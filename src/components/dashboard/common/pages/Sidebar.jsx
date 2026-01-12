@@ -4,7 +4,7 @@ import { LogOut } from "lucide-react";
 const menu = [
   {
     name: "Account Profile",
-    path: "/",
+    path: "/parent",
     icon: "/assets/dashboard.png",
     activeImg: "/assets/dashboard-active.png",
   },

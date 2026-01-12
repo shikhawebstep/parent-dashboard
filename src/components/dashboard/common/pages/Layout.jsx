@@ -1,6 +1,7 @@
 import { useLocation } from "react-router-dom";
 import Sidebar from "./Sidebar";
 import Header from "./Header";
+import OnboardingTour from "../OnboardingTour";
 
 const Layout = ({ children }) => {
   const location = useLocation();
@@ -9,7 +10,9 @@ const Layout = ({ children }) => {
       {location.pathname !== "/parent/login" && <Sidebar />}
       <main className="flex-1">
         {location.pathname !== "/parent/login" && <Header />}
-        {children}</main>
+        {children}
+        <OnboardingTour />
+      </main>
     </div>
   );
 };

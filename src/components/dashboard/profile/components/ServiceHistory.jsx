@@ -1,11 +1,15 @@
 import { useState, useRef, useEffect } from "react";
 
 import { Plus } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import BookingCard from "./BookingCard";
 import Calendar from "./Calender";
+import ServiceDetails from "./ServiceDetails";
 
 export default function ServiceHistory() {
+  const navigate = useNavigate();
   const [open, setOpen] = useState(false);
+  const [selectedBooking, setSelectedBooking] = useState(null);
   const ref = useRef(null);
 
   // Close on outside click
@@ -88,6 +92,11 @@ export default function ServiceHistory() {
 
 
 
+
+  if (selectedBooking) {
+    return <ServiceDetails booking={selectedBooking} onBack={() => setSelectedBooking(null)} />;
+  }
+
   return (
     <>
       <div className="text-right absolute top-7 right-5 mb-6">
@@ -121,6 +130,7 @@ export default function ServiceHistory() {
             )}
           </div>
           <button
+            onClick={() => navigate('/parent/booking')}
             className="inline-flex items-center gap-2 font-semibold text-[18px] px-4 py-2 bg-[#0DD180] text-white rounded-[12px] hover:bg-green-700"
           >
             <Plus size={20} className="text-white font-bold" />
@@ -130,7 +140,7 @@ export default function ServiceHistory() {
       </div>
       <div className="py-6 bg-gray-100 min-h-screen">
         {bookings.map((b) => (
-          <BookingCard key={b.id} booking={b} />
+          <BookingCard key={b.id} booking={b} onSeeDetails={setSelectedBooking} />
         ))}
       </div>
 

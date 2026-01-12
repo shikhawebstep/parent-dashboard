@@ -1,7 +1,7 @@
 
 import { useNavigate } from "react-router-dom";
 import { MoreVertical } from "lucide-react";
-const BookingCard = ({ booking }) => {
+const BookingCard = ({ booking, onSeeDetails }) => {
     const navigate = useNavigate();
     const renderImage = (type) => {
         const images = {
@@ -142,11 +142,15 @@ const BookingCard = ({ booking }) => {
 
                 <div className="flex gap-3">
                     <button
-                        onClick={() =>
-                            navigate(
-                                `/one-to-one/sales/account-information/see-details?id=${booking.id}`
-                            )
-                        }
+                        onClick={() => {
+                            if (onSeeDetails) {
+                                onSeeDetails(booking);
+                            } else {
+                                navigate(
+                                    `/one-to-one/sales/account-information/see-details?id=${booking.id}`
+                                );
+                            }
+                        }}
                         className="px-4 py-2 border border-[#042C89] text-[#042C89] rounded-xl text-[16px] font-semibold"
                     >
                         See details

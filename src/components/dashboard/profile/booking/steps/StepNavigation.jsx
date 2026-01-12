@@ -18,7 +18,6 @@ export default function StepNavigation() {
 
       <button
         onClick={nextStep}
-        disabled={!isStepValid()}
         className="px-[70px] py-4 bg-[#237FEA] text-white poppins rounded-[12px] disabled:opacity-40"
       >
         {currentStep === STEPS.length ? "Finish" : "Next"}
