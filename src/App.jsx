@@ -1,15 +1,15 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 
 import './App.css'
-import AccountInformation from "./components/dashboard/profile/AccountInformation";
-import Layout from "./components/dashboard/common/pages/Layout";
-import LoginPage from "./components/admin/pages/LoginPage";
-import { StepProvider } from "./components/dashboard/profile/booking/context/StepContext";
-import Booking from "./components/dashboard/profile/booking/Booking";
-import MyBookings from "./components/dashboard/profile/MyBookings";
-import ReferFriend from "./components/dashboard/profile/ReferFriend";
-import Surveys from "./components/dashboard/profile/surveys/Surveys";
-import SurveyDetail from "./components/dashboard/profile/surveys/SurveyDetail";
+import AccountInformation from "./pages/dashboard/AccountInformation";
+import Layout from "./layouts/Layout";
+import LoginPage from "./pages/auth/Login";
+import { StepProvider } from "./context/StepContext";
+import Booking from "./pages/dashboard/Booking";
+import MyBookings from "./pages/dashboard/MyBookings";
+import ReferFriend from "./pages/dashboard/ReferFriend";
+import Surveys from "./pages/dashboard/Surveys";
+import SurveyDetail from "./pages/dashboard/SurveyDetail";
 
 function App() {
   return (
