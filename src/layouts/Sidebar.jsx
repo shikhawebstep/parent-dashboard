@@ -37,7 +37,7 @@ const menu = [
 const Sidebar = () => {
   return (
     <aside
-      className="2xl:w-[15%] lg:w-[20%] min-h-screen text-white bg-cover bg-center flex flex-col"
+      className="hidden lg:flex 2xl:w-[15%] lg:w-[20%] min-h-screen text-white bg-cover bg-center flex-col"
       style={{ backgroundImage: "url('/assets/sidebarBg.png')" }}
     >
       {/* LOGO */}

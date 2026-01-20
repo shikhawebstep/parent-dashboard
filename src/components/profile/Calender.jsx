@@ -60,12 +60,12 @@ export default function Calendar() {
       : () => false;
 
   return (
-    <div className="w-[380px] bg-white rounded-2xl shadow-lg p-5">
+    <div className="sm:w-[380px] bg-white rounded-2xl shadow-lg sm:p-5 p-3">
       {/* Header */}
       <div className="flex justify-between items-center mb-4">
         <h2 className="font-semibold text-[24px] ">Filter</h2>
-        <button className="bg-[#0DD180] text-white flex  gap-2 items-center px-3 py-2.5 w-max rounded-[12px] text-[16px] font-semibold">
-         <img src="/assets/filter-vertical-white.png" className="w-5" alt="" /> Apply Filter
+        <button className="bg-[#0DD180] text-white flex  gap-2 items-center sm:px-3 px-2 py-2.5 w-max rounded-[12px] text-[16px] font-semibold">
+          <img src="/assets/filter-vertical-white.png" className="sm:w-5 w-4" alt="" /> Apply Filter
         </button>
       </div>
 
@@ -97,12 +97,12 @@ export default function Calendar() {
                   }`}
               >
                 {selected.includes(item) && (
-                 <Check size={16} className="text-white"/>
+                  <Check size={16} className="text-white" />
                 )}
               </div>
 
               {/* Label text */}
-              <span className="text-[16px] font-semibold">{item}</span>
+              <span className="sm:text-[16px] text-[14px] text-left font-semibold">{item}</span>
             </label>
 
           ))}
@@ -118,7 +118,7 @@ export default function Calendar() {
           <IoIosArrowBack />
         </button>
 
-        <span className="font-semibold text-[20px]">
+        <span className="font-semibold sm:text-[20px] text-[18px]">
           {format(currentMonth, "MMMM yyyy")}
         </span>
 
@@ -135,7 +135,7 @@ export default function Calendar() {
         {["M", "T", "W", "T", "F", "S", "S"].map((d) => (
           <div
             key={d}
-            className="text-[18px] font-semibold text-center"
+            className="sm:text-[18px] text-[15px] font-semibold text-center"
           >
             {d}
           </div>
@@ -159,7 +159,7 @@ export default function Calendar() {
             <div
               key={day}
               onClick={() => onDateClick(day)}
-              className="relative h-11 text-[18px] cursor-pointer"
+              className="relative h-11 sm:text-[18px] text-[15px] cursor-pointer"
             >
               {/* RANGE BACKGROUND */}
               {inRange && !isStart && !isEnd && (
@@ -171,7 +171,7 @@ export default function Calendar() {
                 <>
                   <div className="absolute inset-y-0 right-0 w-1/2 bg-[#E9FBF3] z-0" />
                   <div className="relative z-10 flex items-center justify-center h-full">
-                    <div className="w-10 h-10 text-[18px] bg-[#0DD180] text-white rounded-full flex items-center justify-center font-semibold">
+                    <div className="w-10 h-10 sm:text-[18px] text-[16px] bg-[#0DD180] text-white rounded-full flex items-center justify-center font-semibold">
                       {format(day, "d")}
                     </div>
                   </div>
@@ -183,7 +183,7 @@ export default function Calendar() {
                 <>
                   <div className="absolute inset-y-0 left-0 w-1/2 bg-[#E9FBF3] z-0" />
                   <div className="relative z-10 flex items-center justify-center h-full">
-                    <div className="w-10 h-10 text-[18px] bg-[#0DD180] text-white rounded-full flex items-center justify-center font-semibold">
+                    <div className="w-10 h-10 sm:text-[18px] text-[16px] bg-[#0DD180] text-white rounded-full flex items-center justify-center font-semibold">
                       {format(day, "d")}
                     </div>
                   </div>

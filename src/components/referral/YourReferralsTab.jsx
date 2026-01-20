@@ -20,7 +20,7 @@ const YourReferralsTab = () => {
     return (
         <div className="flex flex-col lg:flex-row gap-6 items-start animate-fadeIn">
             {/* Table Section */}
-            <div className="flex-1 bg-white p-5 rounded-[20px] shadow-sm border border-gray-100 overflow-hidden">
+            <div className="flex-1 md:bg-white md:p-5 w-full rounded-[20px] md:shadow-sm md:border border-gray-100 overflow-hidden">
                 <div className="py-6">
                     <h3 className="font-bold text-[#191919] text-[28px]">Your referrals</h3>
                 </div>

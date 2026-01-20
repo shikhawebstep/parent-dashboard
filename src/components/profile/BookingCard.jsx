@@ -33,18 +33,18 @@ const BookingCard = ({ booking, onSeeDetails }) => {
     return (
         <div className="bg-white rounded-[30px]  p-3 mb-6 relative">
             {/* Header */}
-            <div className="flex justify-between items-center bg-[#383A46] rounded-[22px] p-4">
+            <div className="flex justify-between items-center bg-[#383A46] md:rounded-[22px] rounded-[15px] md:p-4 p-2.5">
                 <div className="flex items-center gap-3">
                     <img
                         src={renderImage(booking.type)}
                         alt={booking.type}
-                        className="w-6"
+                        className="md:w-6 w-5"
                     />
-                    <h3 className="text-white text-[20px] font-semibold">{booking.type}</h3>
+                    <h3 className="text-white lg:text-[20px] text-[16px] font-semibold">{booking.type}</h3>
                 </div>
 
                 <span
-                    className={`px-3 py-2 rounded-lg capitalize text-sm ${statusColors[booking.status] || "bg-gray-400 text-white"
+                    className={`px-3 py-2 sm:block hidden rounded-lg capitalize text-sm ${statusColors[booking.status] || "bg-gray-400 text-white"
                         }`}
                 >
                     {booking.status}
@@ -53,7 +53,7 @@ const BookingCard = ({ booking, onSeeDetails }) => {
 
             {/* Details */}
             <div className="bg-[#FCF9F6] rounded-[22px] p-4 mt-4 relative">
-                <div className={`grid grid-cols-1 sm:grid-cols-2  gap-4 mb-4 ${booking.type === "Birthday Party Booking" ? 'lg:grid-cols-7' : 'lg:grid-cols-8'} `}>
+                <div className={`grid grid-cols-2 serviceHistory sm:grid-cols-4 md:grid-cols-4  gap-4 mb-4 ${booking.type === "Birthday Party Booking" ? 'lg:grid-cols-7' : 'lg:grid-cols-8'} `}>
                     {booking.type === "Weekly Classes Membership" && (
                         <>
                             {renderField("Membership Plan", booking.plan)}
@@ -139,8 +139,7 @@ const BookingCard = ({ booking, onSeeDetails }) => {
                         </>
                     )}
                 </div>
-
-                <div className="flex gap-3">
+                <div className="flex flex-wrap gap-3">
                     <button
                         onClick={() => {
                             if (onSeeDetails) {
@@ -151,21 +150,27 @@ const BookingCard = ({ booking, onSeeDetails }) => {
                                 );
                             }
                         }}
-                        className="px-4 py-2 border border-[#042C89] text-[#042C89] rounded-xl text-[16px] font-semibold"
+                        className="md:px-4 md:py-2 px-2 py-1.5 border border-[#042C89] text-[#042C89] rounded-xl lg:text-[16px] text-[14px] font-semibold"
                     >
                         See details
                     </button>
 
-                    <button className="px-4 py-2 border border-[#042C89] text-[#042C89] rounded-xl text-[16px] font-semibold">
+                    <button className="md:px-4 md:py-2 px-2 py-1.5 border border-[#042C89] text-[#042C89] rounded-xl lg:text-[16px] text-[14px] font-semibold">
                         See payments
                     </button>
-                    <button className="px-4 py-2 border border-[#042C89] text-[#042C89] rounded-xl text-[16px] font-semibold">
+                    <button className="md:px-4 md:py-2 px-2 py-1.5 border border-[#042C89] text-[#042C89] rounded-xl lg:text-[16px] text-[14px] font-semibold">
                         Attendance
                     </button>
-                    <button className="px-4 py-2 border border-[#042C89] text-[#042C89] rounded-xl text-[16px] font-semibold">
+                    <button className="md:px-4 md:py-2 px-2 py-1.5 border border-[#042C89] text-[#042C89] rounded-xl lg:text-[16px] text-[14px] font-semibold">
                         Credits
                     </button>
                 </div>
+                <span
+                    className={`px-3 py-2 mt-3 sm:hidden w-full text-center block rounded-lg capitalize text-sm ${statusColors[booking.status] || "bg-gray-400 text-white"
+                        }`}
+                >
+                    {booking.status}
+                </span>
             </div>
         </div>
     );

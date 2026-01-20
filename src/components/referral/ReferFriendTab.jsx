@@ -8,17 +8,17 @@ const ReferFriendTab = () => {
     const [dialCodes, setDialCodes] = useState("+1");
     return (
         <>
-            <div className="bg-white rounded-[30px] p-6  border border-gray-100">
-                <div className="flex gap-12">
+            <div className="bg-white rounded-[30px] md:p-6 p-2  md:border border-gray-100">
+                <div className="md:flex md:items-center xl:items-start gap-12">
                     {/* Left Column: Blue Card */}
-                    <div style={{ backgroundImage: 'url(/assets/Referr.png)' }} className="bg-cover bg-center rounded-[30px] w-[525px] p-8 py-14 text-white relative overflow-hidden flex flex-col items-center text-center justify-center min-h-[400px]">
+                    <div style={{ backgroundImage: 'url(/assets/Referr.png)' }} className="bg-cover bg-center rounded-[30px] md:w-[525px] md:p-8 p-6 md:py-14 py-6 text-white relative overflow-hidden flex flex-col items-center text-center justify-center min-h-[400px]">
                         <div className='w-full m-auto max-w-[110px]'>
                             <img src="/assets/rewards.png" alt="" srcset="" />
                         </div>
 
-                        <h2 className="text-[36px] recline font-bold  leading-[35px] mt-8 mb-2">Refer your friends<br />and get benefits!</h2>
-                        <p className="text-[16px] font-normal my-8">
-                            Lorem ipsum dolor sit amet consectetur. <br /> Pellentesque bibendum id duis <br /> sit mi lobortis dictum consectetur venenatis.
+                        <h2 className="2xl:text-[36px] text-[26px] recline font-bold  md:leading-[35px] leading-[28px] mt-8 md:mb-2">Refer your friends<br />and get benefits!</h2>
+                        <p className="text-[16px] font-normal 2xl:my-8 my-5">
+                            Lorem ipsum dolor sit amet consectetur. <br className='2xl:block hidden'/> Pellentesque bibendum id duis <br className='2xl:block hidden'/> sit mi lobortis dictum consectetur venenatis.
                         </p>
                         <span className='text-[16px]'>Copy Link</span>
                         <div className="w-full relative mt-2 bg-[#175299] rounded-lg p-1 justify-between flex items-center border border-[#1e4bb5]">
@@ -57,7 +57,7 @@ const ReferFriendTab = () => {
                         <div>
                             <h3 className="text-[#191919] font-bold text-[24px] mb-2">Or send us the referee details</h3>
                             <p className="text-[#717073] text-[18px] mb-6">
-                                Prefer to send us their details? Use the form below and we'll contact directly your friend for you and if <br /> they sign up, we'll let you know.
+                                Prefer to send us their details? Use the form below and we'll contact directly your friend for you and if <br className='hidden md:block' /> they sign up, we'll let you know.
                             </p>
 
                             <form className="space-y-6">
@@ -130,12 +130,12 @@ const ReferFriendTab = () => {
 
                 {/* Bottom Reward Info */}
             </div>
-            <div className="bg-white rounded-[30px] p-10 flex flex-col items-center text-center mt-8">
-                <div className="flex -space-x-2 mb-4">
-                   <img src="/assets/reward.png" alt="" className='w-[100px]' />
+            <div className="bg-white rounded-[30px] md:p-10 p-6 flex flex-col shadowCss items-center text-center mt-8">
+                <div className="flex space-x-2 mb-4">
+                   <img src="/assets/reward.png" alt="" className='md:w-[100px] w-[80px]' />
                 </div>
-                <h3 className="text-[#042C89] font-bold recline text-[36px] mb-2">What the reward is?</h3>
-                <p className="text-[#797A88] text-[24px]">
+                <h3 className="text-[#042C89] font-bold recline md:text-[36px] text-[25px] mb-2">What the reward is?</h3>
+                <p className="text-[#797A88] md:text-[24px] text-[16px]">
                     Get one free month for yourself and give your friend one free month as well.
                 </p>
             </div>

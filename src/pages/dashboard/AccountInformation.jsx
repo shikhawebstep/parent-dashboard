@@ -19,15 +19,15 @@ const AccountInformation = () => {
   const [activeTab, setActiveTab] = useState(tabs[0].name);
 
   return (
-    <div className=" p-6 relative">
+    <div className=" lg:p-6 relative">
 
-      <div className="flex w-max items-center bg-white p-3 gap-1 rounded-2xl ">
+      <div className="flex lg:w-max items-center overflow-x-auto bg-white p-2 gap-1 lg:rounded-[14px] ">
 
         {tabs.map((tab) => (
           <button
             key={tab.name}
             onClick={() => setActiveTab(tab.name)}
-            className={`w-max relative flex-1 whitespace-nowrap px-4 text-[18px] font-semibold py-3 rounded-xl transition-all ${activeTab === tab.name
+            className={`w-max relative flex-1 whitespace-nowrap md:px-4 px-2 2xl:text-[18px] lg:text-[16px] text-[16px] font-semibold md:py-3 py-1.5 rounded-[14px] transition-all ${activeTab === tab.name
               ? "bg-[#042C89] shadow text-white "
               : "text-[#282829] hover:text-[#282829]"
               }`}
@@ -38,7 +38,7 @@ const AccountInformation = () => {
         ))}
       </div>
 
-      <div className="mt-6">
+      <div className="lg:mt-6">
         {tabs.find((tab) => tab.name === activeTab)?.component}
       </div>
     </div>

@@ -78,13 +78,14 @@ const SkillDetail = ({ skill, onBack }) => {
         <div className=" animate-fadeIn">
             {/* Header / Banner */}
             <div className='relative'>
-                <img src="/assets/skillBanner.png" alt="" srcset="" />
+                <img src="/assets/skillBanner.png" alt="" srcset="" className='hidden md:block' />
+                <img src="/assets/skillBannerMobile.png" alt="" srcset="" className='block md:hidden' />
             </div>
 
 
             {/* Title & Overall Progress */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mt-10 mb-8">
-                <h2 className="2xl:text-[32px] text-[24px] font-bold text-[#191919] leading-[36px] w-full md:w-4/12 font-semibold">
+            <div className="flex flex-col px-4 lg:px-0 md:flex-row md:items-center justify-between gap-4 mt-10 mb-8">
+                <h2 className="2xl:text-[32px] lg:text-[24px] text-[20px] font-bold text-[#191919] lg:leading-[36px] leading-[28px] w-full md:w-6/12 font-semibold">
                     {skill.title}
                 </h2>
                 <div className="flex items-center gap-4 w-full md:w-4/12">
@@ -99,14 +100,14 @@ const SkillDetail = ({ skill, onBack }) => {
             </div>
 
             {/* Video List */}
-            <div className="space-y-4">
+            <div className="space-y-4 px-4 lg:px-0 ">
                 {videos.map((video) => (
                     <div key={video.id} className="bg-white rounded-[16px] p-3 border border-[#EBEBEB]">
-                        <div className="flex flex-col lg:flex-row xl:items-center 2xl:gap-10 gap-6">
+                        <div className="xl:flex sm:grid grid-cols-2 flex-col md:flex-row xl:items-center md:items-start 2xl:gap-10 md:gap-6 gap-4">
                             {/* Left: Thumbnail Section */}
-                            <div className="lg:w-[23%] 2xl:w-[20%] w-full">
+                            <div className="xl:w-[23%] 2xl:w-[20%] w-full">
                                 <div
-                                    className="aspect-video bg-[#C4C4C4] xl:h-[250px] rounded-[12px] relative flex items-center justify-center mb-3  w-full h-full cursor-pointer group overflow-hidden"
+                                    className="aspect-video bg-[#C4C4C4] xl:h-[250px]  rounded-[12px] relative flex items-center justify-center mb-3  w-full h-full cursor-pointer group overflow-hidden"
                                     onClick={() => setSelectedVideo(video)}
                                 >
 
@@ -115,17 +116,17 @@ const SkillDetail = ({ skill, onBack }) => {
                                         <Play className="text-white ml-1" size={20} fill="white" />
                                     </div> */}
                                     <div className="absolute bottom-0 left-0 w-full pointer-events-none w-full">
-                                        <div className="bg-[#FFD600] w-full p-4 text-[#191919]  font-bold inline-block rounded-sm">
-                                            <span className='text-[#042C89] text-[20px] font-bold block'>Part {video.id} </span>
-                                            <span className="font-normal text-[#042C89] text-[17px]">{video.duration}</span>
+                                        <div className="bg-[#FFD600] w-full md:p-4 p-2 text-[#191919]  font-bold inline-block rounded-sm">
+                                            <span className='text-[#042C89] md:text-[20px] text-[17px] font-bold block'>Part {video.id} </span>
+                                            <span className="font-normal text-[#042C89] md:text-[17px] text-[14px]">{video.duration}</span>
                                         </div>
                                     </div>
                                 </div>
                             </div>
 
                             {/* Middle: Info */}
-                            <div className="lg:w-[38%] w-full space-y-3">
-                                <h3 className="text-[26px] font-bold text-[#191919] ">{video.title}</h3>
+                            <div className="xl:w-[38%] w-full space-y-3">
+                                <h3 className="md:text-[26px] text-[22px] font-bold text-[#191919] ">{video.title}</h3>
 
                                 <div className="space-y-1">
                                     <p className="text-[18px] font-bold text-[#191919] ">Brief</p>
@@ -167,7 +168,7 @@ const SkillDetail = ({ skill, onBack }) => {
                             </div>
 
                             {/* Right: Checklist & Action */}
-                            <div className="lg:w-[27%] 2xl:w-[25%] w-full flex flex-col justify-between">
+                            <div className="xl:w-[27%] 2xl:w-[25%] w-full flex flex-col justify-between">
                                 <div>
                                     <p className="text-[16px] 2xl:text-[18px] font-bold text-[#191919] mb-2 ">My child can...</p>
                                     <div className="space-y-2">
@@ -185,18 +186,18 @@ const SkillDetail = ({ skill, onBack }) => {
                                 </div>
 
                             </div>
-                            <div className="mt-4 lg:mt-0 lg:w-[14%] flex justify-end">
+                            <div className="mt-4 lg:mt-0 xl:w-[14%] flex justify-end items-center w-full">
                                 {video.status === 'Completed' ? (
                                     <button
                                         onClick={() => setSelectedVideo(video)}
-                                        className="2xl:px-6 p-3 py-2 bg-[#43BE4F] text-white rounded-[14px] text-[16px] font-semibold flex items-center gap-1 hover:bg-[#0bb36d] transition-colors "
+                                        className="2xl:px-6 p-3 py-2 bg-[#43BE4F] text-white rounded-[14px] w-full text-center justify-center text-[16px] font-semibold flex items-center gap-1 hover:bg-[#0bb36d] transition-colors "
                                     >
                                         <Check size={16} /> Completed
                                     </button>
                                 ) : (
                                     <button
                                         onClick={() => setSelectedVideo(video)}
-                                        className={`px-4 py-2 rounded-[14px] 2x:text-[16px] text-[14px] font-semibold flex items-center gap-1 transition-colors  ${video.status === 'Continue'
+                                        className={`px-4 py-2 rounded-[14px] 2x:text-[16px] w-full text-center text-[14px] justify-center font-semibold flex items-center gap-1 transition-colors  ${video.status === 'Continue'
                                             ? 'bg-[#F7D02A] text-[#042C89] hover:bg-[#e6c200]' // Fixed yellow for Continue
                                             : 'bg-[#042C89] text-white hover:bg-[#092b63]' // Blue for Start
                                             }`}>

@@ -92,14 +92,14 @@ const MyBookings = () => {
     const filteredBookings = activeTab === 'Cancelled' ? [] : bookings;
 
     return (
-        <div className="p-4 space-y-8 animate-fadeIn min-h-screen bg-[#fff] rounded-[30px] m-6">
+        <div className="p-4 md:space-y-8 animate-fadeIn min-h-screen bg-[#fff] rounded-[30px] md:m-6 m-4">
             {/* Tabs */}
-            <div className="flex items-center gap-8  pb-1">
+            <div className="flex items-center md:gap-8 gap-2 mb-12 md:mb-0  pb-1">
                 {tabs.map((tab) => (
                     <button
                         key={tab}
                         onClick={() => setActiveTab(tab)}
-                        className={`text-[18px] font-semibold px-5 py-2.5 rounded-[14px] relative transition-colors ${activeTab === tab
+                        className={`md:text-[18px] text-[16px] font-semibold md:px-5 px-2 py-2.5 rounded-[14px] relative transition-colors ${activeTab === tab
                             ? 'bg-[#042C89] text-white'
                             : 'text-[#282829] hover:text-[#282829]'
                             }`}
@@ -127,7 +127,7 @@ const MyBookings = () => {
                         Let's hardcode it for the specific visual match or check logic.
                     */}
                             {index === 3 && ( // Hardcoded breakpoint for visual match to image
-                                <div className="flex items-center gap-4 mb-4 mt-8 bg-[#EAF0FF] p-2 px-6 text-[24px] rounded-[15px] text-[#042C89] font-bold uppercase w-full">
+                                <div className="flex  items-center gap-4 mb-4 mt-8 bg-[#EAF0FF] p-2 px-6 md:text-[24px] text-[20px] rounded-[15px] text-[#042C89] font-bold uppercase w-full">
                                     <span className="material-icons-outlined text-lg"><img src="/assets/calender.png" className='w-6' alt="" /></span> {/* Using text or generic icon if font awesome not avail, or lucide */}
                                     MAY
                                 </div>
@@ -135,42 +135,42 @@ const MyBookings = () => {
 
                             <div className="bg-[#F8F8F8] p-6 rounded-[16px] flex flex-col md:flex-row  overflow-hidden mb-4">
                                 {/* Date Column */}
-                                <div className="bg-[#F9FAFB] md:w-[120px] flex flex-col items-center text-center 2xl:px-5 px-0  2xl:pe-10 pe-5 justify-center border-r border-[#E2E1E5]">
+                                <div className="bg-[#F9FAFB] md:w-[120px] text-left flex flex-col md:items-center md:text-center text-left 2xl:px-5 px-0  2xl:pe-10 md:pe-5 md:justify-center md:border-r border-b md:border-b-0 border-[#E2E1E5]">
                                     <span className="text-[#5F5F6D] 2xl:text-[24px] text-[20px] font-bold block">{booking.day}</span>
                                     <span className="text-[#5F5F6D] font-bold 2xl:text-[42px] text-[36px]">{booking.date}</span>
                                 </div>
 
                                 {/* Details */}
-                                <div className="flex-1 flex ps-7 gap-6 justify-between items-center">
-                                    <div className='w-[8%]'>
+                                <div className="flex-1 xl:flex grid grid-cols-1 sm:grid-cols-2 mt-4 md:mt-0 md:grid-cols-3 md:ps-7 lg:gap-6 gap-3 justify-between items-center">
+                                    <div className='xl:w-[8%]'>
                                         <p className="text-[#9E9FAA] 2xl:text-[16px] text-[14px] mb-1">Venue</p>
                                         <p className="text-[#5F5F6D] 2xl:text-[16px] text-[14px] font-semibold">{booking.venue}</p>
                                     </div>
-                                    <div className='w-[10%]'>
+                                    <div className='xl:w-[10%]'>
                                         <p className="text-[#9E9FAA] 2xl:text-[16px] text-[14px] mb-1">Hour</p>
                                         <p className="text-[#5F5F6D] 2xl:text-[16px] text-[14px] font-semibold">{booking.time}</p>
                                     </div>
-                                    <div className="w-[30%]">
+                                    <div className="xl:w-[30%]">
                                         <p className="text-[#9E9FAA] 2xl:text-[16px] text-[14px] mb-1">Address</p>
                                         <p className="text-[#5F5F6D] 2xl:text-[16px] text-[14px] font-semibold leading-tight">{booking.address}</p>
                                     </div>
-                                    <div className='w-[10%]'>
+                                    <div className='xl:w-[10%]'>
                                         <p className="text-[#9E9FAA] 2xl:text-[16px] text-[14px] mb-1">Class</p>
                                         <p className="text-[#5F5F6D] 2xl:text-[16px] text-[14px] font-semibold">{booking.classType}</p>
                                     </div>
-                                    <div className='w-[10%]'>
+                                    <div className='xl:w-[10%]'>
                                         <p className="text-[#9E9FAA] 2xl:text-[16px] text-[14px] mb-1">Coach</p>
                                         <p className="text-[#5F5F6D] 2xl:text-[16px] text-[14px] font-semibold"> <div className="flex gap-2 items-center"><img src="/assets/Ethan-test1.png" className='w-8' alt="" />{booking.coach}</div></p>
                                     </div>
 
                                     {/* Action Button */}
-                                    <div className=" w-[13%] flex justify-end">
+                                    <div className="xl:w-[13%] w-full flex justify-end">
                                         {booking.status === 'upcoming' ? (
-                                            <button className="bg-[#042C89] text-white  px-2 2xl:px-4 py-2.5 2xl:py-3 rounded-[12px] font-semibold 2xl:text-sm text-[12px] hover:bg-[#032066] transition-colors">
+                                            <button className="bg-[#042C89] text-white w-full  px-2 2xl:px-4 py-2.5 2xl:py-3 rounded-[12px] font-semibold 2xl:text-sm md:text-[12px] text-[14px] hover:bg-[#032066] transition-colors">
                                                 Give Feedback
                                             </button>
                                         ) : (
-                                            <button className="bg-[#FFAB00] text-white 2xl:px-8 px-4 py-2.5 2xl:py-3 rounded-[12px] font-semibold 2xl:text-sm text-[12px] hover:bg-[#e69500] transition-colors ">
+                                            <button className="bg-[#FFAB00] text-white w-full 2xl:px-8 px-4 py-2.5 2xl:py-3 rounded-[12px] font-semibold 2xl:text-sm md:text-[12px] text-[14px] hover:bg-[#e69500] transition-colors ">
                                                 Pending
                                             </button>
                                         )}

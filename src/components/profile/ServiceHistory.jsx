@@ -101,14 +101,16 @@ export default function ServiceHistory() {
     <>
       <div className="text-right 2xl:absolute top-7 right-5 mb-6">
 
-        <div className="flex gap-3 items-center">
-          <div className="bg-white flex gap-3 items-center p-2 rounded-[15px]">
+        <div className="flex gap-3 flex-wrap items-center p-3 md:p-0 items-center">
+          <div className="bg-white shadow  sm:w-max justify-between flex  gap-1 md:gap-3 items-center p-2 rounded-[15px]">
             <img src="/assets/points.png" className="w-9" alt="" />
-            <h3 className="text-[#042C89] font-bold recline">you collected 600 points</h3>
+            <h3 className="text-[#042C89] font-bold recline text-[14px] md:text-[16px">you collected 600 points</h3>
             <button
-              className=" font-semibold text-[18px] px-4 py-2 bg-[#0DD180] text-white rounded-[12px] hover:bg-green-700"
+              className=" font-semibold lg:text-[18px] text-[14px] md:px-4 px-2 py-2 bg-[#0DD180] text-white rounded-[12px] hover:bg-green-700"
             >
-              See More Here
+              <span className="hidden md:block">See More Here</span>
+              <span className="md:hidden block">See More</span>
+
             </button>
           </div>
           <div className="relative inline-block" ref={ref}>
@@ -124,14 +126,14 @@ export default function ServiceHistory() {
 
             {/* Calendar Popup */}
             {open && (
-              <div className="absolute right-0 mt-3 z-50">
+              <div className="sm:absolute right-0 mt-3 z-50">
                 <Calendar />
               </div>
             )}
           </div>
           <button
             onClick={() => navigate('/parent/booking')}
-            className="inline-flex items-center gap-2 font-semibold text-[18px] px-4 py-2 bg-[#0DD180] text-white rounded-[12px] hover:bg-green-700"
+            className="inline-flex items-center gap-2 font-semibold lg:text-[18px] text-[16px] px-4 py-2 bg-[#0DD180] text-white rounded-[12px] hover:bg-green-700"
           >
             <Plus size={20} className="text-white font-bold" />
             Add Booking

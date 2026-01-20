@@ -4,7 +4,7 @@ export default function Stepper() {
   const { currentStep, STEPS } = useStep();
 
   return (
-    <ol className="flex items-center w-max m-auto p-[20px] text-sm font-medium gap-4 bg-[#FBFBFB]  rounded-[10px] overflow-x-auto">
+    <ol className="flex items-center m-auto p-[20px] text-sm font-medium gap-4 bg-[#FBFBFB]  rounded-[10px] overflow-x-auto">
       {STEPS.map((step, index) => {
         const isActive = currentStep === step.id;
         const isCompleted = currentStep > step.id;

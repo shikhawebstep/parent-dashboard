@@ -7,7 +7,7 @@ import BookFreeTrial from "../../components/booking/BookFreeTrial";
 export default function Booking() {
   return (
     <div className="p-6">
-      {/* <div className="bg-[#125294] rounded-[20px] p-4">
+      <div className="bg-[#125294] rounded-[20px] p-4">
           <div className="flex gap-2 items-center"> <ArrowLeft size={20}  className="text-white"/>
             <h3 className="text-[24px] text-white font-bold">Booking</h3></div>
         </div>
@@ -15,8 +15,8 @@ export default function Booking() {
         <Stepper />
         <StepRenderer />
         <StepNavigation />
-      </div> */}
-      <BookFreeTrial />
+      </div>
+      {/* <BookFreeTrial /> */}
 
     </div>
   );

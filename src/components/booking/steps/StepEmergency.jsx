@@ -71,8 +71,8 @@ export default function StepEmergency() {
                 {/* Phone Number */}
                 <div className="space-y-2">
                     <label className="text-sm font-bold text-[#191919]">Phone number</label>
-                    <div className={`poppins flex items-center ${inputClass(errors.emergencyPhone)}`}>
-                        <div className="w-[13%]">
+                    <div className={`w-full flex items-center rounded-lg px-4 py-3 font-semibold outline-none bg-white border ${errors.emergencyPhone ? "border-red-500" : "border-gray-200"}`}>
+                        <div className="2xl:w-[6%] lg:w-[14%]">
                             <PhoneInput
                                 country="us"
                                 value={dialCodes}
@@ -81,7 +81,6 @@ export default function StepEmergency() {
                                 countryCodeEditable={false}
                                 inputStyle={{
                                     display: "none",
-
                                 }}
                             />
                         </div>
@@ -90,7 +89,7 @@ export default function StepEmergency() {
                             name="phone"
                             value={emergency.phone || ""}
                             onChange={handleChange}
-                            className={`poppins ps-3 text-[14px] border-l border-gray-300 outline-none w-full`}
+                            className={`poppins 2xl:ps-3 ps-4 text-[14px] border-l border-gray-300 outline-none w-full bg-transparent`}
                             placeholder="Enter phone number"
                         />
                     </div>

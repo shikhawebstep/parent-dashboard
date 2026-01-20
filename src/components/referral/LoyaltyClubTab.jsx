@@ -36,20 +36,24 @@ const LoyaltyClubTab = () => {
     };
 
     return (
+        <>
+        
+        
         <div className="space-y-8 animate-fadeIn">
             {/* Banner Section */}
-            <div className="relative rounded-[30px] overflow-hidden min-h-[250px]">
-                <img src="/assets/loyalitybanner.png" alt="" srcset="" />
+            <div className="relative rounded-[30px] overflow-hidden 2xl:min-h-[250px]">
+                <img src="/assets/loyalitybanner.png" alt="" srcset="" className='md:block hidden h-full w-full object-cover' />
+                <img src="/assets/mobileBanner.png" alt="" srcset="" className='md:hidden block' />
             </div>
 
             {/* How Can You Collect Points */}
-            <div className="rounded-[30px] p-8  border border-[#DBDBDB]">
-                <h3 className="text-[#191919] font-bold text-[32px] mb-3">How Can You Collect Your Points?</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+            <div className="rounded-[30px] lg:p-8 p-4 border border-[#DBDBDB]">
+                <h3 className="text-[#191919] font-bold lg:text-[32px] text-[24px] mb-3">How Can You Collect Your Points?</h3>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-4">
                     {collectionMethods.map((method, idx) => (
-                        <div key={idx} className="flex items-center justify-between pb-3 border-[#E1E2E6] border-b  transition-colors">
-                            <span className="text-[20px] font-medium text-gray-700">{method.title}</span>
-                            <div className="flex items-center gap-1 bg-[#FFF8D0] text-[#EEA02C]  px-3 py-1 rounded-[30px] text-[18px]">
+                        <div key={idx} className="sm:flex lg:grid grid-cols-2 xl:flex items-center justify-between pb-3 border-[#E1E2E6] border-b  transition-colors">
+                            <span className="xl:text-[20px] text-[17px] font-medium text-gray-700">{method.title}</span>
+                            <div className="flex items-center gap-1 w-max lg:ms-auto bg-[#FFF8D0] justify-end text-[#EEA02C] lg:mt-0 mt-2  px-3 py-1 rounded-[30px] whitespace-nowrap xl:text-[18px] text-[15px]">
                                 <img src="/assets/star.png" alt="" className='w-6' />
                                 <span className='recline'>{method.points} Points</span>
                             </div>
@@ -60,20 +64,20 @@ const LoyaltyClubTab = () => {
 
             {/* Ways To Collect (Rewards) */}
             <div className="bg-white rounded-[30px] p-8 border border-[#DBDBDB]">
-                <h3 className="text-[#191919] font-bold text-[32px] mb-8">Ways To Collect Your Points</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-8">
+                <h3 className="text-[#191919] font-bold md:text-[32px]  text-[26px] mb-8">Ways To Collect Your Points</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 lg:grid-cols-4 gap-8">
                     {rewards.map((reward) => (
                         <div key={reward.id} className="flex flex-col items-center text-center group">
                             <div className="w-full aspect-square rounded-2xl mb-4 flex items-center justify-center relative transition-all">
                                 {/* Placeholder for reward image */}
                                 <img src={reward.image} alt="" srcset="" />  </div>
-                            <h4 className="font-semibold text-[#191919] text-[20px] ">{reward.title}</h4>
+                            <h4 className="font-semibold text-[#191919] 2xl:text-[20px] text-[18px] ">{reward.title}</h4>
                             <p className="text-[16px] font-bold text-[#191919] mb-4">{reward.points} Points</p>
 
                             {points >= reward.points ? (
                                 <button
                                     onClick={() => handleRedeem(reward)}
-                                    className="bg-[#0DD180] text-white px-6 py-3 rounded-[8px] inter text-[14px]  font-semibold hover:bg-[#00b572] transition-colors hover:shadow-md"
+                                    className="bg-[#0DD180] text-white 2xl:px-6 px-4 py-3 rounded-[8px] inter text-[14px]  font-semibold hover:bg-[#00b572] transition-colors hover:shadow-md"
                                 >
                                     Redeem Reward
                                 </button>
@@ -93,8 +97,10 @@ const LoyaltyClubTab = () => {
             </div>
 
             {/* Modal */}
-            {showModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fadeIn">
+           
+        </div>
+         {showModal && (
+                <div className="fixed inset-0 z-50 h-screen flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fadeIn">
                     <div className="bg-white rounded-[30px] p-8 max-w-sm w-full relative flex flex-col items-center text-center shadow-2xl animate-scaleIn">
                         <button
                             onClick={() => setShowModal(false)}
@@ -138,7 +144,7 @@ const LoyaltyClubTab = () => {
                     </div>
                 </div>
             )}
-        </div>
+        </>
     );
 };
 

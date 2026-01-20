@@ -47,7 +47,7 @@ const Skills = () => {
   return (
     <div className="space-y-6">
       {/* Student Selector */}
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-2 p-6 pb-0 md:p-0">
         <h2 className="text-[24px] font-bold text-[#191919]">
           Student
         </h2>
@@ -68,9 +68,9 @@ const Skills = () => {
         </div>
       </div>
 
-      <div className="bg-white xl:max-w-[1410px] rounded-[18px] p-6">
+      <div className="bg-white xl:max-w-[1410px] rounded-[18px] p-6 py-0 md:py-6">
         {/* Filter Tabs */}
-        <div className="flex gap-2 bg-[#F9F9FB] rounded-[14px] w-max p-2 mb-4">
+        <div className="flex gap-2 bg-[#F9F9FB] w-full overflow-auto rounded-[14px] md:w-max p-2 mb-4">
           {filterTabs.map((tab) => (
             <button
               key={tab.id}
@@ -86,7 +86,7 @@ const Skills = () => {
         </div>
 
         {/* Skills Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-6">
           {filteredSkills.map((skill) => (
             <div
               key={skill.id}
@@ -104,7 +104,7 @@ const Skills = () => {
               </h4>
 
               {/* Metadata */}
-              <div className="flex items-center flex-wrap gap-4 2xl:text-[13px] text-[11px] text-[#34353B] mb-4 font-semibold">
+              <div className="flex items-center flex-wrap gap-4 2xl:text-[13px] md:text-[11px] text-[12px] text-[#34353B] mb-4 font-semibold">
                 <div className="flex items-center font-semibold gap-1">
                   <img src="/assets/clock1.png" alt="" className='2xl:w-4 w-3' />
                   {skill.time}
@@ -119,7 +119,7 @@ const Skills = () => {
                 </div>
                 <div className="flex justify-end">
                   <span
-                    className={`px-3 py-1 rounded-[6px] 2xl:text-[12px] text-[10px] font-bold ${skill.status === "Complete"
+                    className={`px-3 py-1 rounded-[6px] 2xl:text-[12px] md:text-[10px] text-[12px] font-bold ${skill.status === "Complete"
                       ? "bg-[#D9F2DC] text-[#000]"
                       : "bg-[#FFF8DD] text-[#000]"
                       }`}
@@ -142,7 +142,7 @@ const Skills = () => {
                     style={{ width: `${skill.progress}%` }}
                   />
                 </div>
-                <p className="text-right 2xl:text-[12px] text-[10px] truncate text-[#34353B] font-bold">
+                <p className="text-right 2xl:text-[12px] md:text-[10px] text-[12px] truncate text-[#34353B] font-bold">
                   {skill.progress}% completed
                 </p>
               </div>

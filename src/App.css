@@ -163,3 +163,27 @@ body {
 .poppins .css-1nmdiq5-menu {
   font-family: 'Poppins';
 }
+
+@media(min-width:2000px) {
+  .containerMain {
+    max-width: 1700px;
+    margin: 0 auto;
+  }
+}
+
+@media(max-width:992px) {
+  header {
+    background-image: url('/assets/sidebarBg.png');
+    background-size: cover;
+    background-position: center;
+  }
+}
+
+@media (min-width:450px) and (max-width:640px) {
+  .serviceHistory {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+.shadowCss{
+  box-shadow: rgba(100, 100, 111, 0.2) 0px 7px 29px 0px;
+}

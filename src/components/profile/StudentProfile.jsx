@@ -108,10 +108,10 @@ const StudentProfile = () => {
   };
 
   return (
-    <div className="py-4 ">
+    <div className="md:py-4 ">
 
       {/* Add Student Button */}
-      <div className="text-right absolute top-7 right-5 mb-6">
+      <div className="md:text-right px-6 lg:p-0 bg-white md:bg-transparent xl:absolute top-7 right-5 md:mb-6">
         <button
           onClick={addStudent}
           className="inline-flex items-center gap-2 font-semibold text-[18px] px-4 py-2 bg-[#0DD180] text-white rounded-lg hover:bg-green-700"
@@ -128,7 +128,7 @@ const StudentProfile = () => {
         return (
           <div
             key={index}
-            className="bg-white rounded-[30px] p-6 mb-6"
+            className="bg-white lg:rounded-[30px] p-6 md:mb-6"
           >
             <div className="flex gap-2 items-center mb-4">
               <h2 className="font-bold text-[24px]">

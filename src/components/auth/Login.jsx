@@ -1,5 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Eye, EyeOff } from 'lucide-react';
+import { Link } from "react-router-dom";
+import Swal from "sweetalert2";
+import axios from "axios";
 
 const Login = () => {
   const [formData, setFormData] = useState({
@@ -10,6 +13,23 @@ const Login = () => {
 
   const [errors, setErrors] = useState({});
   const [showPassword, setShowPassword] = useState(false);
+  useEffect(() => {
+    const token = localStorage.getItem("parentToken");
+    if (token) {
+      window.location.href = "/parent";
+    }
+  }, []);
+
+  useEffect(() => {
+    const email = localStorage.getItem("parentEmail");
+    const password = localStorage.getItem("parentPassword");
+    if (email && password) {
+      setFormData({
+        email: email || "",
+        password: password || "",
+      })
+    }
+  }, []);
 
   // 🔹 HANDLE CHANGE
   const handleChange = (e) => {
@@ -40,35 +60,91 @@ const Login = () => {
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
-
   // 🔹 SUBMIT
-  const handleSubmit = (e) => {
+
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (!validate()) return;
 
-    // Save to localStorage
-    localStorage.setItem(
-      "parentLogin",
-      JSON.stringify({
-        email: formData.email,
-        remember: formData.remember,
-      })
-    );
+    const API_URL = import.meta.env.VITE_API_BASE_URL;
+    const params = new URLSearchParams(window.location.search);
+    const redirectTo = params.get("redirect") || "/parent";
 
-    alert("Login Successful ✅");
+    Swal.fire({
+      title: "Logging in...",
+
+      message: "Please wait...",
+      allowOutsideClick: false,
+      didOpen: () => Swal.showLoading(),
+    });
+
+    try {
+      const response = await axios.post(
+        `${API_URL}api/parent/auth/login`,
+        {
+          email: formData.email,
+          password: formData.password,
+        },
+        { headers: { "Content-Type": "application/json" } }
+      );
+
+      const token = response.data?.token || response.data?.accessToken;
+      if (!token) throw new Error("TOKEN_MISSING");
+
+      localStorage.setItem("parentToken", token);
+      if (formData.remember) {
+        localStorage.setItem("parentRemember", formData.email);
+        localStorage.setItem("parentPassword", formData.password);
+      }
+
+      Swal.fire({
+        icon: "success",
+        title: "Login Successful",
+        message: "Redirecting to dashboard...",
+        timer: 1200,
+        showConfirmButton: false,
+      }).then(() => {
+        window.location.replace(redirectTo);
+      });
+
+    } catch (error) {
+      Swal.close();
+
+      let message = "Something went wrong. Please try again.";
+
+      if (error.code === "ERR_NETWORK") {
+        message = "Cannot connect to server.";
+      } else if (error.message === "TOKEN_MISSING") {
+        message = "Token not returned by API.";
+      } else if (error.response) {
+        message =
+          error.response.data?.message ||
+          error.response.data?.error ||
+          "Invalid email or password.";
+      }
+
+      Swal.fire({
+        icon: "error",
+        title: "Login Failed",
+        text: message,
+      });
+    }
   };
 
+
+
   return (
-    <div className="w-full h-full bg-white flex items-center p-5 md:p-0">
+    <div className="w-full h-full bg-white flex items-center p-5 lg:p-10 xl:p-0">
       <div className="w-full flex flex-col items-center justify-center m-auto ">
         <div className="text-center w-full mb-8">
-          <div className="text-5xl font-bold text-blue-700 2xl:max-w-[70px] lg:max-w-[50px] m-auto"> <img src="/assets/sambaLogoBlue.png" alt="" className="w-full" /></div>
-          <h2 className="2xl:text-[51px] lg:text-[40px] font-semibold mt-3">Welcome</h2>
+          <div className="text-5xl font-bold text-blue-700 2xl:max-w-[70px] lg:max-w-[50px] max-w-[60px] m-auto"> <img src="/assets/sambaLogoBlue.png" alt="" className="w-full" /></div>
+          <h2 className="2xl:text-[51px] text-[38px] lg:text-[40px] font-semibold mt-3">Welcome</h2>
           <p className="text-black text-[20px] font-semibold">Bookings made simple.</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="lg:w-[55%]">
+        <form onSubmit={handleSubmit} className="xl:w-[55%] w-full">
           {/* EMAIL */}
           <div className="my-5">
             <label className="2xl:text-[18px] lg:text-[16px] font-medium">Email</label>
@@ -78,7 +154,8 @@ const Login = () => {
               placeholder="Enter email"
               value={formData.email}
               onChange={handleChange}
-              className="w-full mt-1 px-4 py-2.5 border border-[#D0CFD1] placeholder:text-[#717073] rounded-[14px] focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className={`w-full mt-1 px-4 py-2.5 border ${errors.email ? "border-red-500" : "border-[#D0CFD1]"
+                } placeholder:text-[#717073] rounded-[14px] focus:outline-none focus:ring-2 focus:ring-blue-500`}
             />
             {errors.email && (
               <p className="text-red-500 text-xs mt-1">{errors.email}</p>
@@ -95,7 +172,8 @@ const Login = () => {
                 placeholder="Enter password"
                 value={formData.password}
                 onChange={handleChange}
-                className="w-full mt-1 px-4 py-2.5 border border-[#D0CFD1] placeholder:text-[#717073] rounded-[14px] focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className={`w-full mt-1 px-4 py-2.5 border ${errors.password ? "border-red-500" : "border-[#D0CFD1]"
+                  } placeholder:text-[#717073] rounded-[14px] focus:outline-none focus:ring-2 focus:ring-blue-500`}
               />
               <button
                 type="button"
@@ -122,9 +200,9 @@ const Login = () => {
               />
               Remember me
             </label>
-            <a href="#" className="text-[#282829] hover:underline m-0">
+            <Link to="/parent/auth/forgot-password" className="text-[#282829] hover:underline m-0">
               Forgot password?
-            </a>
+            </Link>
           </div>
 
           {/* BUTTON */}

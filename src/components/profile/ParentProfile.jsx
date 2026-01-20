@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { Plus, Save } from "lucide-react";
 import ReactSelect from "react-select";
-
+import PhoneInput from "react-phone-input-2";
+import "react-phone-input-2/lib/style.css";
 /* ================= DEFAULT MODELS ================= */
 
 const options = [
@@ -34,6 +35,7 @@ const ParentProfile = () => {
     const [parents, setParents] = useState([emptyParent]);
     const [editingIndex, setEditingIndex] = useState(null);
     const [emergencyEditing, setEmergencyEditing] = useState(false);
+    const [dialCodes, setDialCodes] = useState("+1");
 
     const [emergency, setEmergency] = useState(emptyEmergency);
     const [sameAsParent, setSameAsParent] = useState(false);
@@ -205,14 +207,14 @@ const ParentProfile = () => {
     };
 
     return (
-        <div className="space-y-6">
+        <div className="lg:space-y-6">
             {/* ================= Parent Info ================= */}
-            <div className="bg-white rounded-[30px] p-6 shadow-sm">
+            <div className="bg-white lg:rounded-[30px] p-6 shadow-sm">
                 <div className="flex justify-between items-center mb-4">
                     {parents.length === 1 && (
                         <>
                             <div className="flex gap-2 items-center cursor-pointer">
-                                <h2 className="font-bold text-[24px]">Parent Information</h2>
+                                <h2 className="font-bold 2xl:text-[24px] lg:text-[20px] text-[18px]">Parent Information</h2>
                                 {editingIndex !== 0 ? (
                                     <img
                                         src="/assets/edit.png"
@@ -228,7 +230,7 @@ const ParentProfile = () => {
                             </div>
                             <button
                                 onClick={handleAddParent}
-                                className="flex items-center gap-1 px-4 py-2 font-semibold rounded-lg text-sm bg-[#0DD180] text-white"
+                                className="md:flex hidden items-center gap-1 px-4 py-2 font-semibold rounded-lg text-sm bg-[#0DD180] text-white"
                                 disabled={editingIndex !== null}
                             >
                                 <Plus size={17} /> Add Parent
@@ -254,7 +256,7 @@ const ParentProfile = () => {
                                         }}
                                         className="text-sm font-semibold cursor-pointer flex gap-2 items-center"
                                     >
-                                        <h2 className="font-bold text-[24px]">Parent Information {index + 1}</h2>
+                                        <h2 className="font-bold 2xl:text-[24px] lg:text-[20px] text-[18px]">Parent Information {index + 1}</h2>
                                         {!editable && <img src="/assets/edit.png" className="w-5" alt="Edit" />}
                                     </div>
                                         {editable && (
@@ -273,7 +275,7 @@ const ParentProfile = () => {
                                         <button
                                             onClick={handleAddParent}
                                             disabled={editingIndex !== null || parents.length >= 3}
-                                            className={`flex items-center gap-1 px-4 py-2 font-semibold rounded-lg text-sm bg-[#0DD180] text-white ${editingIndex !== null || parents.length >= 3 ? "cursor-not-allowed" : "cursor-pointer"
+                                            className={`md:flex hidden items-center gap-1 px-4 py-2 font-semibold rounded-lg text-sm bg-[#0DD180] text-white ${editingIndex !== null || parents.length >= 3 ? "cursor-not-allowed" : "cursor-pointer"
                                                 }`}
                                         >
                                             <Plus size={17} /> Add Parent
@@ -311,13 +313,33 @@ const ParentProfile = () => {
                                     onChange={(e) => updateParent(index, "email", e.target.value)}
                                 />
 
-                                <Input
-                                    label="Phone number"
-                                    value={parent.phone}
-                                    editable={editable}
-                                    error={errors.phone}
-                                    onChange={(e) => updateParent(index, "phone", e.target.value)}
-                                />
+
+
+                                <div>
+                                    <Label>Phone number</Label>
+                                    <div className={`w-full flex items-center rounded-lg px-4 py-3 font-semibold outline-none ${editable ? "bg-white border" : "bg-[#F0F5FF]"
+                                        } ${errors.phone ? "border-red-500" : "border-gray-300"}`}>
+                                        <div className="2xl:w-[6%] lg:w-[14%] w-[18%]">
+                                            <PhoneInput
+                                                country="us"
+                                                value={dialCodes}
+                                                disableDropdown={true}
+                                                disableCountryCode={true}
+                                                countryCodeEditable={false}
+                                                inputStyle={{
+                                                    display: "none",
+                                                }}
+                                            />
+                                        </div>
+                                        <input
+                                            value={parent.phone}
+                                            onChange={(e) => updateParent(index, "phone", e.target.value)}
+                                            disabled={!editable}
+                                            className={`poppins 2xl:ps-3 ps-4 text-[14px] border-l border-gray-300 outline-none w-full bg-transparent`}
+                                        />
+                                    </div>
+                                    {errors.phone && <p className="text-red-500 text-sm mt-1">{errors.phone}</p>}
+                                </div>
 
                                 <CustomSelect
                                     label="Relation to child"
@@ -340,10 +362,18 @@ const ParentProfile = () => {
                         </div>
                     );
                 })}
+
+                <button
+                    onClick={handleAddParent}
+                    className="md:hidden flex items-center gap-1 px-4 py-2 font-semibold rounded-lg text-sm bg-[#0DD180] text-white"
+                    disabled={editingIndex !== null}
+                >
+                    <Plus size={17} /> Add Parent
+                </button>
             </div>
 
             {/* ================= Emergency Contact ================= */}
-            <div className="bg-white rounded-[30px] p-6 shadow-sm">
+            <div className="bg-white lg:rounded-[30px] p-6 shadow-sm">
                 <div
                     className="flex gap-2 items-center mb-2 cursor-pointer"
                     onClick={() => {
@@ -351,7 +381,7 @@ const ParentProfile = () => {
                         // Don't toggle off edit by clicking again, force Save
                     }}
                 >
-                    <h2 className="font-bold text-[24px]">Emergency Contact Details</h2>
+                    <h2 className="font-bold 2xl:text-[24px] lg:text-[20px] text-[18px]">Emergency Contact Details</h2>
                     {emergencyEditing ? (
                         <button onClick={() => handleSaveEmergency()} aria-label="Save Emergency Contact">
                             <Save size={20} />
@@ -384,13 +414,31 @@ const ParentProfile = () => {
                         onChange={(e) => handleEmergencyChange("lastName", e.target.value)}
                     />
 
-                    <Input
-                        label="Phone number"
-                        value={emergency.phone}
-                        editable={!sameAsParent && emergencyEditing}
-                        error={emergencyErrors.phone}
-                        onChange={(e) => handleEmergencyChange("phone", e.target.value)}
-                    />
+                    <div>
+                        <Label>Phone number</Label>
+                        <div className={`w-full flex items-center rounded-lg px-4 py-3 font-semibold outline-none ${(!sameAsParent && emergencyEditing) ? "bg-white border" : "bg-[#F0F5FF]"
+                            } ${emergencyErrors.phone ? "border-red-500" : "border-gray-300"}`}>
+                            <div className="2xl:w-[6%] lg:w-[14%] w-[18%]">
+                                <PhoneInput
+                                    country="us"
+                                    value={dialCodes}
+                                    disableDropdown={true}
+                                    disableCountryCode={true}
+                                    countryCodeEditable={false}
+                                    inputStyle={{
+                                        display: "none",
+                                    }}
+                                />
+                            </div>
+                            <input
+                                value={emergency.phone}
+                                onChange={(e) => handleEmergencyChange("phone", e.target.value)}
+                                disabled={!(!sameAsParent && emergencyEditing)}
+                                className={`poppins 2xl:ps-3 ps-4 text-[14px] border-l border-gray-300 outline-none w-full bg-transparent`}
+                            />
+                        </div>
+                        {emergencyErrors.phone && <p className="text-red-500 text-sm mt-1">{emergencyErrors.phone}</p>}
+                    </div>
 
                     <CustomSelect
                         label="Relation to child"
