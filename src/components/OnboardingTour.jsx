@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { X, Check, Calendar, Trophy, FileText, Settings, PartyPopper } from 'lucide-react';
 
 const OnboardingTour = () => {
     const [isOpen, setIsOpen] = useState(false);

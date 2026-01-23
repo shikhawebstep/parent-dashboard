@@ -1,34 +1,28 @@
 import { Plus, Save } from "lucide-react";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Select from "react-select";
+import { useProfile } from "../../context/ProfileContext";
 
 const genderOptions = [
   { value: "", label: "Select Gender" },
-  { value: "Male", label: "Male" },
-  { value: "Female", label: "Female" },
+  { value: "male", label: "Male" },
+  { value: "female", label: "Female" },
   { value: "Other", label: "Other" },
 ];
 
-const medicalOptions = [
-  { value: "", label: "Enter medical information" },
-  { value: "None", label: "None" },
-  { value: "Asthma", label: "Asthma" },
-  { value: "Diabetes", label: "Diabetes" },
-  { value: "Allergy", label: "Allergy" },
-];
 
 const emptyStudent = {
-  firstName: "",
-  lastName: "",
-  dob: "",
+  studentFirstName: "",
+  studentLastName: "",
+  dateOfBirth: "",
   age: "",
   gender: "",
-  medical: "",
+  medicalInformation: "",
 };
 
-function calculateAge(dob) {
-  if (!dob) return "";
-  const birthDate = new Date(dob);
+function calculateAge(dateOfBirth) {
+  if (!dateOfBirth) return "";
+  const birthDate = new Date(dateOfBirth);
   if (isNaN(birthDate.getTime())) return "";
   const today = new Date();
   let age = today.getFullYear() - birthDate.getFullYear();
@@ -42,10 +36,17 @@ function calculateAge(dob) {
 const StudentProfile = () => {
   const [students, setStudents] = useState([{ ...emptyStudent }]);
   const [editingIndex, setEditingIndex] = useState(null);
+  const { profile } = useProfile();
 
   // Validation errors: array of objects per student
   const [errors, setErrors] = useState([{}]);
-
+  useEffect(() => {
+    if (Array.isArray(profile?.uniqueProfiles?.students)) {
+      setStudents(profile.uniqueProfiles.students);
+    } else {
+      setStudents([emptyStudent]); // fallback at least one parent
+    }
+  }, [profile]);
   const addStudent = () => {
     setStudents((prev) => [...prev, { ...emptyStudent }]);
     setErrors((prev) => [...prev, {}]);
@@ -62,8 +63,8 @@ const StudentProfile = () => {
     const updated = [...students];
     updated[index] = { ...updated[index], [field]: value };
 
-    // Update age on dob change
-    if (field === "dob") {
+    // Update age on dateOfBirth change
+    if (field === "dateOfBirth") {
       updated[index].age = calculateAge(value);
     }
     setStudents(updated);
@@ -79,13 +80,13 @@ const StudentProfile = () => {
   // Validate student fields, return error object
   const validateStudent = (student) => {
     const err = {};
-    if (!student.firstName.trim()) err.firstName = "First name is required";
-    if (!student.lastName.trim()) err.lastName = "Last name is required";
+    if (!student.studentFirstName.trim()) err.studentFirstName = "First name is required";
+    if (!student.studentLastName.trim()) err.studentLastName = "Last name is required";
 
-    if (!student.dob) {
-      err.dob = "Date of birth is required";
-    } else if (isNaN(new Date(student.dob).getTime())) {
-      err.dob = "Invalid date of birth";
+    if (!student.dateOfBirth) {
+      err.dateOfBirth = "Date of birth is required";
+    } else if (isNaN(new Date(student.dateOfBirth).getTime())) {
+      err.dateOfBirth = "Invalid date of birth";
     }
 
     if (!student.gender) err.gender = "Gender is required";
@@ -155,14 +156,14 @@ const StudentProfile = () => {
                 <input
                   type="text"
                   disabled={!isEditing}
-                  value={student.firstName}
-                  onChange={(e) => updateStudentField(index, "firstName", e.target.value)}
+                  value={student.studentFirstName}
+                  onChange={(e) => updateStudentField(index, "studentFirstName", e.target.value)}
                   className={`w-full rounded-md px-3 py-3 border 
-  ${isEditing ? (err.firstName ? "border-red-500 bg-white" : "border-gray-300 bg-white") : "bg-[#F0F5FF] border-transparent"} 
+  ${isEditing ? (err.studentFirstName ? "border-red-500 bg-white" : "border-gray-300 bg-white") : "bg-[#F0F5FF] border-transparent"} 
   text-gray-800`}
 
                 />
-                {err.firstName && <p className="text-red-600 mt-1 text-sm">{err.firstName}</p>}
+                {err.studentFirstName && <p className="text-red-600 mt-1 text-sm">{err.studentFirstName}</p>}
               </div>
 
               {/* Last Name */}
@@ -173,17 +174,17 @@ const StudentProfile = () => {
                 <input
                   type="text"
                   disabled={!isEditing}
-                  value={student.lastName}
-                  onChange={(e) => updateStudentField(index, "lastName", e.target.value)}
+                  value={student.studentLastName}
+                  onChange={(e) => updateStudentField(index, "studentLastName", e.target.value)}
                   className={`w-full rounded-md px-3 py-3 border 
-  ${isEditing ? (err.lastName ? "border-red-500 bg-white" : "border-gray-300 bg-white") : "bg-[#F0F5FF] border-transparent"} 
+  ${isEditing ? (err.studentLastName ? "border-red-500 bg-white" : "border-gray-300 bg-white") : "bg-[#F0F5FF] border-transparent"} 
   text-gray-800`}
 
                 />
-                {err.lastName && <p className="text-red-600 mt-1 text-sm">{err.lastName}</p>}
+                {err.studentLastName && <p className="text-red-600 mt-1 text-sm">{err.studentLastName}</p>}
               </div>
 
-              {/* DOB */}
+              {/* dateOfBirth */}
               <div>
                 <label className="text-[16px] lg:text-[18px] font-semibold text-[#282829] mb-1 block">
                   Date of birth
@@ -191,14 +192,14 @@ const StudentProfile = () => {
                 <input
                   type="date"
                   disabled={!isEditing}
-                  value={student.dob}
-                  onChange={(e) => updateStudentField(index, "dob", e.target.value)}
+                  value={student.dateOfBirth}
+                  onChange={(e) => updateStudentField(index, "dateOfBirth", e.target.value)}
                   className={`w-full rounded-md px-3 py-3 border 
-  ${isEditing ? (err.dob ? "border-red-500 bg-white" : "border-gray-300 bg-white") : "bg-[#F0F5FF] border-transparent"} 
+  ${isEditing ? (err.dateOfBirth ? "border-red-500 bg-white" : "border-gray-300 bg-white") : "bg-[#F0F5FF] border-transparent"} 
   text-gray-800`}
 
                 />
-                {err.dob && <p className="text-red-600 mt-1 text-sm">{err.dob}</p>}
+                {err.dateOfBirth && <p className="text-red-600 mt-1 text-sm">{err.dateOfBirth}</p>}
               </div>
 
               {/* Age */}
@@ -265,10 +266,10 @@ const StudentProfile = () => {
                 <input
                   type="text"
                   disabled={!isEditing}
-                  value={student.medical}
-                  onChange={(e) => updateStudentField(index, "medical", e.target.value)}
+                  value={student.medicalInformation}
+                  onChange={(e) => updateStudentField(index, "medicalInformation", e.target.value)}
                   className={`w-full rounded-md px-3 py-3 border 
-  ${isEditing ? (err.firstName ? "border-red-500 bg-white" : "border-gray-300 bg-white") : "bg-[#F0F5FF] border-transparent"} 
+  ${isEditing ? (err.studentFirstName ? "border-red-500 bg-white" : "border-gray-300 bg-white") : "bg-[#F0F5FF] border-transparent"} 
   text-gray-800`}
 
                 />

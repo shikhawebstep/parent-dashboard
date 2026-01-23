@@ -1,5 +1,6 @@
 import { NavLink } from "react-router-dom";
 import { X, ChevronDown, Bell, LogOut } from "lucide-react";
+import { useState, useEffect } from "react";
 
 // Reusing the same menu items from Sidebar
 const menu = [
@@ -34,8 +35,17 @@ const menu = [
         activeImg: "/assets/setting-active.png",
     },
 ];
+const parentData = JSON.parse(localStorage.getItem("parentData"));
 
 const MobileMenu = ({ isOpen, onClose }) => {
+    const [dateTime, setDateTime] = useState(new Date());
+
+    useEffect(() => {
+        const timer = setInterval(() => {
+            setDateTime(new Date());
+        }, 1000);
+        return () => clearInterval(timer);
+    }, []);
     if (!isOpen) return null;
 
     return (
@@ -64,8 +74,22 @@ const MobileMenu = ({ isOpen, onClose }) => {
 
                 {/* Date Section */}
                 <div className="mb-6">
-                    <p className="text-[18px] font-semibold">Monday</p>
-                    <p className="text-[14px] font-medium">8 January, 2023</p>
+                    <p className="text-[18px] font-semibold">
+                        {dateTime.toLocaleDateString("en-US", { weekday: "long" })}
+                    </p>
+                    <p className="text-[14px] font-medium">
+                        {dateTime.toLocaleDateString("en-GB", {
+                            day: "numeric",
+                            month: "long",
+                            year: "numeric",
+                        })}{" "}
+                        |{" "}
+                        {dateTime.toLocaleTimeString("en-US", {
+                            hour: "numeric",
+                            minute: "numeric",
+                            hour12: true,
+                        })}
+                    </p>
                 </div>
 
                 {/* User Profile */}
@@ -75,7 +99,9 @@ const MobileMenu = ({ isOpen, onClose }) => {
                         alt="John Doe"
                         className="w-12 h-12 rounded-full border-2 border-white object-cover"
                     />
-                    <span className="text-[18px] font-bold">John Doe</span>
+                    <span className="text-[18px] font-bold">{parentData?.firstName && parentData?.lastName
+                        ? `${parentData.firstName} ${parentData.lastName}`
+                        : parentData?.email || "N/A"}</span>
                 </div>
 
                 {/* Menu Links */}

@@ -3,6 +3,7 @@ import { Plus, Save } from "lucide-react";
 import ReactSelect from "react-select";
 import PhoneInput from "react-phone-input-2";
 import "react-phone-input-2/lib/style.css";
+import { useProfile } from "../../context/ProfileContext";
 /* ================= DEFAULT MODELS ================= */
 
 const options = [
@@ -10,58 +11,86 @@ const options = [
     { value: "Father", label: "Father" },
     { value: "Mother", label: "Mother" },
     { value: "Guardian", label: "Guardian" },
-    { value: "Social media", label: "Social media" },
+    { value: "Social Media", label: "Social Media" },
     { value: "Google", label: "Google" },
 ];
 
 const emptyParent = {
-    firstName: "",
-    lastName: "",
-    email: "",
-    phone: "",
-    relation: "",
-    source: "",
+    parentFirstName: "",
+    parentLastName: "",
+    parentEmail: "",
+    phoneNumber: "",
+    relationChild: "",
+    howDidHear: "",
+
 };
 
 const emptyEmergency = {
-    firstName: "",
-    lastName: "",
-    phone: "",
-    relation: "",
+    emergencyFirstName: "",
+    emergencyLastName: "",
+    emergencyPhoneNumber: "",
+    emergencyRelation: "",
+
 };
 
 const ParentProfile = () => {
     /* ===== 1 PARENT BY DEFAULT ===== */
-    const [parents, setParents] = useState([emptyParent]);
+    const { profile } = useProfile();
+    const [parents, setParents] = useState([]);
     const [editingIndex, setEditingIndex] = useState(null);
     const [emergencyEditing, setEmergencyEditing] = useState(false);
     const [dialCodes, setDialCodes] = useState("+1");
 
-    const [emergency, setEmergency] = useState(emptyEmergency);
-    const [sameAsParent, setSameAsParent] = useState(false);
 
-    // Validation states
+    const [emergency, setEmergency] = useState(emptyEmergency);
+
+    const [sameAsParent, setSameAsParent] = useState(false);
     const [parentErrors, setParentErrors] = useState([{}]); // one object per parent
     const [emergencyErrors, setEmergencyErrors] = useState({});
 
     /* ===== COPY ACTIVE PARENT → EMERGENCY ===== */
     useEffect(() => {
-        if (sameAsParent && parents[0]) {
+        if (
+            sameAsParent &&
+            Array.isArray(parents) &&
+            parents.length > 0 &&
+            parents[0]
+        ) {
             const parent = parents[0];
+
             setEmergency({
-                firstName: parent.firstName,
-                lastName: parent.lastName,
-                phone: parent.phone,
-                relation: parent.relation,
+                emergencyFirstName: parent?.parentFirstName || "",
+                emergencyLastName: parent?.parentLastName || "",
+                emergencyPhoneNumber: parent?.phoneNumber || "",
+                emergencyRelation: parent?.relationChild || "",
+
             });
+
             setEmergencyErrors({}); // clear errors if copying from valid parent
         }
     }, [sameAsParent, parents]);
 
+
+    useEffect(() => {
+        if (Array.isArray(profile?.uniqueProfiles?.parents)) {
+            setParents(profile.uniqueProfiles.parents);
+        } else {
+            setParents([emptyParent]); // fallback at least one parent
+        }
+    }, [profile]);
+
+    useEffect(() => {
+        if (profile?.uniqueProfiles?.emergencyContacts?.[0]) {
+            setEmergency(profile.uniqueProfiles.emergencyContacts[0]);
+        }
+    }, [profile]);
+
+
+
     /* ===== CLEAR EMERGENCY WHEN SAMEASPARENT OFF ===== */
     useEffect(() => {
-        if (!sameAsParent) {
-            setEmergency(emptyEmergency);
+        if (!sameAsParent && !emergency) {
+            setEmergency({ ...emptyEmergency });
             setEmergencyErrors({});
         }
     }, [sameAsParent]);
@@ -107,13 +136,13 @@ const ParentProfile = () => {
     /* ===== VALIDATE PARENT FIELD (single) ===== */
     const validateParentField = (index, field, value) => {
         let errorMsg = "";
-        if (["firstName", "lastName"].includes(field)) {
-            errorMsg = validateText(value, field === "firstName" ? "First name" : "Last name");
-        } else if (field === "email") {
+        if (["parentLastName", "parentLastName"].includes(field)) {
+            errorMsg = validateText(value, field === "parentLastName" ? "First name" : "Last name");
+        } else if (field === "parentEmail") {
             errorMsg = validateEmail(value);
-        } else if (field === "phone") {
+        } else if (field === "phoneNumber") {
             errorMsg = validatePhone(value);
-        } else if (field === "relation" || field === "source") {
+        } else if (field === "relationChild" || field === "howDidHear") {
             // optional fields or you can require if you want
             errorMsg = "";
         }
@@ -131,14 +160,14 @@ const ParentProfile = () => {
         const parent = parents[index];
         const errors = {};
 
-        errors.firstName = validateText(parent.firstName, "First name");
-        errors.lastName = validateText(parent.lastName, "Last name");
-        errors.email = validateEmail(parent.email);
-        errors.phone = validatePhone(parent.phone);
+        errors.parentFirstName = validateText(parent.parentFirstName, "First name");
+        errors.parentlLastName = validateText(parent.parentlLastName, "Last name");
+        errors.parentEmail = validateEmail(parent.parentEmail);
+        errors.phoneNumber = validatePhone(parent.phoneNumber);
 
-        // relation and source optional or validate if needed
+        // relation and howDidHear optional or validate if needed
         errors.relation = "";
-        errors.source = "";
+        errors.howDidHear = "";
 
         setParentErrors((prev) => {
             const newErrors = [...prev];
@@ -170,10 +199,11 @@ const ParentProfile = () => {
     const validateEmergency = () => {
         const errors = {};
 
-        errors.firstName = validateText(emergency.firstName, "First name");
-        errors.lastName = validateText(emergency.lastName, "Last name");
-        errors.phone = validatePhone(emergency.phone);
-        errors.relation = "";
+        errors.emergencyFirstName = validateText(emergency.firstName, "First name");
+        errors.emergencyLastName = validateText(emergency.lastName, "Last name");
+        errors.emergencyPhoneNumber = validatePhone(emergency.phone);
+        errors.emergencyRelation = "";
+
 
         setEmergencyErrors(errors);
 
@@ -291,26 +321,26 @@ const ParentProfile = () => {
                             >
                                 <Input
                                     label="First name"
-                                    value={parent.firstName}
+                                    value={parent.parentFirstName}
                                     editable={editable}
-                                    error={errors.firstName}
-                                    onChange={(e) => updateParent(index, "firstName", e.target.value)}
+                                    error={errors.parentFirstName}
+                                    onChange={(e) => updateParent(index, "parentFirstName", e.target.value)}
                                 />
 
                                 <Input
                                     label="Last name"
-                                    value={parent.lastName}
+                                    value={parent.parentLastName}
                                     editable={editable}
-                                    error={errors.lastName}
-                                    onChange={(e) => updateParent(index, "lastName", e.target.value)}
+                                    error={errors.parentLastName}
+                                    onChange={(e) => updateParent(index, "parentLastName", e.target.value)}
                                 />
 
                                 <Input
                                     label="Email"
-                                    value={parent.email}
+                                    value={parent.parentEmail}
                                     editable={editable}
-                                    error={errors.email}
-                                    onChange={(e) => updateParent(index, "email", e.target.value)}
+                                    error={errors.parentEmail}
+                                    onChange={(e) => updateParent(index, "parentEmail", e.target.value)}
                                 />
 
 
@@ -318,7 +348,7 @@ const ParentProfile = () => {
                                 <div>
                                     <Label>Phone number</Label>
                                     <div className={`w-full flex items-center rounded-lg px-4 py-3 font-semibold outline-none ${editable ? "bg-white border" : "bg-[#F0F5FF]"
-                                        } ${errors.phone ? "border-red-500" : "border-gray-300"}`}>
+                                        } ${errors.phoneNumber ? "border-red-500" : "border-gray-300"}`}>
                                         <div className="2xl:w-[6%] lg:w-[14%] w-[18%]">
                                             <PhoneInput
                                                 country="us"
@@ -332,29 +362,29 @@ const ParentProfile = () => {
                                             />
                                         </div>
                                         <input
-                                            value={parent.phone}
-                                            onChange={(e) => updateParent(index, "phone", e.target.value)}
+                                            value={parent.phoneNumber}
+                                            onChange={(e) => updateParent(index, "phoneNumber", e.target.value)}
                                             disabled={!editable}
                                             className={`poppins 2xl:ps-3 ps-4 text-[14px] border-l border-gray-300 outline-none w-full bg-transparent`}
                                         />
                                     </div>
-                                    {errors.phone && <p className="text-red-500 text-sm mt-1">{errors.phone}</p>}
+                                    {errors.phoneNumber && <p className="text-red-500 text-sm mt-1">{errors.phoneNumber}</p>}
                                 </div>
 
                                 <CustomSelect
                                     label="Relation to child"
-                                    value={parent.relation}
+                                    value={parent.relationChild}
                                     editable={editable}
-                                    onChange={(e) => updateParent(index, "relation", e.target.value)}
-                                    error={errors.relation}
+                                    onChange={(e) => updateParent(index, "relationChild", e.target.value)}
+                                    error={errors.relationChild}
                                 />
 
                                 <CustomSelect
                                     label="How did you hear about us?"
-                                    value={parent.source}
+                                    value={parent.howDidHear}
                                     editable={editable}
-                                    onChange={(e) => updateParent(index, "source", e.target.value)}
-                                    error={errors.source}
+                                    onChange={(e) => updateParent(index, "howDidHear", e.target.value)}
+                                    error={errors.howDidHear}
                                 />
                             </div>
 
@@ -400,18 +430,18 @@ const ParentProfile = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                     <Input
                         label="First name"
-                        value={emergency.firstName}
+                        value={emergency.emergencyFirstName}
                         editable={!sameAsParent && emergencyEditing}
-                        error={emergencyErrors.firstName}
-                        onChange={(e) => handleEmergencyChange("firstName", e.target.value)}
+                        error={emergencyErrors.emergencyFirstName}
+                        onChange={(e) => handleEmergencyChange("emergencyFirstName", e.target.value)}
                     />
 
                     <Input
                         label="Last name"
-                        value={emergency.lastName}
+                        value={emergency.emergencyLastName}
                         editable={!sameAsParent && emergencyEditing}
-                        error={emergencyErrors.lastName}
-                        onChange={(e) => handleEmergencyChange("lastName", e.target.value)}
+                        error={emergencyErrors.emergencyLastName}
+                        onChange={(e) => handleEmergencyChange("emergencyLastName", e.target.value)}
                     />
 
                     <div>
@@ -431,21 +461,21 @@ const ParentProfile = () => {
                                 />
                             </div>
                             <input
-                                value={emergency.phone}
-                                onChange={(e) => handleEmergencyChange("phone", e.target.value)}
+                                value={emergency.emergencyPhoneNumber}
+                                onChange={(e) => handleEmergencyChange("emergencyPhoneNumber", e.target.value)}
                                 disabled={!(!sameAsParent && emergencyEditing)}
                                 className={`poppins 2xl:ps-3 ps-4 text-[14px] border-l border-gray-300 outline-none w-full bg-transparent`}
                             />
                         </div>
-                        {emergencyErrors.phone && <p className="text-red-500 text-sm mt-1">{emergencyErrors.phone}</p>}
+                        {emergencyErrors.emergencyPhoneNumber && <p className="text-red-500 text-sm mt-1">{emergencyErrors.emergencyPhoneNumber}</p>}
                     </div>
 
                     <CustomSelect
                         label="Relation to child"
-                        value={emergency.relation}
+                        value={emergency.emergencyRelation}
                         editable={!sameAsParent && emergencyEditing}
-                        error={emergencyErrors.relation}
-                        onChange={(e) => handleEmergencyChange("relation", e.target.value)}
+                        error={emergencyErrors.emergencyRelation}
+                        onChange={(e) => handleEmergencyChange("emergencyRelation", e.target.value)}
                     />
                 </div>
 

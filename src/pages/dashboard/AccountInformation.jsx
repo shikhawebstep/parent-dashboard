@@ -1,12 +1,11 @@
-import React, { useState } from "react";
-
+import React, { useEffect, useState } from "react";
+import Loader from "../../components/Loader";
 import ParentProfile from "../../components/profile/ParentProfile";
 import StudentProfile from "../../components/profile/StudentProfile";
 import Skills from "../../components/profile/Skills";
 import Feedback from "../../components/profile/Feedback";
 import ServiceHistory from "../../components/profile/ServiceHistory";
-
-
+import { useProfile } from "../../context/ProfileContext";
 const tabs = [
   { name: "Parent Profile", component: <ParentProfile /> },
   { name: "Childs Profile", component: <StudentProfile /> },
@@ -16,7 +15,18 @@ const tabs = [
 ];
 
 const AccountInformation = () => {
+
+  const { fetchProfileData, loading, } = useProfile();
   const [activeTab, setActiveTab] = useState(tabs[0].name);
+
+  useEffect(() => {
+    fetchProfileData();
+  }, []);
+
+
+  if (loading) {
+    return <Loader />
+  }
 
   return (
     <div className=" lg:p-6 relative">

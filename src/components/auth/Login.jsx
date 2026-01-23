@@ -15,6 +15,7 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   useEffect(() => {
     const token = localStorage.getItem("parentToken");
+    console.log('token', token)
     if (token) {
       window.location.href = "/parent";
     }
@@ -89,13 +90,14 @@ const Login = () => {
         },
         { headers: { "Content-Type": "application/json" } }
       );
-
-      const token = response.data?.token || response.data?.accessToken;
+      const result = response?.data;
+      const token = result?.data?.token || result?.data?.accessToken;
       if (!token) throw new Error("TOKEN_MISSING");
 
       localStorage.setItem("parentToken", token);
+      localStorage.setItem("parentData", JSON.stringify(result?.data?.admin));
       if (formData.remember) {
-        localStorage.setItem("parentRemember", formData.email);
+        localStorage.setItem("parentEmail", formData.email);
         localStorage.setItem("parentPassword", formData.password);
       }
 
