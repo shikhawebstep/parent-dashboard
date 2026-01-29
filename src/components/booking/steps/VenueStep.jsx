@@ -1,22 +1,25 @@
 import Select from "react-select";
 import { useStep } from "../../../context/StepContext";
 
-const serviceOptions = [
-  { value: "Yoga", label: "Yoga" },
-  { value: "Dance", label: "Dance" },
-];
 
 export default function VenueStep() {
-  const { formData, setFormData } = useStep();
+  const { formData, setFormData, data } = useStep();
+
+  const serviceOptions = Array.isArray(data) ? data.map((item) => ({
+    value: item.venueId,
+    label: item.address
+  })) : [];
+
+
 
   return (
     <div className="max-w-[696px] mx-auto poppins">
-      <h2 className="text-[24px] font-semibold poppins text-center mb-4">
-       In which venue do you want to book?
+      <h2 className="md:text-[24px] text-[18px] font-semibold poppins text-center mb-4">
+        In which venue do you want to book?
       </h2>
 
       <label className="text-[#282829] poppins text-[16px] block mb-2">
-       Select venue
+        Select venue
       </label>
 
       <Select
@@ -29,7 +32,7 @@ export default function VenueStep() {
         }
         placeholder="Choose a venue"
         className="poppins"
-              styles={{
+        styles={{
           control: (base) => ({
             ...base,
             minHeight: "48px",

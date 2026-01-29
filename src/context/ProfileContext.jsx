@@ -61,6 +61,50 @@ export const ProfileProvider = ({ children }) => {
     };
 
 
+    const updateProfile = async (updatedData) => {
+        const token = localStorage.getItem("parentToken");
+        const parentData = JSON.parse(localStorage.getItem("parentData"));
+        const parentId = parentData?.id;
+        const API_URL = import.meta.env.VITE_API_BASE_URL;
+
+        if (!token || !parentId) return;
+
+        setLoading(true);
+        setError(null);
+
+        try {
+            const response = await axios.put(
+                `${API_URL}api/parent/holiday/booking/update/${parentId}`,
+                updatedData, // ✅ data goes here
+                {
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${token}`,
+                    },
+                }
+            );
+
+            fetchProfileData();
+        } catch (err) {
+            console.error("Error updating profile:", err);
+
+            const errorMessage =
+                err?.response?.data?.message ||
+                err?.response?.data?.error ||
+                "Something went wrong while updating profile.";
+
+            setError(errorMessage);
+
+            Swal.fire({
+                icon: "error",
+                title: "Error",
+                text: errorMessage,
+            });
+        } finally {
+            setLoading(false);
+        }
+    };
+
     return (
         <ProfileContext.Provider
             value={{
@@ -68,7 +112,8 @@ export const ProfileProvider = ({ children }) => {
                 loading,
                 error,
                 fetchProfileData,
-                setProfile
+                setProfile,
+                updateProfile
             }}
         >
             {children}

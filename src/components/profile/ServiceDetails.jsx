@@ -6,12 +6,19 @@ import CancelMembershipModal from "./CancelMembershipModal";
 export default function ServiceDetails({ booking, onBack }) {
     const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
 
-    // Mock data or extracted from booking if available
-    const studentInfo = {
-        firstName: "John", // Placeholder
-        lastName: "Doe",  // Placeholder
-    };
 
+
+    const student = booking?.students?.[0];
+    const parent = booking?.isParent ? booking?.parents?.find(p => p.id === booking.bookedByAdmin.id) : booking?.parents?.[0];
+    // Fallback logic for parent: check if booking is done by parent, find matching parent, else take first. 
+    // But simplistic approach:
+    const activeParent = booking?.parents?.[0];
+    const classSchedule = booking?.classSchedule;
+    const venue = classSchedule?.venue;
+    const payment = booking?.payments?.[0];
+    const paymentPlan = booking?.paymentPlan;
+
+    console.log('booking', booking)
     return (
         <div className="animate-fadeIn">
             {/* Back Button */}
@@ -37,7 +44,7 @@ export default function ServiceDetails({ booking, onBack }) {
                                     <input
                                         type="text"
                                         placeholder="Enter first name"
-                                        defaultValue={studentInfo.firstName}
+                                        value={student?.studentFirstName || ""}
                                         className="w-full lg:p-3 p-2 border border-[#E2E1E5] rounded-[12px] focus:outline-none focus:border-[#042C89] text-[#383A46] font-medium"
                                         readOnly
                                     />
@@ -49,7 +56,7 @@ export default function ServiceDetails({ booking, onBack }) {
                                     <input
                                         type="text"
                                         placeholder="Enter last name"
-                                        defaultValue={studentInfo.lastName}
+                                        value={student?.studentLastName || ""}
                                         className="w-full lg:p-3 p-2 border border-[#E2E1E5] rounded-[12px] focus:outline-none focus:border-[#042C89] text-[#383A46] font-medium"
                                         readOnly
                                     />
@@ -63,49 +70,40 @@ export default function ServiceDetails({ booking, onBack }) {
                         <h2 className="md:text-[24px] 2xl:text-[20px] xl:text-[18px] lg:text-[16px] text-[14px] font-bold text-[#383A46] mb-4">Booking information</h2>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="space-y-1">
-                                <label className="lg:text-[16px] text-[14px] font-medium text-[#282829] font-medium">Start Date</label>
-                                <select className="w-full lg:p-3 p-2 border border-[#E2E1E5] rounded-[12px] focus:outline-none focus:border-[#042C89] bg-white text-[#383A46] font-medium appearance-none">
-                                    <option>4-7 years</option>
-                                </select>
+                                <label className="lg:text-[16px] text-[14px] font-medium text-[#282829]">Start Date</label>
+                                <input
+                                    type="text"
+                                    value={booking?.createdAt ? new Date(booking.createdAt).toLocaleDateString("en-GB") : "N/A"}
+                                    className="w-full lg:p-3 p-2 border border-[#E2E1E5] rounded-[12px] focus:outline-none text-[#383A46] font-medium bg-white"
+                                    readOnly
+                                />
                             </div>
                             <div className="space-y-1">
-                                <label className="lg:text-[16px] text-[14px] font-medium text-[#282829] font-medium">Venue</label>
-                                <div className="relative">
-                                    <select className="w-full lg:p-3 p-2 border border-[#E2E1E5] rounded-[12px] focus:outline-none focus:border-[#042C89] bg-white text-[#383A46] font-medium appearance-none">
-                                        <option>Automatic entry</option>
-                                    </select>
-                                    <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
-                                        <svg width="12" height="8" viewBox="0 0 12 8" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                            <path d="M1 1.5L6 6.5L11 1.5" stroke="#717073" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                                        </svg>
-                                    </div>
-                                </div>
+                                <label className="lg:text-[16px] text-[14px] font-medium text-[#282829]">Venue</label>
+                                <input
+                                    type="text"
+                                    value={venue?.name || "N/A"}
+                                    className="w-full lg:p-3 p-2 border border-[#E2E1E5] rounded-[12px] focus:outline-none text-[#383A46] font-medium bg-white"
+                                    readOnly
+                                />
                             </div>
                             <div className="space-y-1">
-                                <label className="lg:text-[16px] text-[14px] font-medium text-[#282829] font-medium">Class</label>
-                                <div className="relative">
-                                    <select className="w-full lg:p-3 p-2 border border-[#E2E1E5] rounded-[12px] focus:outline-none focus:border-[#042C89] bg-white text-[#383A46] font-medium appearance-none">
-                                        <option>4-7 years</option>
-                                    </select>
-                                    <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
-                                        <svg width="12" height="8" viewBox="0 0 12 8" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                            <path d="M1 1.5L6 6.5L11 1.5" stroke="#717073" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                                        </svg>
-                                    </div>
-                                </div>
+                                <label className="lg:text-[16px] text-[14px] font-medium text-[#282829]">Class</label>
+                                <input
+                                    type="text"
+                                    value={classSchedule?.className || "N/A"}
+                                    className="w-full lg:p-3 p-2 border border-[#E2E1E5] rounded-[12px] focus:outline-none text-[#383A46] font-medium bg-white"
+                                    readOnly
+                                />
                             </div>
                             <div className="space-y-1">
-                                <label className="lg:text-[16px] text-[14px] font-medium text-[#282829] font-medium">Time</label>
-                                <div className="relative">
-                                    <select className="w-full lg:p-3 p-2 border border-[#E2E1E5] rounded-[12px] focus:outline-none focus:border-[#042C89] bg-white text-[#383A46] font-medium appearance-none">
-                                        <option>Automatic entry</option>
-                                    </select>
-                                    <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
-                                        <svg width="12" height="8" viewBox="0 0 12 8" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                            <path d="M1 1.5L6 6.5L11 1.5" stroke="#717073" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                                        </svg>
-                                    </div>
-                                </div>
+                                <label className="lg:text-[16px] text-[14px] font-medium text-[#282829]">Time</label>
+                                <input
+                                    type="text"
+                                    value={classSchedule?.startTime && classSchedule?.endTime ? `${classSchedule.startTime} - ${classSchedule.endTime}` : "N/A"}
+                                    className="w-full lg:p-3 p-2 border border-[#E2E1E5] rounded-[12px] focus:outline-none text-[#383A46] font-medium bg-white"
+                                    readOnly
+                                />
                             </div>
                         </div>
                     </section>
@@ -124,7 +122,7 @@ export default function ServiceDetails({ booking, onBack }) {
 
                             <div className="flex flex-col">
                                 <h3 className="text-black font-bold 2xl:text-[20px] xl:text-[18px] lg:text-[16px] text-[14px] leading-tight">Account Status</h3>
-                                <span className="text-black/80 lg:text-[16px] text-[14px] text-[#282829] font-semibold">Active</span>
+                                <span className="text-black/80 lg:text-[16px] text-[14px] text-[#282829] font-semibold">{booking?.status || "Active"}</span>
                             </div>
                         </div>
 
@@ -135,7 +133,10 @@ export default function ServiceDetails({ booking, onBack }) {
 
                                 <div>
                                     <h4 className="md:text-[24px] 2xl:text-[20px] xl:text-[18px] lg:text-[16px] text-[14px] font-bold leading-tight">Account Holder</h4>
-                                    <p className=" lg:text-[16px] text-[14px] text-[#BDC0C3] font-medium">John Doe / Father</p>
+                                    <p className=" lg:text-[16px] text-[14px] text-[#BDC0C3] font-medium">
+                                        {activeParent ? `${activeParent.parentFirstName} ${activeParent.parentLastName}` : "N/A"}
+                                        {activeParent?.relationChild ? ` / ${activeParent.relationChild}` : ""}
+                                    </p>
                                 </div>
                             </div>
 
@@ -145,33 +146,42 @@ export default function ServiceDetails({ booking, onBack }) {
                                 <div className="border-b border-[#495362] pb-2">
                                     <p className="text-white 2xl:text-[20px] xl:text-[18px] lg:text-[16px] text-[14px] font-medium mb-1">Venue</p>
                                     <span className="bg-[#3B82F6] text-white px-3 py-1 rounded text-xs font-semibold inline-block">
-                                        {booking.venue || "Acton"}
+                                        {venue?.area || venue?.name || "N/A"}
                                     </span>
                                 </div>
 
-                                <DetailRow label="Membership Plan" value={booking.plan || "12 Month Plan"} />
-                                <DetailRow label="Students" value={booking.students || "1"} />
-                                <DetailRow label="Monthly Price" value={booking.price || "£3999"} />
-                                <DetailRow label="GoCardless ID" value={booking.id || "XHDJDHLS314"} />
+                                <DetailRow label="Membership Plan" value={paymentPlan?.title || "N/A"} />
+                                <DetailRow label="Students" value={booking?.students?.length || 0} />
+                                <DetailRow label="Monthly Price" value={paymentPlan?.price ? `£${paymentPlan.price}` : "0"} />
+                                <DetailRow label="GoCardless ID" value={booking?.id || "N/A"} />
                                 <DetailRow
                                     label="Date of Booking"
-                                    value={booking.createdAt ? new Date(booking.createdAt).toLocaleString("en-IN") : "Nov 18 2021, 17:00"}
+                                    value={
+                                        booking?.createdAt
+                                            ? new Date(booking.createdAt).toLocaleString("en-GB")
+                                            : "N/A"
+                                    }
                                 />
 
                                 <div className="border-b border-[#495362] pb-3">
                                     <div className="flex justify-between items-end mb-1">
                                         <p className="text-white 2xl:text-[20px] xl:text-[18px] lg:text-[16px] text-[14px]  font-bold">Progress</p>
                                     </div>
-                                    <p className="lg:text-[16px] text-[14px] font-semibold text-[#BDC0C3] mb-2">6 of 12 Months</p>
+                                    <p className="lg:text-[16px] text-[14px] font-semibold text-[#BDC0C3] mb-2">1 of {paymentPlan?.duration || 12} Months</p>
                                     <div className="flex items-center gap-2">
                                         <div className="h-1.5 bg-gray-600 rounded-full w-full overflow-hidden">
-                                            <div className="h-full bg-[#43BE4F] w-[78%]" />
+                                            <div className="h-full bg-[#43BE4F] w-[8%]" />
                                         </div>
-                                        <p className="text-xs font-bold text-gray-300 text-white">78%</p>
+                                        <p className="text-xs font-bold text-gray-300 text-white">8%</p>
                                     </div>
                                 </div>
+                                <div className=" pb-2">
+                                    <p className="text-white 2xl:text-[20px] xl:text-[18px] lg:text-[16px] text-[14px] font-medium mb-1">Booking Source</p>
+                                    <span className="font-semibold text-[#BDC0C3] lg:text-[16px] text-[14px]">
+                                        {booking?.source || (typeof parent?.howDidHear === 'string' ? parent.howDidHear : "N/A")}
+                                    </span>
+                                </div>
 
-                                <DetailRow label="Booking Source" value={booking.source || "Ben Marcus"} />
                             </div>
 
                             <button
@@ -188,6 +198,7 @@ export default function ServiceDetails({ booking, onBack }) {
             <CancelMembershipModal
                 isOpen={isCancelModalOpen}
                 onClose={() => setIsCancelModalOpen(false)}
+                booking={booking}
             />
         </div>
     );

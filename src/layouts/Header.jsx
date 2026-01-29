@@ -48,8 +48,8 @@ const Header = ({ onMenuClick }) => {
     return () => clearInterval(timer);
   }, []);
   return (
-    <header className="w-full bg-white border-b">
-      <div className="w-full px-6 py-4 pt-[20px] 2xl:pt-[50px] pb-[20px] flex items-center justify-between">
+    <header className="w-full bg-white border-b shadow-[rgba(0,0,0,0.1)_0px_5px_7px_-5px,_rgba(0,0,0,0.04)_0px_3px_10px_-5px]">
+      <div className="w-full px-6 py-4 pt-[20px] 2xl:pt-[40px] pb-[20px] flex items-center justify-between">
 
         {/* Left Section */}
         <div className="flex items-center gap-4">
@@ -70,10 +70,10 @@ const Header = ({ onMenuClick }) => {
         <img src="/assets/whiteParentLogo.png" alt="" className="block lg:hidden max-w-[200px]" />
 
         {/* Right Section */}
-        <div className="flex items-center 2xl:gap-6 gap-3">
+        <div className="flex items-center 2xl:gap-8 gap-3">
 
           {/* Back Button */}
-          <button className="bg-[#00A6E3] hidden lg:block  hover:bg-sky-600 text-white 2xl:px-6 px-3 glory py-2.5 rounded-full 2xl:text-[18px] text-[16px] font-semibold transition">
+          <button className="bg-[#00A6E3] hidden lg:block  hover:bg-sky-600 text-white 2xl:px-6 px-3 glory py-3 rounded-full 2xl:text-[18px] text-[16px] font-semibold transition">
             Go back to the website
           </button>
 
@@ -94,13 +94,9 @@ const Header = ({ onMenuClick }) => {
                 day: "numeric",
                 month: "long",
                 year: "numeric",
-              })}{" "}
-              |{" "}
-              {dateTime.toLocaleTimeString("en-US", {
-                hour: "numeric",
-                minute: "numeric",
-                hour12: true,
               })}
+              
+              
             </p>
           </div>
 

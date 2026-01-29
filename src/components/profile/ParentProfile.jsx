@@ -11,18 +11,23 @@ const options = [
     { value: "Father", label: "Father" },
     { value: "Mother", label: "Mother" },
     { value: "Guardian", label: "Guardian" },
+
+];
+const howDidHearOptions = [
+    { value: "", label: "Select" },
     { value: "Social Media", label: "Social Media" },
     { value: "Google", label: "Google" },
+    { value: "Website", label: "Website" },
+    { value: "Referral", label: "Referral" },
 ];
 
 const emptyParent = {
     parentFirstName: "",
     parentLastName: "",
     parentEmail: "",
-    phoneNumber: "",
+    parentPhoneNumber: "",
     relationChild: "",
     howDidHear: "",
-
 };
 
 const emptyEmergency = {
@@ -35,20 +40,18 @@ const emptyEmergency = {
 
 const ParentProfile = () => {
     /* ===== 1 PARENT BY DEFAULT ===== */
-    const { profile } = useProfile();
+    const { profile, updateProfile } = useProfile();
     const [parents, setParents] = useState([]);
     const [editingIndex, setEditingIndex] = useState(null);
     const [emergencyEditing, setEmergencyEditing] = useState(false);
     const [dialCodes, setDialCodes] = useState("+1");
-
-
     const [emergency, setEmergency] = useState(emptyEmergency);
-
     const [sameAsParent, setSameAsParent] = useState(false);
     const [parentErrors, setParentErrors] = useState([{}]); // one object per parent
     const [emergencyErrors, setEmergencyErrors] = useState({});
 
     /* ===== COPY ACTIVE PARENT → EMERGENCY ===== */
+
     useEffect(() => {
         if (
             sameAsParent &&
@@ -61,7 +64,7 @@ const ParentProfile = () => {
             setEmergency({
                 emergencyFirstName: parent?.parentFirstName || "",
                 emergencyLastName: parent?.parentLastName || "",
-                emergencyPhoneNumber: parent?.phoneNumber || "",
+                emergencyPhoneNumber: parent?.parentPhoneNumber || "",
                 emergencyRelation: parent?.relationChild || "",
 
             });
@@ -140,7 +143,7 @@ const ParentProfile = () => {
             errorMsg = validateText(value, field === "parentLastName" ? "First name" : "Last name");
         } else if (field === "parentEmail") {
             errorMsg = validateEmail(value);
-        } else if (field === "phoneNumber") {
+        } else if (field === "parentPhoneNumber") {
             errorMsg = validatePhone(value);
         } else if (field === "relationChild" || field === "howDidHear") {
             // optional fields or you can require if you want
@@ -161,9 +164,9 @@ const ParentProfile = () => {
         const errors = {};
 
         errors.parentFirstName = validateText(parent.parentFirstName, "First name");
-        errors.parentlLastName = validateText(parent.parentlLastName, "Last name");
+        errors.parentLastName = validateText(parent.parentLastName, "Last name");
         errors.parentEmail = validateEmail(parent.parentEmail);
-        errors.phoneNumber = validatePhone(parent.phoneNumber);
+        errors.parentPhoneNumber = validatePhone(parent.parentPhoneNumber);
 
         // relation and howDidHear optional or validate if needed
         errors.relation = "";
@@ -181,11 +184,12 @@ const ParentProfile = () => {
     /* ===== VALIDATE EMERGENCY FIELD (single) ===== */
     const validateEmergencyField = (field, value) => {
         let errorMsg = "";
-        if (["firstName", "lastName"].includes(field)) {
-            errorMsg = validateText(value, field === "firstName" ? "First name" : "Last name");
-        } else if (field === "phone") {
+        if (["emergencyFirstName", "emergencyLastName"].includes(field)) {
+            errorMsg = validateText(value, field === "emergencyFirstName" ? "First name" : "Last name");
+        } else if (field === "emergencyPhoneNumber") {
             errorMsg = validatePhone(value);
-        } else if (field === "relation") {
+        } else if (field === "emergencyRelation") {
+
             errorMsg = ""; // optional, can add if needed
         }
 
@@ -199,9 +203,9 @@ const ParentProfile = () => {
     const validateEmergency = () => {
         const errors = {};
 
-        errors.emergencyFirstName = validateText(emergency.firstName, "First name");
-        errors.emergencyLastName = validateText(emergency.lastName, "Last name");
-        errors.emergencyPhoneNumber = validatePhone(emergency.phone);
+        errors.emergencyFirstName = validateText(emergency.emergencyFirstName, "First name");
+        errors.emergencyLastName = validateText(emergency.emergencyLastName, "Last name");
+        errors.emergencyPhoneNumber = validatePhone(emergency.emergencyPhoneNumber);
         errors.emergencyRelation = "";
 
 
@@ -219,11 +223,63 @@ const ParentProfile = () => {
         validateEmergencyField(field, value);
     };
 
+    const parentData = JSON.parse(localStorage.getItem("parentData"));
+    const parentId = parentData?.id;
+
+
+    const cleanedStudents = profile?.uniqueProfiles.students.map(
+        ({
+            id,
+            studentFirstName,
+            studentLastName,
+            dateOfBirth,
+            age,
+            gender,
+            medicalInformation,
+        }) => ({
+            id,
+
+            studentFirstName,
+            studentLastName,
+            dateOfBirth,
+            age,
+            gender,
+            medicalInformation,
+        })
+    );
+    const cleanedEmergency = {
+        id: emergency?.id,
+        studentId: emergency?.studentId,
+        emergencyFirstName: emergency?.emergencyFirstName,
+        emergencyLastName: emergency?.emergencyLastName,
+        emergencyPhoneNumber: emergency?.emergencyPhoneNumber,
+        emergencyRelation: emergency?.emergencyRelation,
+    }
+
+
+    const cleanedParents = parents?.map(
+        ({ relationChild, howDidHear, ...rest }) => ({
+            ...rest,
+            relationToChild: relationChild,
+            howDidYouHear: howDidHear,
+        })
+    );
+
+
     /* ===== HANDLE SAVE PARENT ===== */
     const handleSaveParent = (index) => {
         const isValid = validateParent(index);
         if (isValid) {
             setEditingIndex(null);
+
+            const finalDataToSend = {
+                parentAdminId: parentId,
+                students: cleanedStudents,
+                parents: cleanedParents,
+                emergencyContacts: [cleanedEmergency]
+            };
+
+            updateProfile(finalDataToSend);
         } else {
         }
     };
@@ -232,6 +288,14 @@ const ParentProfile = () => {
     const handleSaveEmergency = () => {
         if (validateEmergency()) {
             setEmergencyEditing(false);
+            const finalDataToSend = {
+                parentAdminId: parentId,
+                students: cleanedStudents,
+                parents: cleanedParents,
+                emergencyContacts: [cleanedEmergency]
+            };
+
+            updateProfile(finalDataToSend);
         } else {
         }
     };
@@ -239,36 +303,35 @@ const ParentProfile = () => {
     return (
         <div className="lg:space-y-6">
             {/* ================= Parent Info ================= */}
-            <div className="bg-white lg:rounded-[30px] p-6 shadow-sm">
-                <div className="flex justify-between items-center mb-4">
-                    {parents.length === 1 && (
-                        <>
-                            <div className="flex gap-2 items-center cursor-pointer">
-                                <h2 className="font-bold 2xl:text-[24px] lg:text-[20px] text-[18px]">Parent Information</h2>
-                                {editingIndex !== 0 ? (
-                                    <img
-                                        src="/assets/edit.png"
-                                        className="w-5 cursor-pointer"
-                                        alt="Edit"
-                                        onClick={() => setEditingIndex(0)}
-                                    />
-                                ) : (
-                                    <button onClick={() => handleSaveParent(0)} aria-label="Save Parent">
-                                        <Save size={20} />
-                                    </button>
-                                )}
-                            </div>
-                            <button
-                                onClick={handleAddParent}
-                                className="md:flex hidden items-center gap-1 px-4 py-2 font-semibold rounded-lg text-sm bg-[#0DD180] text-white"
-                                disabled={editingIndex !== null}
-                            >
-                                <Plus size={17} /> Add Parent
-                            </button>
-                        </>
-                    )}
+            <div className="bg-white lg:rounded-[30px] p-6">
+                {parents.length === 1 && (
+                    <div className="flex justify-between items-center mb-4">
+                        <div className="flex gap-2 items-center cursor-pointer">
+                            <h2 className="font-bold 2xl:text-[24px] lg:text-[20px] text-[18px]">Parent Information</h2>
+                            {editingIndex !== 0 ? (
+                                <img
+                                    src="/assets/edit.png"
+                                    className="w-5 cursor-pointer"
+                                    alt="Edit"
+                                    onClick={() => setEditingIndex(0)}
+                                />
+                            ) : (
+                                <button onClick={() => handleSaveParent(0)} aria-label="Save Parent">
+                                    <Save size={20} />
+                                </button>
+                            )}
+                        </div>
+                        <button
+                            onClick={handleAddParent}
+                            className="md:flex hidden items-center gap-1 px-4 py-2 font-semibold rounded-[8px] text-sm bg-[#0DD180] text-white"
+                            disabled={editingIndex !== null}
+                        >
+                            <Plus size={17} /> Add Parent
+                        </button>
 
-                </div>
+                    </div>
+                )}
+
 
                 {parents.map((parent, index) => {
                     const editable = editingIndex === index;
@@ -305,10 +368,10 @@ const ParentProfile = () => {
                                         <button
                                             onClick={handleAddParent}
                                             disabled={editingIndex !== null || parents.length >= 3}
-                                            className={`md:flex hidden items-center gap-1 px-4 py-2 font-semibold rounded-lg text-sm bg-[#0DD180] text-white ${editingIndex !== null || parents.length >= 3 ? "cursor-not-allowed" : "cursor-pointer"
+                                            className={`md:flex hidden items-center gap-1 px-4 py-2.5 font-semibold rounded-[8px] text-sm md:text-[18px] bg-[#0DD180] text-white ${editingIndex !== null || parents.length >= 3 ? "cursor-not-allowed" : "cursor-pointer"
                                                 }`}
                                         >
-                                            <Plus size={17} /> Add Parent
+                                            <Plus className="text-xl md:text-[20px]" /> Add Parent
                                         </button>
                                     )}
                                 </div>
@@ -338,7 +401,6 @@ const ParentProfile = () => {
                                 <Input
                                     label="Email"
                                     value={parent.parentEmail}
-                                    editable={editable}
                                     error={errors.parentEmail}
                                     onChange={(e) => updateParent(index, "parentEmail", e.target.value)}
                                 />
@@ -348,7 +410,7 @@ const ParentProfile = () => {
                                 <div>
                                     <Label>Phone number</Label>
                                     <div className={`w-full flex items-center rounded-lg px-4 py-3 font-semibold outline-none ${editable ? "bg-white border" : "bg-[#F0F5FF]"
-                                        } ${errors.phoneNumber ? "border-red-500" : "border-gray-300"}`}>
+                                        } ${errors.parentPhoneNumber ? "border-red-500" : "border-gray-300"}`}>
                                         <div className="2xl:w-[6%] lg:w-[14%] w-[18%]">
                                             <PhoneInput
                                                 country="us"
@@ -362,13 +424,13 @@ const ParentProfile = () => {
                                             />
                                         </div>
                                         <input
-                                            value={parent.phoneNumber}
-                                            onChange={(e) => updateParent(index, "phoneNumber", e.target.value)}
+                                            value={parent.parentPhoneNumber}
+                                            onChange={(e) => updateParent(index, "parentPhoneNumber", e.target.value)}
                                             disabled={!editable}
-                                            className={`poppins 2xl:ps-3 ps-4 text-[14px] border-l border-gray-300 outline-none w-full bg-transparent`}
+                                            className={`poppins placeholder:text-[#9E9FAA] 2xl:ps-3 ps-4 text-[14px] border-l border-gray-300 outline-none w-full bg-transparent ${editable ? "text-[#282829]" : "text-[#9E9FAA]"}`}
                                         />
                                     </div>
-                                    {errors.phoneNumber && <p className="text-red-500 text-sm mt-1">{errors.phoneNumber}</p>}
+                                    {errors.parentPhoneNumber && <p className="text-red-500 text-sm mt-1">{errors.parentPhoneNumber}</p>}
                                 </div>
 
                                 <CustomSelect
@@ -488,7 +550,7 @@ const ParentProfile = () => {
 /* ================= Reusable Components ================= */
 
 const Label = ({ children }) => (
-    <p className="text-[16px] lg:text-[18px] font-semibold text-[#282829] mb-1">{children}</p>
+    <p className="text-[16px] lg:text-[18px] font-medium text-[#282829] mb-1">{children}</p>
 );
 
 const Input = ({ label, value, onChange, editable, error }) => (
@@ -498,7 +560,7 @@ const Input = ({ label, value, onChange, editable, error }) => (
             value={value}
             onChange={onChange}
             disabled={!editable}
-            className={`w-full rounded-lg px-4 py-3 font-semibold outline-none ${editable ? "bg-white border" : "bg-[#F0F5FF]"
+            className={`w-full rounded-lg px-4 py-3 font-semibold outline-none ${editable ? "bg-white border" : "text-[#9E9FAA] placeholder:text-[#9E9FAA] bg-[#F0F5FF]"
                 } ${error ? "border-red-500" : "border-gray-300"}`}
         />
         {error && <p className="text-red-500 text-sm mt-1">{error}</p>}
@@ -506,7 +568,7 @@ const Input = ({ label, value, onChange, editable, error }) => (
 );
 
 const CustomSelect = ({ label, value, onChange, editable, error }) => {
-    const selectedOption = options.find((opt) => opt.value === value) || null;
+    const selectedOption = label === "How did you hear about us?" ? howDidHearOptions.find((opt) => opt.value === value) || null : options.find((opt) => opt.value === value) || null;
 
     const handleChange = (selected) => {
         onChange({ target: { value: selected ? selected.value : "" } });

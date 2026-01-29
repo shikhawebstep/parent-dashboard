@@ -15,7 +15,7 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   useEffect(() => {
     const token = localStorage.getItem("parentToken");
-    console.log('token', token)
+
     if (token) {
       window.location.href = "/parent";
     }
@@ -101,15 +101,8 @@ const Login = () => {
         localStorage.setItem("parentPassword", formData.password);
       }
 
-      Swal.fire({
-        icon: "success",
-        title: "Login Successful",
-        message: "Redirecting to dashboard...",
-        timer: 1200,
-        showConfirmButton: false,
-      }).then(() => {
-        window.location.replace(redirectTo);
-      });
+
+      window.location.replace(redirectTo);
 
     } catch (error) {
       Swal.close();
@@ -140,10 +133,10 @@ const Login = () => {
   return (
     <div className="w-full h-full bg-white flex items-center p-5 lg:p-10 xl:p-0">
       <div className="w-full flex flex-col items-center justify-center m-auto ">
-        <div className="text-center w-full mb-8">
-          <div className="text-5xl font-bold text-blue-700 2xl:max-w-[70px] lg:max-w-[50px] max-w-[60px] m-auto"> <img src="/assets/sambaLogoBlue.png" alt="" className="w-full" /></div>
-          <h2 className="2xl:text-[51px] text-[38px] lg:text-[40px] font-semibold mt-3">Welcome</h2>
-          <p className="text-black text-[20px] font-semibold">Bookings made simple.</p>
+        <div className="text-center w-full mb-6">
+          <div className="text-5xl font-bold text-blue-700 2xl:max-w-[80px] lg:max-w-[50px] max-w-[60px] m-auto"> <img src="/assets/sambaLogoBlue.png" alt="" className="w-full" /></div>
+          <h2 className="2xl:text-[51px] text-[38px] lg:text-[40px] font-semibold md:mt-3 mt-7">Welcome</h2>
+          <p className="text-black md:text-[20px] text-[16px] font-semibold">Bookings made simple.</p>
         </div>
 
         <form onSubmit={handleSubmit} className="xl:w-[55%] w-full">
@@ -157,7 +150,7 @@ const Login = () => {
               value={formData.email}
               onChange={handleChange}
               className={`w-full mt-1 px-4 py-2.5 border ${errors.email ? "border-red-500" : "border-[#D0CFD1]"
-                } placeholder:text-[#717073] rounded-[14px] focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                } placeholder:text-[#717073] md:rounded-[14px] rounded-[10px] focus:outline-none focus:ring-2 focus:ring-blue-500`}
             />
             {errors.email && (
               <p className="text-red-500 text-xs mt-1">{errors.email}</p>
@@ -175,7 +168,7 @@ const Login = () => {
                 value={formData.password}
                 onChange={handleChange}
                 className={`w-full mt-1 px-4 py-2.5 border ${errors.password ? "border-red-500" : "border-[#D0CFD1]"
-                  } placeholder:text-[#717073] rounded-[14px] focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                  } placeholder:text-[#717073] md:rounded-[14px] rounded-[10px] focus:outline-none focus:ring-2 focus:ring-blue-500`}
               />
               <button
                 type="button"
@@ -191,7 +184,7 @@ const Login = () => {
           </div>
 
           {/* OPTIONS */}
-          <div className="flex items-center justify-between text-[16px] mb-10">
+          <div className="flex items-center justify-between mt-2 text-[16px] mb-10">
             <label className="flex items-center gap-2 m-0">
               <input
                 type="checkbox"
@@ -210,13 +203,13 @@ const Login = () => {
           {/* BUTTON */}
           <button
             type="submit"
-            className="w-full bg-[#237FEA] text-white 2xl:text-[18px] lg:text-[16px] font-bold py-2.5 rounded-[14px] hover:bg-blue-700 transition"
+            className="w-full my-10 md:my-0 bg-[#237FEA] text-white 2xl:text-[22px] lg:text-[16px] font-bold py-2.5 md:rounded-[14px] rounded-[10px] hover:bg-blue-700 transition"
           >
             Log In
           </button>
         </form>
 
-        <div className="mt-8 max-w-[150px] m-auto">
+        <div className="mt-10 max-w-[150px] m-auto">
           <img src="/assets/sss-logo-parents.png" alt="" className="w-full" />
         </div>
       </div>

@@ -23,13 +23,13 @@ export default function StepStudent() {
       setFormData(prev => ({
         ...prev,
         student: {
-          firstName: student.firstName,
-          lastName: student.lastName,
-          dob: student.dob,
+          studentFirstName: student.studentFirstName,
+          studentLastName: student.studentLastName,
+          dateOfBirth: student.dateOfBirth,
           age: student.age,
           gender: student.gender,
-          class: student.class,
-          medical: student.medical || "",
+          className: student.className,
+          medicalInformation: student.medicalInformation || "",
           type: "existing",
         },
       }));
@@ -39,13 +39,13 @@ export default function StepStudent() {
       setFormData(prev => ({
         ...prev,
         student: {
-          firstName: "",
-          lastName: "",
-          dob: "",
+          studentFirstName: "",
+          studentLastName: "",
+          dateOfBirth: "",
           age: "",
           gender: "",
-          class: "",
-          medical: "",
+          className: "",
+          medicalInformation: "",
           type: "new",
         },
       }));
@@ -58,23 +58,23 @@ export default function StepStudent() {
   const handleFieldChange = (field, value) => {
     let updatedStudent = { ...formData.student, [field]: value, type: "new" };
 
-    if (field === "dob") {
+    if (field === "dateOfBirth") {
       const birthYear = new Date(value).getFullYear();
       if (!isNaN(birthYear)) {
         const age = new Date().getFullYear() - birthYear;
         updatedStudent.age = age;
-        updatedStudent.class = age <= 7 ? "4–7 years" : "10–12 years";
+        updatedStudent.className = age <= 7 ? "4–7 years" : "10–12 years";
       }
     }
 
     setFormData(prev => ({ ...prev, student: updatedStudent }));
 
     const errorMap = {
-      firstName: "studentFirstName",
-      lastName: "studentLastName",
-      dob: "studentDob",
+      studentFirstName: "studentstudentFirstName",
+      studentLastName: "studentLastName",
+      dateOfBirth: "studentDob",
       gender: "studentGender",
-      medical: "studentMedical",
+      medicalInformation: "studentmedicalInformation",
     };
     if (errorMap[field]) clearError(errorMap[field]);
   };
@@ -84,17 +84,17 @@ export default function StepStudent() {
   =============================== */
   const saveNewStudent = () => {
     const s = formData.student;
-    if (!s?.firstName || !s?.dob || !s?.gender) return;
+    if (!s?.studentFirstName || !s?.dateOfBirth || !s?.gender) return;
 
     const newStudent = {
       id: Date.now(),
-      firstName: s.firstName,
-      lastName: s.lastName,
-      dob: s.dob,
+      studentFirstName: s.studentFirstName,
+      studentLastName: s.studentLastName,
+      dateOfBirth: s.dateOfBirth,
       age: s.age,
       gender: s.gender,
       class: s.class,
-      medical: s.medical || "",
+      medicalInformation: s.medicalInformation || "",
     };
 
     setFormData(prev => ({
@@ -108,14 +108,14 @@ export default function StepStudent() {
   };
 
   const inputClass = (hasError) =>
-    `mt-1 w-full bg-white mainShadow  ${hasError ? "border border-red-500" : ""
-    } p-3 rounded-lg text-sm focus:ring-2 focus:ring-[#0496FF] outline-none`;
+    `mt-1 w-full placeholder:text-[#9C9C9C] bg-white poppins font-normal mainShadow  ${hasError ? "border border-red-500" : ""
+    } p-3 rounded-[6px] text-sm focus:ring-2 focus:ring-[#0496FF] outline-none`;
 
   const data = formData.student || {};
 
   return (
-    <div className="max-w-4xl mx-auto bg-white py-6 px-0 md:px-6">
-      <h2 className="text-center text-[20px] font-bold mb-8">
+    <div className="max-w-4xl mx-auto bg-white py-4 px-0 md:px-6">
+      <h2 className="text-center md:text-[24px] text-[18px] font-semibold poppins mb-8">
         Student information
       </h2>
 
@@ -125,8 +125,8 @@ export default function StepStudent() {
         <button
           onClick={() => setActiveTab("existing")}
           className={`poppins font-semibold transition-all ${activeTab === "existing"
-            ? "bg-[#E8F1FF] text-[#0496FF] px-6 py-2 rounded-lg"
-            : "text-[#282829] text-[16px]"
+            ? "bg-[#E8F1FF] text-[#0496FF] md:px-6 px-3 py-2 rounded-lg"
+            : "text-[#282829] md:text-[16px] text-[14px]"
             }`}
         >
           Select an existing child
@@ -135,8 +135,8 @@ export default function StepStudent() {
         <button
           onClick={() => setActiveTab("new")}
           className={`poppins font-semibold transition-all ${activeTab === "new"
-            ? "bg-[#E8F1FF] text-[#0496FF] px-6 py-2 rounded-lg"
-            : "text-[#282829] text-[16px]"
+            ? "bg-[#E8F1FF] text-[#0496FF] md:px-6 px-3 py-2 rounded-lg"
+            : "text-[#282829] md:text-[16px] text-[14px]"
             }`}
         >
           Add a new child
@@ -148,7 +148,7 @@ export default function StepStudent() {
         <div className="grid sm:grid-cols-2 max-w-[500px] mx-auto gap-6">
           {students.length === 0 && (
             <div className="col-span-2 text-center py-8">
-              <p className="text-gray-400 text-sm poppins">
+              <p className="text-[#939395] text-sm poppins">
                 No students added yet
               </p>
             </div>
@@ -163,31 +163,31 @@ export default function StepStudent() {
                 : "border-gray-200 bg-white hover:border-gray-300"
                 }`}
             >
-              <h3 className={`font-semibold text-lg mb-4 poppins ${selectedStudentId === student.id ? "text-[#0496FF]" : "text-[#0496FF]"}`}>
-                {student.firstName} {student.lastName}
+              <h3 className={`font-medium text-[16px] mb-4 poppins ${selectedStudentId === student.id ? "text-[#0496FF]" : "text-[#0496FF]"}`}>
+                {student.studentFirstName} {student.studentLastName}
               </h3>
 
               <div className="grid grid-cols-2 gap-y-4 gap-x-2">
                 <div>
-                  <label className="text-[12px] text-gray-400 block mb-1 poppins">Date of birth</label>
-                  <p className="text-[14px] font-medium text-[#282829] poppins">{student.dob}</p>
+                  <label className="text-[12px] text-[#939395] block font-normal mb-1 poppins">Date of birth</label>
+                  <p className="text-[14px] text-[#282829] poppins font-medium">{student.dateOfBirth}</p>
                 </div>
 
                 <div>
-                  <label className="text-[12px] text-gray-400 block mb-1 poppins">Age</label>
-                  <p className="text-[14px] font-medium text-[#282829] poppins">{student.age}</p>
+                  <label className="text-[12px] text-[#939395] block font-normal mb-1 poppins">Age</label>
+                  <p className="text-[14px] text-[#282829] poppins font-medium">{student.age}</p>
                 </div>
 
                 <div>
-                  <label className="text-[12px] text-gray-400 block mb-1 poppins">Gender</label>
-                  <p className="text-[14px] font-medium text-[#282829] poppins">
+                  <label className="text-[12px] text-[#939395] block font-normal mb-1 poppins">Gender</label>
+                  <p className="text-[14px] text-[#282829] poppins font-medium">
                     {student.gender === "Male" ? "M" : student.gender === "Female" ? "F" : student.gender}
                   </p>
                 </div>
 
                 <div>
-                  <label className="text-[12px] text-gray-400 block mb-1 poppins">Class</label>
-                  <p className="text-[14px] font-medium text-[#282829] poppins">{student.class}</p>
+                  <label className="text-[12px] text-[#939395] block font-normal mb-1 poppins">Class</label>
+                  <p className="text-[14px] text-[#282829] poppins font-medium">{student.className}</p>
                 </div>
               </div>
             </div>
@@ -200,44 +200,44 @@ export default function StepStudent() {
         <div className="grid max-w-[670px] m-auto md:grid-cols-2 gap-4">
 
           <div>
-            <label className="block text-[14px] text-[#282829] poppins mb-1">
+            <label className="block text-[14px] text-[#282829] poppins font-normal mb-1 capitalize">
               First name
             </label>
             <input
               placeholder="Enter first name"
-              value={data.firstName || ""}
-              onChange={e => handleFieldChange("firstName", e.target.value)}
-              className={inputClass(errors.studentFirstName)}
+              value={data.studentFirstName || ""}
+              onChange={e => handleFieldChange("studentFirstName", e.target.value)}
+              className={inputClass(errors.studentstudentFirstName)}
             />
           </div>
 
           <div>
-            <label className="block text-[14px] text-[#282829] poppins mb-1">
+            <label className="block text-[14px] text-[#282829] poppins font-normal mb-1 capitalize">
               Last name
             </label>
             <input
               placeholder="Enter last name"
-              value={data.lastName || ""}
-              onChange={e => handleFieldChange("lastName", e.target.value)}
+              value={data.studentLastName || ""}
+              onChange={e => handleFieldChange("studentLastName", e.target.value)}
               className={inputClass(errors.studentLastName)}
             />
           </div>
 
           <div>
-            <label className="block text-[14px] text-[#282829] poppins mb-1">
+            <label className="block text-[14px] text-[#282829] poppins font-normal mb-1 capitalize">
               Date of birth
             </label>
             <input
               type="date"
               placeholder="Enter date of birth"
-              value={data.dob || ""}
-              onChange={e => handleFieldChange("dob", e.target.value)}
+              value={data.dateOfBirth || ""}
+              onChange={e => handleFieldChange("dateOfBirth", e.target.value)}
               className={inputClass(errors.studentDob)}
             />
           </div>
 
           <div>
-            <label className="block text-[14px] text-[#282829] poppins mb-1">
+            <label className="block text-[14px] text-[#282829] poppins font-normal mb-1 capitalize">
               Age:
             </label>
             <input
@@ -249,7 +249,7 @@ export default function StepStudent() {
           </div>
 
           <div>
-            <label className="block text-[14px] text-[#282829] poppins mb-1">
+            <label className="block text-[14px] text-[#282829] poppins font-normal mb-1 capitalize">
               Gender:
             </label>
             <select
@@ -264,21 +264,21 @@ export default function StepStudent() {
           </div>
 
           <div>
-            <label className="block text-[14px] text-[#282829] poppins mb-1">
-              Medical information
+            <label className="block text-[14px] text-[#282829] poppins font-normal mb-1 capitalize">
+              medical information
             </label>
             <div className="relative">
               <input
                 placeholder="Enter medical information"
-                value={data.medical || ""}
-                onChange={e => handleFieldChange("medical", e.target.value)}
-                className={inputClass(errors.studentMedical)}
+                value={data.medicalInformation || ""}
+                onChange={e => handleFieldChange("medicalInformation", e.target.value)}
+                className={inputClass(errors.studentmedicalInformation)}
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-[14px] text-[#282829] poppins mb-1">
+            <label className="block text-[14px] text-[#282829] poppins font-normal mb-1 capitalize">
               Class:
             </label>
             <div className="relative">
@@ -289,15 +289,15 @@ export default function StepStudent() {
                 className={`${inputClass()} bg-white text-gray-700`}
               />
               <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
-                <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
+                <svg className="w-4 h-4 text-[#939395]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinectrokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
                 </svg>
               </div>
             </div>
           </div>
 
           <div>
-            <label className="block text-[14px] text-[#282829] poppins mb-1">
+            <label className="block text-[14px] text-[#282829] poppins font-normal mb-1 capitalize">
               Time:
             </label>
             <div className="relative">
@@ -307,8 +307,8 @@ export default function StepStudent() {
                 className={`${inputClass()} bg-white text-gray-500`}
               />
               <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
-                <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
+                <svg className="w-4 h-4 text-[#939395]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinectrokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
                 </svg>
               </div>
             </div>

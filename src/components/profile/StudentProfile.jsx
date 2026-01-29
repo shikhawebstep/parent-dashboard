@@ -36,7 +36,7 @@ function calculateAge(dateOfBirth) {
 const StudentProfile = () => {
   const [students, setStudents] = useState([{ ...emptyStudent }]);
   const [editingIndex, setEditingIndex] = useState(null);
-  const { profile } = useProfile();
+  const { profile, updateProfile } = useProfile();
 
   // Validation errors: array of objects per student
   const [errors, setErrors] = useState([{}]);
@@ -94,6 +94,55 @@ const StudentProfile = () => {
     return err;
   };
 
+
+
+
+  const parentData = JSON.parse(localStorage.getItem("parentData"));
+  const parentId = parentData?.id;
+
+
+  const cleanedStudents = students.map(
+    ({
+      id,
+      studentFirstName,
+      studentLastName,
+      dateOfBirth,
+      age,
+      gender,
+      medicalInformation,
+    }) => ({
+      id,
+
+      studentFirstName,
+      studentLastName,
+      dateOfBirth,
+      age,
+      gender,
+      medicalInformation,
+    })
+  );
+
+  const emergency = profile?.uniqueProfiles.emergencyContacts[0];
+  const cleanedEmergency = {
+    id: emergency?.id,
+    studentId: emergency?.studentId,
+    emergencyFirstName: emergency?.emergencyFirstName,
+    emergencyLastName: emergency?.emergencyLastName,
+    emergencyPhoneNumber: emergency?.emergencyPhoneNumber,
+    emergencyRelation: emergency?.emergencyRelation,
+  }
+
+  const parents = profile?.uniqueProfiles.parents;
+  const cleanedParents = parents?.map(
+    ({ relationChild, howDidHear, ...rest }) => ({
+      ...rest,
+      relationToChild: relationChild,
+      howDidYouHear: howDidHear,
+    })
+  );
+
+
+
   const handleSave = (index) => {
     const student = students[index];
     const validationErrors = validateStudent(student);
@@ -105,6 +154,15 @@ const StudentProfile = () => {
     // If no errors, close edit mode
     if (Object.keys(validationErrors).length === 0) {
       setEditingIndex(null);
+
+      const finalDataToSend = {
+        parentAdminId: parentId,
+        students: cleanedStudents,
+        parents: cleanedParents,
+        emergencyContacts: [cleanedEmergency]
+      };
+
+      updateProfile(finalDataToSend);
     }
   };
 
@@ -115,7 +173,7 @@ const StudentProfile = () => {
       <div className="md:text-right px-6 lg:p-0 bg-white md:bg-transparent xl:absolute top-7 right-5 md:mb-6">
         <button
           onClick={addStudent}
-          className="inline-flex items-center gap-2 font-semibold text-[18px] px-4 py-2 bg-[#0DD180] text-white rounded-lg hover:bg-green-700"
+          className="inline-flex items-center gap-2 font-medium text-[18px] px-4 py-2 bg-[#0DD180] text-white rounded-lg hover:bg-green-700"
         >
           <Plus size={20} className="text-white font-bold" />
           Add New Student
@@ -141,7 +199,7 @@ const StudentProfile = () => {
                   if (isEditing) handleSave(index);
                   else setEditingIndex(index);
                 }}
-                title={isEditing ? "Save" : "Edit"}
+                title={isEditing ? " text-black Save" : "Edit"}
               >
                 {isEditing ? <Save size={20} /> : <img src="/assets/edit.png" className="w-5" alt="Edit" />}
               </button>
@@ -150,7 +208,7 @@ const StudentProfile = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {/* First Name */}
               <div>
-                <label className="text-[16px] lg:text-[18px] font-semibold text-[#282829] mb-1 block">
+                <label className="text-[16px] lg:text-[18px] font-medium text-[#282829] mb-1 block capitalize">
                   First name
                 </label>
                 <input
@@ -159,8 +217,8 @@ const StudentProfile = () => {
                   value={student.studentFirstName}
                   onChange={(e) => updateStudentField(index, "studentFirstName", e.target.value)}
                   className={`w-full rounded-md px-3 py-3 border 
-  ${isEditing ? (err.studentFirstName ? "border-red-500 bg-white" : "border-gray-300 bg-white") : "bg-[#F0F5FF] border-transparent"} 
-  text-gray-800`}
+  ${isEditing ? (err.studentFirstName ? " text-black placeholder:text-black  border-red-500 bg-white" : "border-gray-300 bg-white text-black") : "bg-[#F0F5FF] border-transparent text-[#9E9FAA] placeholder:text-[#9E9FAA]"} 
+  `}
 
                 />
                 {err.studentFirstName && <p className="text-red-600 mt-1 text-sm">{err.studentFirstName}</p>}
@@ -168,7 +226,7 @@ const StudentProfile = () => {
 
               {/* Last Name */}
               <div>
-                <label className="text-[16px] lg:text-[18px] font-semibold text-[#282829] mb-1 block">
+                <label className="text-[16px] lg:text-[18px] font-medium text-[#282829] mb-1 block capitalize">
                   Last name
                 </label>
                 <input
@@ -177,8 +235,8 @@ const StudentProfile = () => {
                   value={student.studentLastName}
                   onChange={(e) => updateStudentField(index, "studentLastName", e.target.value)}
                   className={`w-full rounded-md px-3 py-3 border 
-  ${isEditing ? (err.studentLastName ? "border-red-500 bg-white" : "border-gray-300 bg-white") : "bg-[#F0F5FF] border-transparent"} 
-  text-gray-800`}
+  ${isEditing ? (err.studentLastName ? " text-black placeholder:text-black  border-red-500 bg-white" : "border-gray-300 bg-white text-black") : "bg-[#F0F5FF] border-transparent text-[#9E9FAA] placeholder:text-[#9E9FAA]"} 
+  `}
 
                 />
                 {err.studentLastName && <p className="text-red-600 mt-1 text-sm">{err.studentLastName}</p>}
@@ -186,7 +244,7 @@ const StudentProfile = () => {
 
               {/* dateOfBirth */}
               <div>
-                <label className="text-[16px] lg:text-[18px] font-semibold text-[#282829] mb-1 block">
+                <label className="text-[16px] lg:text-[18px] font-medium text-[#282829] mb-1 block capitalize">
                   Date of birth
                 </label>
                 <input
@@ -195,8 +253,8 @@ const StudentProfile = () => {
                   value={student.dateOfBirth}
                   onChange={(e) => updateStudentField(index, "dateOfBirth", e.target.value)}
                   className={`w-full rounded-md px-3 py-3 border 
-  ${isEditing ? (err.dateOfBirth ? "border-red-500 bg-white" : "border-gray-300 bg-white") : "bg-[#F0F5FF] border-transparent"} 
-  text-gray-800`}
+  ${isEditing ? (err.dateOfBirth ? " text-black placeholder:text-black  border-red-500 bg-white" : "border-gray-300 bg-white text-black") : "bg-[#F0F5FF] border-transparent text-[#9E9FAA] placeholder:text-[#9E9FAA]"} 
+  `}
 
                 />
                 {err.dateOfBirth && <p className="text-red-600 mt-1 text-sm">{err.dateOfBirth}</p>}
@@ -204,20 +262,20 @@ const StudentProfile = () => {
 
               {/* Age */}
               <div>
-                <label className="text-[16px] lg:text-[18px] font-semibold text-[#282829] mb-1 block">
+                <label className="text-[16px] lg:text-[18px] font-medium text-[#282829] mb-1 block capitalize">
                   Age
                 </label>
                 <input
                   type="number"
                   disabled
                   value={student.age}
-                  className="w-full rounded-md px-3 py-3 bg-[#F0F5FF] border-transparent text-gray-800 cursor-not-allowed"
+                  className="w-full rounded-md px-3 py-3 bg-[#F0F5FF] border-transparent  cursor-not-allowed text-[#9E9FAA] placeholder:text-[#9E9FAA]"
                 />
               </div>
 
               {/* Gender */}
               <div>
-                <label className="text-[16px] lg:text-[18px] font-semibold text-[#282829] mb-1 block">
+                <label className="text-[16px] lg:text-[18px] font-medium text-[#282829] mb-1 block capitalize">
                   Gender
                 </label>
                 <Select
@@ -229,8 +287,8 @@ const StudentProfile = () => {
                   styles={{
                     control: (provided, state) => ({
                       ...provided,
-                      backgroundColor: isEditing ? "#fff" : "#F0F5FF",
-                      borderColor: err.gender ? "#ef4444" : isEditing ? "#ccc" : "#fff",
+                      backgroundColor: isEditing ? " text-black #fff" : "#F0F5FF",
+                      borderColor: err.gender ? "#ef4444" : isEditing ? " text-black #ccc" : "#fff",
                       borderRadius: "0.5rem",
                       minHeight: "48px",
                       fontWeight: "600",
@@ -242,7 +300,7 @@ const StudentProfile = () => {
                     }),
                     singleValue: (provided) => ({
                       ...provided,
-                      color: isEditing ? "#000" : "#999",
+                      color: isEditing ? " text-black #000" : "#999",
                     }),
                     menu: (provided) => ({
                       ...provided,
@@ -259,7 +317,7 @@ const StudentProfile = () => {
 
               {/* Medical Info */}
               <div>
-                <label className="text-[16px] lg:text-[18px] font-semibold text-[#282829] mb-1 block">
+                <label className="text-[16px] lg:text-[18px] font-medium text-[#282829] mb-1 block capitalize">
                   Medical information
                 </label>
 
@@ -269,8 +327,8 @@ const StudentProfile = () => {
                   value={student.medicalInformation}
                   onChange={(e) => updateStudentField(index, "medicalInformation", e.target.value)}
                   className={`w-full rounded-md px-3 py-3 border 
-  ${isEditing ? (err.studentFirstName ? "border-red-500 bg-white" : "border-gray-300 bg-white") : "bg-[#F0F5FF] border-transparent"} 
-  text-gray-800`}
+  ${isEditing ? " text-black " : "bg-[#F0F5FF] border-transparent text-[#9E9FAA] placeholder:text-[#9E9FAA]"} 
+  `}
 
                 />
               </div>

@@ -41,24 +41,24 @@ const MobileMenu = ({ isOpen, onClose }) => {
     const [dateTime, setDateTime] = useState(new Date());
 
     useEffect(() => {
+        if (!isOpen) return; // Only run timer when menu is open
         const timer = setInterval(() => {
             setDateTime(new Date());
         }, 1000);
         return () => clearInterval(timer);
-    }, []);
-    if (!isOpen) return null;
+    }, [isOpen]);
 
     return (
-        <div className="fixed inset-0 z-50 lg:hidden">
+        <div className={`fixed inset-0 z-50 lg:hidden transition-all duration-300 ${isOpen ? "pointer-events-auto visible" : "pointer-events-none invisible"}`}>
             {/* Backdrop */}
             <div
-                className="fixed inset-0 bg-black/50"
+                className={`fixed inset-0 bg-black/50 transition-opacity duration-300 ease-in-out ${isOpen ? "opacity-100" : "opacity-0"}`}
                 onClick={onClose}
             />
 
             {/* Menu Container */}
             <div
-                className="relative w-[85%] max-w-[320px] h-full bg-[#0056B3] text-white flex flex-col p-6 overflow-y-auto"
+                className={`relative w-[85%] max-w-[320px] h-full bg-[#0056B3] text-white flex flex-col p-6 overflow-y-auto transition-transform duration-300 ease-in-out transform ${isOpen ? "translate-x-0" : "-translate-x-full"}`}
                 style={{
                     backgroundImage: "url('/assets/sidebarBg.png')",
                     backgroundSize: "cover",

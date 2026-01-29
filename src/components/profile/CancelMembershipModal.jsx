@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { X, Info } from 'lucide-react';
 
-export default function CancelMembershipModal({ isOpen, onClose }) {
+export default function CancelMembershipModal({ isOpen, onClose, booking }) {
     if (!isOpen) return null;
 
     return (
@@ -10,14 +10,15 @@ export default function CancelMembershipModal({ isOpen, onClose }) {
                 {/* Header */}
                 <div className="p-6 pb-2 shrink-0 border-b border-[#EBEBEB]">
                     <div className="flex justify-between items-center mb-4">
-                        <h2 className="text-xl font-bold text-gray-900">Request to cancel membership</h2>
+                        <h2 className="md:text-xl text-[16px] font-bold text-gray-900">Request to cancel membership</h2>
                         <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
                             <X size={24} />
                         </button>
                     </div>
                 </div>
 
-                <div className="px-8 pb-8 space-y-6 mt-7 overflow-y-auto">
+                <div className="md:px-8  px-4 pb-8 space-y-6 mt-7 overflow-y-auto">
+                    {/* Warning Card */}
                     {/* Warning Card */}
                     <div className="bg-red-50 border border-red-100 rounded-xl p-4 space-y-3">
                         <div className="flex items-start gap-3">
@@ -25,17 +26,22 @@ export default function CancelMembershipModal({ isOpen, onClose }) {
                                 <Info size={20} className="fill-red-500 text-white" />
                             </div>
                             <div>
-                                <h3 className="font-semibold text-gray-900">You currently have 6 more months left on your membership</h3>
+                                <h3 className="font-semibold text-gray-900">
+                                    You currently have {booking?.paymentPlan?.duration ? Math.max(0, booking.paymentPlan.duration - 1) : 0} more months left on your membership
+                                </h3>
                             </div>
                         </div>
 
                         <div className="">
                             <div className="flex justify-between text-xs text-gray-500 mb-1">
-                                <span>6 of 12 Months</span>
-                                <span className="font-semibold">75%</span>
+                                <span>1 of {booking?.paymentPlan?.duration || "N/A"} Months</span>
+                                <span className="font-semibold">{booking?.paymentPlan?.duration ? Math.round((1 / booking.paymentPlan.duration) * 100) : 0}%</span>
                             </div>
                             <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-                                <div className="h-full bg-green-500 w-[75%]" />
+                                <div
+                                    className="h-full bg-green-500"
+                                    style={{ width: `${booking?.paymentPlan?.duration ? (1 / booking.paymentPlan.duration) * 100 : 0}%` }}
+                                />
                             </div>
                         </div>
 
@@ -53,7 +59,7 @@ export default function CancelMembershipModal({ isOpen, onClose }) {
                             Cancellations with one months notices are permitted under exceptional circumstances.
                         </p>
                         <p className="text-sm text-gray-600 leading-relaxed">
-                            If your reason is unexceptional, you still may cancel your membership however this would involve a payout of the remaining 6 months of your membership.
+                            If your reason is unexceptional, you still may cancel your membership however this would involve a payout of the remaining {booking?.paymentPlan?.duration ? Math.max(0, booking.paymentPlan.duration - 1) : 0} months of your membership.
                         </p>
                     </div>
 
@@ -67,9 +73,9 @@ export default function CancelMembershipModal({ isOpen, onClose }) {
                     </div>
 
                     {/* Footer */}
-                    <div className="flex justify-between items-center pt-2">
+                    <div className="md:flex justify-between items-center pt-2">
                         <p className="text-sm text-[#4B4B56] font-semibold">Our team will get in touch shortly.</p>
-                        <button className="bg-[#237FEA] text-white px-6 py-2.5 rounded-xl font-semibold hover:bg-blue-700 transition-colors">
+                        <button className="bg-[#237FEA] mt-4 md:mt-0 text-white px-6 py-2.5 rounded-xl font-semibold hover:bg-blue-700 transition-colors">
                             Send request
                         </button>
                     </div>

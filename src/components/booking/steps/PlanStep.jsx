@@ -1,17 +1,30 @@
 import Select from "react-select";
 import { useStep } from "../../../context/StepContext";
 
-const serviceOptions = [
-  { value: "Yoga", label: "Yoga" },
-  { value: "Dance", label: "Dance" },
-];
+
 
 export default function PlanStep() {
-  const { formData, setFormData } = useStep();
+  const { formData, setFormData, data } = useStep();
+
+  const filteredData = Array.isArray(data)
+    ? data.filter((item) => item?.venueId === formData?.venue)
+    : [];
+
+  const serviceOptions =
+    Array.isArray(filteredData) &&
+      filteredData.length > 0 &&
+      Array.isArray(filteredData[0]?.paymentGroups) &&
+      filteredData[0].paymentGroups.length > 0 &&
+      Array.isArray(filteredData[0].paymentGroups[0]?.holidayPaymentPlans)
+      ? filteredData[0].paymentGroups[0].holidayPaymentPlans.map((item) => ({
+        value: item?.id ?? "",
+        label: `${item?.title} - (${item?.price})` ?? "",
+      }))
+      : [];
 
   return (
     <div className="max-w-[696px] mx-auto poppins">
-      <h2 className="text-[24px] font-semibold poppins text-center mb-4">
+      <h2 className="md:text-[24px] text-[18px] font-semibold poppins text-center mb-4">
         Which plan do you want to book?
       </h2>
 

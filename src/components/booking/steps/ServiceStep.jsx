@@ -2,8 +2,7 @@ import Select from "react-select";
 import { useStep } from "../../../context/StepContext";
 
 const serviceOptions = [
-  { value: "Yoga", label: "Yoga" },
-  { value: "Dance", label: "Dance" },
+  { value: "Holiday Camp Booking", label: "Holiday Camp Booking" },
 ];
 
 export default function ServiceStep() {
@@ -11,7 +10,7 @@ export default function ServiceStep() {
 
   return (
     <div className="max-w-[696px] mx-auto poppins">
-      <h2 className="text-[24px] font-semibold poppins text-center mb-4">
+      <h2 className="md:text-[24px] text-[18px] font-semibold poppins text-center mb-4">
         Which service do you want to use?
       </h2>
 

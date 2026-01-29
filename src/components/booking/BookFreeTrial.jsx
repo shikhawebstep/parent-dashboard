@@ -174,10 +174,8 @@ const BookFreeTrial = () => {
 
     const handleSubmit = () => {
         if (validate()) {
-            console.log('Form Submitted', formData, selectedDate);
             alert('Booking Successful!');
         } else {
-            console.log('Validation Failed', errors);
             // Scroll to top or show toast
         }
     };

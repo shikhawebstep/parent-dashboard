@@ -37,7 +37,6 @@ const menu = [
 
 const Sidebar = () => {
   const navigate = useNavigate();
- console.log('localStorage', localStorage);
   const handleLogout = () => {
     Swal.fire({
       title: "Are you sure?",
@@ -66,7 +65,7 @@ const Sidebar = () => {
       style={{ backgroundImage: "url('/assets/sidebarBg.png')" }}
     >
       {/* LOGO */}
-      <div className="p-6 mt-16">
+      <div className="p-6 mt-18 mb-5">
         <img src="/assets/whiteParentLogo.png" alt="Logo" />
       </div>
 
@@ -78,7 +77,7 @@ const Sidebar = () => {
             to={item.path}
             end
             className={({ isActive }) =>
-              `flex items-center gap-3 px-4 py-3 rounded-[12px] text-[18px] font-semibold transition
+              `flex items-center gap-3 px-4 py-3 rounded-[12px] text-[18px] 2xl:text-[20px] font-semibold transition
               ${isActive ? "bg-[#0DD180]" : ""}`
             }
           >
