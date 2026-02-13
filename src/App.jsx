@@ -13,6 +13,7 @@ import MyBookings from "./pages/dashboard/MyBookings";
 import ReferFriend from "./pages/dashboard/ReferFriend";
 import Surveys from "./pages/dashboard/Surveys";
 import SurveyDetail from "./pages/dashboard/SurveyDetail";
+import Settings from "./pages/dashboard/Settings";
 import NotFound from "./pages/NotFound";
 import { FeedbackProvider } from "./context/FeedbackContext";
 import { SkillProvider } from "./context/SkillContext";
@@ -38,8 +39,8 @@ function App() {
                   <Route path="parent/surveys" element={<Surveys />} />
                   <Route path="parent/surveys/:id" element={<SurveyDetail />} />
                   <Route path="parent/skills/:id" element={<SkillDetail />} />
+                  <Route path="/parent/settings" element={<Settings />} />
                   <Route path="*" element={<NotFound />} />
-                  {/* <Route path="/settings" element={<Settings />} /> */}
                 </Routes>
               </Layout>
             </BrowserRouter>

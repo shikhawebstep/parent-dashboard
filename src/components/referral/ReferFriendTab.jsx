@@ -1,11 +1,142 @@
 import React from 'react';
 import { Copy, Share2, Smartphone, Mail, Facebook, Instagram, Linkedin } from 'lucide-react';
+import Swal from "sweetalert2";
 import PhoneInput from "react-phone-input-2";
 import "react-phone-input-2/lib/style.css";
 import { useState } from "react";
-
+import { useProfile } from "../../context/ProfileContext";
+import Loader from "../Loader";
 const ReferFriendTab = () => {
+    const { profile } = useProfile();
+    const [formData, setFormData] = useState({
+        firstName: "",
+        lastName: "",
+        email: "",
+        phone: "",
+    });
+
+    const [errors, setErrors] = useState({
+        firstName: "",
+        lastName: "",
+        email: "",
+        phone: "",
+    });
     const [dialCodes, setDialCodes] = useState("+1");
+    const [loading, setLoading] = useState(false);
+    const handleChange = (e) => {
+        const { name, value } = e.target;
+        setFormData({
+            ...formData,
+            [name]: value,
+        });
+        setErrors({
+            ...errors,
+            [name]: "",
+        });
+    };
+    const referalCode = profile?.profile?.referralLink || 'N/A';
+
+    const handleCopy = () => {
+        navigator.clipboard.writeText(`${referalCode}`);
+    };
+
+    const validateEmail = (email) => {
+        const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return re.test(email);
+    };
+    const validateForm = () => {
+        if (!formData.firstName) {
+            setErrors({
+                ...errors,
+                firstName: "First name is required",
+            });
+            return false;
+        }
+        if (!formData.lastName) {
+            setErrors({
+                ...errors,
+                lastName: "Last name is required",
+            });
+            return false;
+        }
+        if (!formData.email || !validateEmail(formData.email)) {
+            setErrors({
+                ...errors,
+                email: "Email is required",
+            });
+            return false;
+        }
+        if (!formData.phone) {
+            setErrors({
+                ...errors,
+                phone: "Phone is required",
+            });
+            return false;
+        }
+        return true;
+    };
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+
+        const isValid = validateForm();
+        if (!isValid) return;
+
+        const token = localStorage.getItem("parentToken");
+        const API_URL = import.meta.env.VITE_API_BASE_URL;
+
+        setLoading(true);
+
+        fetch(`${API_URL}/api/parent/referral/create`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+                firstName: formData.firstName,
+                lastName: formData.lastName,
+                email: formData.email,
+                phone: formData.phone,
+            }),
+        })
+            .then(async (response) => {
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.message || "Something went wrong");
+                }
+
+                return data;
+            })
+            .then((result) => {
+                Swal.fire({
+                    icon: "success",
+                    title: "Success!",
+                    text: result.message || "Referral submitted successfully 🎉",
+                });
+
+                // optional: reset form
+                setFormData({
+                    firstName: "",
+                    lastName: "",
+                    email: "",
+                    phone: "",
+                });
+            })
+            .catch((error) => {
+                Swal.fire({
+                    icon: "error",
+                    title: "Oops!",
+                    text: error.message || "Failed to submit referral",
+                });
+            })
+            .finally(() => setLoading(false));
+    };
+
+    if (loading) {
+        return <Loader />
+    }
     return (
         <>
             <div className="bg-white rounded-[30px] md:p-6 p-2  md:border border-gray-100">
@@ -18,14 +149,14 @@ const ReferFriendTab = () => {
 
                         <h2 className="2xl:text-[36px] text-[26px] recline font-bold  md:leading-[35px] leading-[28px] mt-8 md:mb-2">Refer your friends<br />and get benefits!</h2>
                         <p className="text-[16px] font-normal 2xl:my-8 my-5">
-                            Lorem ipsum dolor sit amet consectetur. <br className='2xl:block hidden'/> Pellentesque bibendum id duis <br className='2xl:block hidden'/> sit mi lobortis dictum consectetur venenatis.
+                            Lorem ipsum dolor sit amet consectetur. <br className='2xl:block hidden' /> Pellentesque bibendum id duis <br className='2xl:block hidden' /> sit mi lobortis dictum consectetur venenatis.
                         </p>
                         <span className='text-[16px]'>Copy Link</span>
                         <div className="w-full relative mt-2 bg-[#175299] rounded-lg p-1 justify-between flex items-center border border-[#1e4bb5]">
                             <div className="flex-1 px-3 py-2 text-left text-sm text-gray-300 truncate">
-                                sharelink.com/get/sft123fg
+                                {`${referalCode}`}
                             </div>
-                            <button className="p-2 hover:text-white bg-[#042C89] rounded-full h-10 w-10 flex items-center justify-center text-gray-400">
+                            <button onClick={handleCopy} className="p-2 hover:text-white bg-[#042C89] rounded-full h-10 w-10 flex items-center justify-center text-gray-400">
                                 <Copy size={16} className='text-white' />
                             </button>
                         </div>
@@ -60,22 +191,28 @@ const ReferFriendTab = () => {
                                 Prefer to send us their details? Use the form below and we'll contact directly your friend for you and if <br className='hidden md:block' /> they sign up, we'll let you know.
                             </p>
 
-                            <form className="space-y-6">
+                            <form className="space-y-6" onSubmit={handleSubmit}>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div className="space-y-1">
                                         <label className="text-[16px] font-semibold text-[#191919]">First name</label>
                                         <input
                                             type="text"
+                                            name='firstName'
+                                            onChange={handleChange}
+                                            value={formData.firstName}
                                             placeholder="First name"
-                                            className="w-full bg-[#F0F5FF] border-none rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-[#042C89]"
+                                            className={`w-full bg-[#F0F5FF] rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-[#042C89] ${errors.firstName ? "border-red-500 border" : " border-none"}`}
                                         />
                                     </div>
                                     <div className="space-y-1">
                                         <label className="text-[16px] font-semibold text-[#191919]">Last name</label>
                                         <input
                                             type="text"
+                                            name='lastName'
+                                            onChange={handleChange}
+                                            value={formData.lastName}
                                             placeholder="Last name"
-                                            className="w-full bg-[#F0F5FF] border-none rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-[#042C89]"
+                                            className={`w-full bg-[#F0F5FF] rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-[#042C89] ${errors.lastName ? "border-red-500 border" : " border-none"}`}
                                         />
                                     </div>
                                 </div>
@@ -85,13 +222,16 @@ const ReferFriendTab = () => {
                                         <label className="text-[16px] font-semibold text-[#191919]">Email</label>
                                         <input
                                             type="email"
+                                            name='email'
+                                            onChange={handleChange}
+                                            value={formData.email}
                                             placeholder="If known"
-                                            className="w-full bg-[#F0F5FF] border-none rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-[#042C89]"
+                                            className={`w-full bg-[#F0F5FF] rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-[#042C89] ${errors.email ? "border-red-500 border" : " border-none"}`}
                                         />
                                     </div>
                                     <div className="space-y-1">
                                         <label className="text-[16px] font-semibold text-[#191919]">Phone number</label>
-                                        <div className={`w-full flex bg-[#F0F5FF] items-center rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-[#0496FF] outline-none`}>
+                                        <div className={`w-full flex bg-[#F0F5FF] items-center rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-[#0496FF] outline-none ${errors.phone ? "border-red-500 border" : " border-none"}`}>
                                             <div className="w-[13%]">
                                                 <PhoneInput
                                                     country="us"
@@ -108,7 +248,9 @@ const ReferFriendTab = () => {
                                             <input
                                                 type="tel"
                                                 name="phone"
-                                                className={`poppins ps-3 text-[14px] border-l border-gray-300 outline-none w-full`}
+                                                onChange={handleChange}
+                                                value={formData.phone}
+                                                className={`poppins ps-3 text-[14px]  outline-none w-full  border-l border-gray-300`}
                                             />
                                         </div>
 
@@ -119,9 +261,11 @@ const ReferFriendTab = () => {
 
                                 <button
                                     type="button"
+                                    disabled={loading}
+                                    onClick={handleSubmit}
                                     className="bg-[#042C89] text-white px-16 py-3 rounded-xl font-semibold text-[18px] hover:bg-[#032066] transition-colors mt-8"
                                 >
-                                    Submit
+                                    {loading ? "Submitting..." : "Submit"}
                                 </button>
                             </form>
                         </div>
@@ -132,7 +276,7 @@ const ReferFriendTab = () => {
             </div>
             <div className="bg-white rounded-[30px] md:p-10 p-6 flex flex-col shadowCss items-center text-center mt-8">
                 <div className="flex space-x-2 mb-4">
-                   <img src="/assets/reward.png" alt="" className='md:w-[100px] w-[80px]' />
+                    <img src="/assets/reward.png" alt="" className='md:w-[100px] w-[80px]' />
                 </div>
                 <h3 className="text-[#042C89] font-bold recline md:text-[36px] text-[25px] mb-2">What the reward is?</h3>
                 <p className="text-[#797A88] md:text-[24px] text-[16px]">

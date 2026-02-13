@@ -1,21 +1,42 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import ReferralStatsCard from './ReferralStatsCard';
-
+import Loader from '../Loader';
 const YourReferralsTab = () => {
     // Static data for the table
-    const referrals = [
-        { id: 1, date: '01/06/2023', name: 'Steve Jones', email: 'tom.jones@gmail.com', phone: '123456789', status: 'Pending' },
-        { id: 2, date: '01/06/2023', name: 'Steve Jones', email: 'tom.jones@gmail.com', phone: '123456789', status: 'Pending' },
-        { id: 3, date: '01/06/2023', name: 'Steve Jones', email: 'tom.jones@gmail.com', phone: '123456789', status: 'Pending' },
-        { id: 4, date: '01/06/2023', name: 'Steve Jones', email: 'tom.jones@gmail.com', phone: '123456789', status: 'Pending' },
-        { id: 5, date: '01/06/2023', name: 'Steve Jones', email: 'tom.jones@gmail.com', phone: '123456789', status: 'Pending' },
-        { id: 6, date: '01/06/2023', name: 'Steve Jones', email: 'tom.jones@gmail.com', phone: '123456789', status: 'Pending' },
-        { id: 7, date: '01/06/2023', name: 'Steve Jones', email: 'tom.jones@gmail.com', phone: '123456789', status: 'Pending' },
-        { id: 8, date: '01/06/2023', name: 'Steve Jones', email: 'tom.jones@gmail.com', phone: '123456789', status: 'Pending' },
-        { id: 9, date: '01/06/2023', name: 'Steve Jones', email: 'tom.jones@gmail.com', phone: '123456789', status: 'Pending' },
-        { id: 10, date: '01/06/2023', name: 'Steve Jones', email: 'tom.jones@gmail.com', phone: '123456789', status: 'Pending' },
-        { id: 11, date: '01/06/2023', name: 'Steve Jones', email: 'tom.jones@gmail.com', phone: '123456789', status: 'Success' },
-    ];
+    const [referrals, setReferrals] = useState([]);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
+    const token = localStorage.getItem("parentToken");
+    const API_URL = import.meta.env.VITE_API_BASE_URL;
+    const fetchReferrals = async () => {
+        setLoading(true);
+        try {
+            const response = await fetch(`${API_URL}api/parent/referral/list`, {
+                method: "GET",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                },
+            });
+            const data = await response.json();
+            console.log(data);
+            if (!response.ok) {
+                throw new Error(data.message || "Something went wrong");
+            }
+            setReferrals(data.data);
+        } catch (error) {
+            setError(error.message);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchReferrals();
+    }, []);
+    if (loading) {
+        return <Loader />
+    }
 
     return (
         <div className="flex flex-col lg:flex-row gap-6 items-start animate-fadeIn">
@@ -36,10 +57,10 @@ const YourReferralsTab = () => {
                             </tr>
                         </thead>
                         <tbody>
-                            {referrals.map((item, index) => (
+                            {Array.isArray(referrals?.referrals) && referrals?.referrals.map((item, index) => (
                                 <tr key={index} className="border-t font-semibold text-[#282829] border-[#EFEEF2] hover:bg-gray-50">
-                                    <td className="py-3 px-6 text-sm text-[#191919] font-medium">{item.date}</td>
-                                    <td className="py-3 px-6 text-sm text-[#191919] font-medium">{item.name}</td>
+                                    <td className="py-3 px-6 text-sm text-[#191919] font-medium">{new Date(item.createdAt).toLocaleDateString()}</td>
+                                    <td className="py-3 px-6 text-sm text-[#191919] font-medium">{item.firstName + ' ' + item.lastName}</td>
                                     <td className="py-3 px-6 text-sm text-[#191919]">{item.email}</td>
                                     <td className="py-3 px-6 text-sm text-[#191919]">{item.phone}</td>
                                     <td className="py-3 px-6 text-right">
@@ -60,7 +81,7 @@ const YourReferralsTab = () => {
             </div>
 
             {/* Stats Card Section */}
-            <ReferralStatsCard />
+            <ReferralStatsCard  statusCount={referrals?.statusCounts} />
         </div>
     );
 };

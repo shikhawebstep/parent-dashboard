@@ -17,11 +17,18 @@ const tabs = [
 const AccountInformation = () => {
 
   const { fetchProfileData, loading, } = useProfile();
-  const [activeTab, setActiveTab] = useState(tabs[0].name);
+  const [activeTab, setActiveTab] = useState(() => {
+    const storedTab = localStorage.getItem("activeAccountTab");
+    return storedTab && tabs.some(tab => tab.name === storedTab) ? storedTab : tabs[0].name;
+  });
 
   useEffect(() => {
     fetchProfileData();
   }, []);
+
+  useEffect(() => {
+    localStorage.setItem("activeAccountTab", activeTab);
+  }, [activeTab]);
 
 
   if (loading) {

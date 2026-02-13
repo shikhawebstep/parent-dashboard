@@ -3,16 +3,27 @@ import { Menu, User, Settings, LogOut } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
+import NotificationPopup, { notificationsData } from "../components/NotificationPopup";
 const Header = ({ onMenuClick }) => {
   const [dateTime, setDateTime] = useState(new Date());
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const dropdownRef = useRef(null);
+  const notificationRef = useRef(null);
   const navigate = useNavigate();
+
+  const unreadCount = notificationsData.reduce((acc, group) => {
+    return acc + group.items.filter(item => item.unread).length;
+  }, 0);
+
   const parentData = JSON.parse(localStorage.getItem("parentData"));
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setIsDropdownOpen(false);
+      }
+      if (notificationRef.current && !notificationRef.current.contains(event.target)) {
+        setIsNotificationOpen(false);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
@@ -78,11 +89,22 @@ const Header = ({ onMenuClick }) => {
           </button>
 
           {/* Notification */}
-          <button className="relative hidden lg:flex  border border-[#E2E1E5] rounded-full 2xl:h-[54px] 2xl:w-[54px] h-[40px] w-[40px]  items-center justify-center">
-            <img src="/assets/notification-02.png" alt="notification"
-              className="2xl:w-6 2xl:h-6 w-4 h-4 text-gray-600" />
-            <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full" />
-          </button>
+          <div className="relative" ref={notificationRef}>
+            <button
+              onClick={() => setIsNotificationOpen(!isNotificationOpen)}
+              className={`relative hidden lg:flex border rounded-full 2xl:h-[54px] 2xl:w-[54px] h-[40px] w-[40px] items-center justify-center transition-all ${isNotificationOpen ? 'bg-[#00A6E3] border-[#00A6E3]' : 'border-[#E2E1E5]'}`}
+            >
+              <img src="/assets/notification-02.png" alt="notification"
+                className={`2xl:w-6 2xl:h-6 w-4 h-4 transition-all ${isNotificationOpen ? 'brightness-0 invert' : 'text-gray-600'}`} />
+              {unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center border-2 border-white">
+                  {unreadCount}
+                </span>
+              )}
+            </button>
+
+            {isNotificationOpen && <NotificationPopup />}
+          </div>
 
           {/* Date */}
           <div className="text-right text-sm text-gray-600 hidden lg:block">
@@ -95,8 +117,8 @@ const Header = ({ onMenuClick }) => {
                 month: "long",
                 year: "numeric",
               })}
-              
-              
+
+
             </p>
           </div>
 
