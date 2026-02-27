@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useSearchParams, useNavigate, Link } from "react-router-dom";
 import { Eye, EyeOff } from 'lucide-react';
 import Swal from "sweetalert2";
+import { showError, showSuccess } from "../../../utils/swalHelper";
 import axios from "axios";
 
 const ResetPassword = () => {
@@ -13,6 +14,7 @@ const ResetPassword = () => {
         password: "",
         confirmPassword: ""
     });
+    const [loading, setLoading] = useState(false);
 
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -20,14 +22,10 @@ const ResetPassword = () => {
 
     useEffect(() => {
         if (!token) {
-            Swal.fire({
-                icon: "error",
-                title: "Invalid Link",
-                text: "Reset token is missing. Please request a new password reset link.",
-                confirmButtonText: "Go to Login"
-            }).then(() => {
-                navigate("/parent/auth/login");
-            });
+            showError("Invalid Link", "Reset token is missing. Please request a new password reset link.")
+                .then(() => {
+                    navigate("/parent/auth/login");
+                });
         }
     }, [token, navigate]);
 
@@ -62,11 +60,7 @@ const ResetPassword = () => {
 
         const API_URL = import.meta.env.VITE_API_BASE_URL;
 
-        Swal.fire({
-            title: "Resetting Password...",
-            allowOutsideClick: false,
-            didOpen: () => Swal.showLoading(),
-        });
+        setLoading(true);
 
         try {
             await axios.post(
@@ -78,18 +72,13 @@ const ResetPassword = () => {
                 { headers: { "Content-Type": "application/json" } }
             );
 
-            Swal.fire({
-                icon: "success",
-                title: "Password Reset Successful",
-                text: "You can now login with your new password.",
-                timer: 2000,
-                showConfirmButton: false,
-            }).then(() => {
-                navigate("/parent/auth/login");
-            });
+            showSuccess("Password Reset Successful", "You can now login with your new password.")
+                .then(() => {
+                    navigate("/parent/auth/login");
+                });
 
         } catch (error) {
-            Swal.close();
+            setLoading(false);
             console.error("RESET PASS ERROR:", error);
 
             let message = "Something went wrong. Please try again.";
@@ -101,11 +90,9 @@ const ResetPassword = () => {
                     "Could not reset password.";
             }
 
-            Swal.fire({
-                icon: "error",
-                title: "Reset Failed",
-                text: message,
-            });
+            showError("Reset Failed", message);
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -178,9 +165,11 @@ const ResetPassword = () => {
                     {/* BUTTON */}
                     <button
                         type="submit"
-                        className="w-full bg-[#237FEA] text-white 2xl:text-[18px] lg:text-[16px] font-bold py-2.5 rounded-[14px] hover:bg-blue-700 transition"
+                        disabled={loading}
+                        className="w-full bg-[#237FEA] text-white 2xl:text-[18px] lg:text-[16px] font-bold py-2.5 rounded-[14px] hover:bg-blue-700 transition disabled:opacity-70 disabled:cursor-not-allowed flex justify-center items-center gap-2"
                     >
-                        Reset Password
+                        {loading && <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>}
+                        {loading ? "Resetting..." : "Reset Password"}
                     </button>
 
                     <div className="text-center mt-5">

@@ -94,6 +94,13 @@ const Feedback = () => {
               </tr>
             </thead>
             <tbody>
+              {Array.isArray(feedback?.["holiday camp"]) && feedback["holiday camp"].length === 0 && (
+                <tr>
+                  <td colSpan="8" className="text-center py-12 text-gray-500 font-medium gilory">
+                    No feedback found.
+                  </td>
+                </tr>
+              )}
               {Array.isArray(feedback?.["holiday camp"]) &&
                 feedback["holiday camp"].map((item, idx) => (
                   <tr key={idx} className="border-t font-semibold text-[#282829] border-[#EFEEF2] hover:bg-gray-50">
@@ -131,6 +138,11 @@ const Feedback = () => {
 
         {/* Mobile View */}
         <div className="md:hidden space-y-4">
+          {Array.isArray(feedback?.["holiday camp"]) && feedback["holiday camp"].length === 0 && (
+            <div className="text-center py-10 text-gray-500 font-medium gilory">
+              No feedback found.
+            </div>
+          )}
           {Array.isArray(feedback?.["holiday camp"]) &&
             feedback["holiday camp"].map((item, idx) => (
               <div key={idx} className="bg-white rounded-[20px] p-3.5 shadow-sm border border-[#EFEEF2]">

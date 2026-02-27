@@ -41,7 +41,7 @@ const NotificationSettings = () => {
                     <Mail size={20} className="text-[#00A6E3]" />
                     Email Notifications
                 </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 items-center gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 items-center gap-4">
                     <NotificationItem
                         title="Class Updates"
                         description="Receive emails about new classes and schedule changes."

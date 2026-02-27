@@ -57,31 +57,38 @@ const YourReferralsTab = () => {
                             </tr>
                         </thead>
                         <tbody>
-                            {Array.isArray(referrals?.referrals) && referrals?.referrals.map((item, index) => (
-                                <tr key={index} className="border-t font-semibold text-[#282829] border-[#EFEEF2] hover:bg-gray-50">
-                                    <td className="py-3 px-6 text-sm text-[#191919] font-medium">{new Date(item.createdAt).toLocaleDateString()}</td>
-                                    <td className="py-3 px-6 text-sm text-[#191919] font-medium">{item.firstName + ' ' + item.lastName}</td>
-                                    <td className="py-3 px-6 text-sm text-[#191919]">{item.email}</td>
-                                    <td className="py-3 px-6 text-sm text-[#191919]">{item.phone}</td>
-                                    <td className="py-3 px-6 text-right">
-                                        <span className={`inline-block px-4 py-1.5 rounded-lg text-[14px] font-semibold min-w-[80px] text-center
-                                            ${item.status === 'Success'
-                                                ? 'bg-[#E5F9EF] text-[#00D285]'
-                                                : 'bg-[#FDF6E5] text-[#EDA600]'
-                                            }`}
-                                        >
-                                            {item.status}
-                                        </span>
+                            {!Array.isArray(referrals?.referrals) || referrals?.referrals.length === 0 ? (
+                                <tr>
+                                    <td colSpan="5" className="text-center py-10 text-gray-500 font-medium">
+                                        No referrals found.
                                     </td>
                                 </tr>
-                            ))}
+                            ) : (
+                                referrals?.referrals.map((item, index) => (
+                                    <tr key={index} className="border-t font-semibold text-[#282829] border-[#EFEEF2] hover:bg-gray-50">
+                                        <td className="py-3 px-6 text-sm text-[#191919] font-medium">{new Date(item.createdAt).toLocaleDateString()}</td>
+                                        <td className="py-3 px-6 text-sm text-[#191919] font-medium">{item.firstName + ' ' + item.lastName}</td>
+                                        <td className="py-3 px-6 text-sm text-[#191919]">{item.email}</td>
+                                        <td className="py-3 px-6 text-sm text-[#191919]">{item.phone}</td>
+                                        <td className="py-3 px-6 text-right">
+                                            <span className={`inline-block px-4 py-1.5 rounded-lg text-[14px] font-semibold min-w-[80px] text-center
+                                            ${item.status === 'Success'
+                                                    ? 'bg-[#E5F9EF] text-[#00D285]'
+                                                    : 'bg-[#FDF6E5] text-[#EDA600]'
+                                                }`}
+                                            >
+                                                {item.status}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                )))}
                         </tbody>
                     </table>
                 </div>
             </div>
 
             {/* Stats Card Section */}
-            <ReferralStatsCard  statusCount={referrals?.statusCounts} />
+            <ReferralStatsCard statusCount={referrals?.statusCounts} />
         </div>
     );
 };

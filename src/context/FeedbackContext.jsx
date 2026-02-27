@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect } from "react";
 import axios from "axios";
-import Swal from "sweetalert2";
+import { showError } from "../../utils/swalHelper";
 
 const FeedbackContext = createContext();
 
@@ -49,11 +49,7 @@ export const FeedbackProvider = ({ children }) => {
             setError(errorMessage);
 
             // ✅ Show SweetAlert
-            Swal.fire({
-                icon: "error",
-                title: "Error",
-                text: errorMessage,
-            });
+            showError("Error", errorMessage);
 
         } finally {
             setLoading(false);

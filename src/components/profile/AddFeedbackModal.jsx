@@ -3,7 +3,7 @@ import { X } from 'lucide-react';
 import { useProfile } from '../../context/ProfileContext';
 import axios from 'axios';
 import Swal from 'sweetalert2';
-import Loader from '../Loader';
+import { showError } from '../../../utils/swalHelper';
 const AddFeedbackModal = ({ isOpen, onClose }) => {
     const { profile } = useProfile();
     const booking = profile?.combinedBookings;
@@ -43,17 +43,6 @@ const AddFeedbackModal = ({ isOpen, onClose }) => {
 
         if (!token) return;
 
-        // ✅ SHOW LOADING SWAL
-        Swal.fire({
-            title: "Submitting feedback...",
-            text: "Please wait",
-            allowOutsideClick: false,
-            allowEscapeKey: false,
-            didOpen: () => {
-                Swal.showLoading();
-            },
-        });
-
         setLoading(true);
 
         try {
@@ -77,15 +66,12 @@ const AddFeedbackModal = ({ isOpen, onClose }) => {
 
             console.log("Feedback submitted:", response.data);
 
-            // ✅ CLOSE LOADING SWAL
-            Swal.close();
+
 
             // ✅ CLOSE MODAL ON SUCCESS
             onClose();
             emptyForm();
         } catch (error) {
-            // ❌ CLOSE LOADING FIRST
-            Swal.close();
 
             const errorMessage =
                 error?.response?.data?.message ||
@@ -93,11 +79,7 @@ const AddFeedbackModal = ({ isOpen, onClose }) => {
                 "Something went wrong. Please try again.";
 
             // ❌ ERROR SWAL
-            Swal.fire({
-                icon: "error",
-                title: "Error",
-                text: errorMessage,
-            });
+            showError("Error", errorMessage);
 
             console.error("Feedback submit error:", error);
         } finally {
@@ -232,9 +214,11 @@ const AddFeedbackModal = ({ isOpen, onClose }) => {
                         </button>
                         <button
                             onClick={handleSubmit}
-                            className="flex-1 py-3.5 rounded-xl bg-[#1B7AF9] text-white font-semibold hover:bg-blue-600 transition-colors shadow-blue-200 shadow-lg gilory"
+                            disabled={loading}
+                            className="flex-1 py-3.5 rounded-xl bg-[#1B7AF9] text-white font-semibold flex items-center justify-center gap-2 hover:bg-blue-600 transition-colors shadow-blue-200 shadow-lg gilory disabled:opacity-70 disabled:cursor-not-allowed"
                         >
-                            Submit
+                            {loading && <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>}
+                            {loading ? "Submitting..." : "Submit"}
                         </button>
                     </div>
                 </div>

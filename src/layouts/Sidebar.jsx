@@ -1,6 +1,6 @@
 import { NavLink, useNavigate } from "react-router-dom";
 import { LogOut } from "lucide-react";
-import Swal from "sweetalert2";
+import { showConfirm, showSuccess } from "../../utils/swalHelper";
 
 const menu = [
   {
@@ -38,23 +38,11 @@ const menu = [
 const Sidebar = () => {
   const navigate = useNavigate();
   const handleLogout = () => {
-    Swal.fire({
-      title: "Are you sure?",
-      text: "You want to logout?",
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonColor: "#3085d6",
-      cancelButtonColor: "#d33",
-      confirmButtonText: "Yes, logout!"
-    }).then((result) => {
+    showConfirm("Are you sure?", "You want to logout?", "Yes, logout!").then((result) => {
       if (result.isConfirmed) {
         localStorage.removeItem("parentToken");
         navigate("/parent/auth/login");
-        Swal.fire({
-          title: "Logged Out!",
-          text: "You have been logged out.",
-          icon: "success"
-        });
+        showSuccess("Logged Out!", "You have been logged out.");
       }
     });
   };

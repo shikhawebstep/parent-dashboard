@@ -2,7 +2,7 @@
 import { Menu, User, Settings, LogOut } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import Swal from "sweetalert2";
+import { showConfirm, showSuccess } from "../../utils/swalHelper";
 import NotificationPopup, { notificationsData } from "../components/NotificationPopup";
 const Header = ({ onMenuClick }) => {
   const [dateTime, setDateTime] = useState(new Date());
@@ -31,23 +31,11 @@ const Header = ({ onMenuClick }) => {
   }, []);
 
   const handleLogout = () => {
-    Swal.fire({
-      title: "Are you sure?",
-      text: "You want to logout?",
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonColor: "#3085d6",
-      cancelButtonColor: "#d33",
-      confirmButtonText: "Yes, logout!"
-    }).then((result) => {
+    showConfirm("Are you sure?", "You want to logout?", "Yes, logout!").then((result) => {
       if (result.isConfirmed) {
         localStorage.removeItem("parentToken");
         navigate("/parent/auth/login");
-        Swal.fire({
-          title: "Logged Out!",
-          text: "You have been logged out.",
-          icon: "success"
-        });
+        showSuccess("Logged Out!", "You have been logged out.");
       }
     });
   };

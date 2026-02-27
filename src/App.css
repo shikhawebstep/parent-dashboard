@@ -189,3 +189,180 @@ body {
   box-shadow: rgba(100, 100, 111, 0.2) 0px 7px 29px 0px;
 }
 
+
+/* Icon background black + icon white */
+.swal-icon-custom {
+  background-color: #000 !important;
+  color: #fff !important;
+  border: none;
+  font-family: 'Gilroy';
+}
+
+/* Confirm button: white bg, black text, black border */
+.swal-confirm-btn {
+  background: #fff !important;
+  color: #000 !important;
+  border: 2px solid #000 !important;
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-weight: 600;
+  margin-right: 10px;
+  font-family: 'Gilroy';
+}
+
+/* Cancel button: black bg, white text */
+.swal-cancel-btn {
+  background: #000 !important;
+  color: #fff !important;
+  border: 2px solid #000 !important;
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-family: 'Gilroy';
+}
+
+/* Optional hover effects */
+.swal-confirm-btn:hover {
+  background: #000 !important;
+  color: #fff !important;
+}
+
+.swal-cancel-btn:hover {
+  opacity: 0.85;
+}
+
+.swal-title-custom {
+  color: #000;
+  font-family: 'Gilroy';
+  font-weight: 700;
+  font-size: 24px;
+}
+
+.swal-text-custom {
+  color: #333;
+  font-weight: 500;
+  font-family: 'Gilroy';
+  font-size: 16px;
+  padding-top: 5px !important;
+  padding-bottom: 10px !important;
+}
+
+.swal2-popup {
+  border-radius: 15px;
+}
+
+/* --- Custom SweetAlert Theme (Black & White) --- */
+
+/* Toast Customization */
+.swal-toast-custom {
+  border: 1px solid #333;
+}
+
+/* Ensure toast icons are high contrast if needed, but default success is green usually. 
+   User said "icons also black bg colors text icon color white".
+   For Toast (Success), often standard colors are better, but if we want B&W:
+*/
+div:where(.swal2-icon).swal2-success {
+  border-color: #fff !important;
+  color: #fff !important;
+}
+
+div:where(.swal2-icon).swal2-success [class^=swal2-success-line] {
+  background-color: #fff !important;
+}
+
+div:where(.swal2-icon).swal2-success .swal2-success-ring {
+  border: .25em solid rgba(255, 255, 255, .3) !important;
+}
+
+
+/* Modal Buttons */
+.swal-confirm-btn {
+  background-color: #000 !important;
+  color: #fff !important;
+  border: 1px solid #000 !important;
+  padding: 12px 24px !important;
+  border-radius: 8px !important;
+  font-weight: 600 !important;
+  font-size: 16px !important;
+  margin: 0 5px !important;
+  box-shadow: none !important;
+}
+
+.swal-confirm-btn:hover {
+  background-color: #333 !important;
+}
+
+.swal-cancel-btn {
+  background-color: #fff !important;
+  color: #000 !important;
+  border: 1px solid #ccc !important;
+  padding: 12px 24px !important;
+  border-radius: 8px !important;
+  font-weight: 600 !important;
+  font-size: 16px !important;
+  margin: 0 5px !important;
+}
+
+.swal-cancel-btn:hover {
+  background-color: #f5f5f5 !important;
+}
+
+/* Modal Icons - Black Background, White Icon */
+/* Success */
+div:where(.swal2-icon).swal2-success {
+  border-color: #000 !important;
+  /* Outer ring matches bg or black */
+  color: #fff !important;
+  /* Icon color */
+  background-color: #000 !important;
+  /* Black background */
+}
+
+/* Fix inner lines for success */
+div:where(.swal2-icon).swal2-success [class^=swal2-success-line] {
+  background-color: #fff !important;
+}
+
+div:where(.swal2-icon).swal2-success .swal2-success-ring {
+  border: .25em solid rgba(0, 0, 0, 0) !important;
+  /* Hide standard ring or make it match */
+}
+
+/* Error */
+div:where(.swal2-icon).swal2-error {
+  border-color: #000 !important;
+  color: #fff !important;
+  background-color: #000 !important;
+}
+
+div:where(.swal2-icon).swal2-error [class^=swal2-x-mark-line] {
+  background-color: #fff !important;
+}
+
+/* Warning */
+div:where(.swal2-icon).swal2-warning {
+  border-color: #000 !important;
+  color: #fff !important;
+  /* Usually orange, but user requested white/black theme */
+  background-color: #000 !important;
+}
+
+/* Info */
+div:where(.swal2-icon).swal2-info {
+  border-color: #000 !important;
+  color: #fff !important;
+  background-color: #000 !important;
+}
+
+/* Text Styling */
+.swal-title-custom {
+  color: #000 !important;
+  font-family: 'Gilroy', sans-serif !important;
+  font-size: 22px !important;
+}
+
+.swal-text-custom {
+  color: #555 !important;
+  font-family: 'Gilroy', sans-serif !important;
+  font-size: 16px !important;
+}

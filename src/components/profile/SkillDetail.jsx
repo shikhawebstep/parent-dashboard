@@ -3,7 +3,7 @@ import { Play, CheckCircle2, Check } from 'lucide-react'
 import { useParams, useNavigate } from 'react-router-dom';
 import VideoPlayerModal from './VideoPlayerModal';
 import axios from 'axios';
-import Swal from 'sweetalert2';
+import { showError } from "../../../utils/swalHelper";
 import Loader from '../Loader';
 
 const SkillDetail = () => {
@@ -48,11 +48,7 @@ const SkillDetail = () => {
             setError(errorMessage);
 
             // ✅ Show SweetAlert
-            Swal.fire({
-                icon: "error",
-                title: "Error",
-                text: errorMessage,
-            });
+            showError("Error", errorMessage);
 
         } finally {
             setLoading(false);

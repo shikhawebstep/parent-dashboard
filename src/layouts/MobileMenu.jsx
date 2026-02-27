@@ -1,6 +1,8 @@
 import { NavLink } from "react-router-dom";
 import { X, ChevronDown, Bell, LogOut } from "lucide-react";
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { showConfirm, showSuccess } from "../../utils/swalHelper";
 
 // Reusing the same menu items from Sidebar
 const menu = [
@@ -12,25 +14,25 @@ const menu = [
     },
     {
         name: "My Bookings",
-        path: "/bookings",
+        path: "/parent/bookings",
         icon: "/assets/booking.png",
         activeImg: "/assets/booking-active.png",
     },
     {
         name: "Refer a friend",
-        path: "/refer",
+        path: "/parent/refer",
         icon: "/assets/refer.png",
         activeImg: "/assets/refer-active.png",
     },
     {
         name: "Surveys",
-        path: "/surveys",
+        path: "/parent/surveys",
         icon: "/assets/online-learning.png",
         activeImg: "/assets/online-learning-active.png",
     },
     {
         name: "Settings",
-        path: "/settings",
+        path: "/parent/settings",
         icon: "/assets/setting-02.png",
         activeImg: "/assets/setting-active.png",
     },
@@ -39,6 +41,18 @@ const parentData = JSON.parse(localStorage.getItem("parentData"));
 
 const MobileMenu = ({ isOpen, onClose }) => {
     const [dateTime, setDateTime] = useState(new Date());
+    const navigate = useNavigate();
+
+    const handleLogout = () => {
+        onClose(); // Close mobile menu first
+        showConfirm("Are you sure?", "You want to logout?", "Yes, logout!").then((result) => {
+            if (result.isConfirmed) {
+                localStorage.removeItem("parentToken");
+                navigate("/parent/auth/login");
+                showSuccess("Logged Out!", "You have been logged out.");
+            }
+        });
+    };
 
     useEffect(() => {
         if (!isOpen) return; // Only run timer when menu is open
@@ -111,6 +125,7 @@ const MobileMenu = ({ isOpen, onClose }) => {
                             key={item.name}
                             to={item.path}
                             end
+                            onClick={onClose}
                             className={({ isActive }) =>
                                 `flex items-center gap-3 px-4 py-3 rounded-[12px] text-[18px] font-semibold transition
                               ${isActive ? "bg-[#0DD180]" : ""}`
@@ -131,7 +146,7 @@ const MobileMenu = ({ isOpen, onClose }) => {
                 </nav>
 
                 {/* Action Buttons */}
-                <div className="space-y-4 mb-8">
+                <div className="space-y-4 mb-8 mt-3">
                     <button className="w-full bg-white text-[#002855] font-bold py-3 rounded-full flex items-center justify-center gap-2">
                         <Bell size={20} />
                         Notifications
@@ -142,7 +157,7 @@ const MobileMenu = ({ isOpen, onClose }) => {
                 </div>
 
                 {/* Logout */}
-                <button className="flex items-center gap-2 font-semibold text-white/90 hover:text-white mt-auto">
+                <button onClick={handleLogout} className="flex items-center gap-2 font-semibold text-white/90 hover:text-white mt-auto">
                     <img src="/assets/logout-04.png" alt="" className="w-5 brightness-200" />
                     Logout
                 </button>

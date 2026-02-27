@@ -78,9 +78,15 @@ export default function ServiceHistory() {
         </div>
       </div>
       <div className="py-6 md:pt-0 bg-gray-100 min-h-screen">
-        {bookings.map((b) => (
-          <BookingCard key={b.id} booking={b} onSeeDetails={setSelectedBooking} />
-        ))}
+        {!bookings || bookings.length === 0 ? (
+          <div className="text-center py-12 text-gray-500 font-medium bg-white rounded-xl shadow-sm mx-4 md:mx-0">
+            No service history found.
+          </div>
+        ) : (
+          bookings.map((b) => (
+            <BookingCard key={b.id} booking={b} onSeeDetails={setSelectedBooking} />
+          ))
+        )}
       </div>
 
 

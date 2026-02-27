@@ -1,6 +1,6 @@
 import { createContext, useContext, useState } from "react";
 import axios from "axios";
-import Swal from "sweetalert2";
+import { showError } from "../../utils/swalHelper";
 const StepContext = createContext();
 
 export const useStep = () => useContext(StepContext);
@@ -174,11 +174,7 @@ export function StepProvider({ children }) {
         "Something went wrong while fetching profile.";
 
       // ✅ Show SweetAlert
-      Swal.fire({
-        icon: "error",
-        title: "Error",
-        text: errorMessage,
-      });
+      showError("Error", errorMessage);
 
     } finally {
       setLoading(false);

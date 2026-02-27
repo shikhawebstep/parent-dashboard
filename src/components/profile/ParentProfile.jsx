@@ -75,10 +75,10 @@ const ParentProfile = () => {
 
 
     useEffect(() => {
-        if (Array.isArray(profile?.uniqueProfiles?.parents)) {
+        if (Array.isArray(profile?.uniqueProfiles?.parents) && profile.uniqueProfiles.parents.length > 0) {
             setParents(profile.uniqueProfiles.parents);
         } else {
-            setParents([emptyParent]); // fallback at least one parent
+            setParents([]); // fallback empty instead of one form
         }
     }, [profile]);
 
@@ -304,6 +304,17 @@ const ParentProfile = () => {
         <div className="lg:space-y-6">
             {/* ================= Parent Info ================= */}
             <div className="bg-white lg:rounded-[30px] p-6">
+                {parents.length === 0 && (
+                    <div className="text-center py-12">
+                        <p className="text-gray-500 font-medium mb-4 text-[18px]">No parent information found.</p>
+                        <button
+                            onClick={handleAddParent}
+                            className="inline-flex items-center gap-2 px-6 py-2.5 font-semibold rounded-[12px] text-[16px] bg-[#0DD180] text-white hover:bg-green-700 transition"
+                        >
+                            <Plus size={18} /> Add Parent
+                        </button>
+                    </div>
+                )}
                 {parents.length === 1 && (
                     <div className="flex justify-between items-center mb-4">
                         <div className="flex gap-2 items-center cursor-pointer">
@@ -455,13 +466,15 @@ const ParentProfile = () => {
                     );
                 })}
 
-                <button
-                    onClick={handleAddParent}
-                    className="md:hidden flex items-center gap-1 px-4 py-2 font-semibold rounded-lg text-sm bg-[#0DD180] text-white"
-                    disabled={editingIndex !== null}
-                >
-                    <Plus size={17} /> Add Parent
-                </button>
+                {parents.length > 0 && (
+                    <button
+                        onClick={handleAddParent}
+                        className="md:hidden flex items-center gap-1 px-4 py-2 font-semibold rounded-lg text-sm bg-[#0DD180] text-white"
+                        disabled={editingIndex !== null}
+                    >
+                        <Plus size={17} /> Add Parent
+                    </button>
+                )}
             </div>
 
             {/* ================= Emergency Contact ================= */}

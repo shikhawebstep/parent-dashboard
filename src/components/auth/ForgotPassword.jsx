@@ -1,10 +1,12 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import Swal from "sweetalert2";
+import { showError, showSuccess } from "../../../utils/swalHelper";
 import axios from "axios";
 
 const ForgotPassword = () => {
     const [email, setEmail] = useState("");
+    const [loading, setLoading] = useState(false);
     const [errors, setErrors] = useState({});
 
     // 🔹 VALIDATION
@@ -29,13 +31,7 @@ const ForgotPassword = () => {
 
         const API_URL = import.meta.env.VITE_API_BASE_URL;
 
-        // 🔄 Loading
-        Swal.fire({
-            title: "Sending Request...",
-            allowOutsideClick: false,
-            didOpen: () => Swal.showLoading(),
-        });
-
+        setLoading(true);
         try {
             await axios.post(
                 `${API_URL}api/parent/auth/forgot-password`,
@@ -43,16 +39,10 @@ const ForgotPassword = () => {
                 { headers: { "Content-Type": "application/json" } }
             );
 
-            Swal.fire({
-                icon: "success",
-                title: "Link Sent!",
-                text: "Please check your email for password reset instructions.",
-                timer: 3000,
-                showConfirmButton: true,
-            });
+            showSuccess("Link Sent!", "Please check your email for password reset instructions.");
 
         } catch (error) {
-            Swal.close();
+            setLoading(false);
             console.error("FORGOT PASS ERROR:", error);
 
             let message = "Something went wrong. Please try again.";
@@ -64,11 +54,9 @@ const ForgotPassword = () => {
                     "Could not send reset link.";
             }
 
-            Swal.fire({
-                icon: "error",
-                title: "Request Failed",
-                text: message,
-            });
+            showError("Request Failed", message);
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -104,9 +92,11 @@ const ForgotPassword = () => {
                     {/* BUTTON */}
                     <button
                         type="submit"
-                        className="w-full bg-[#237FEA] text-white 2xl:text-[18px] lg:text-[16px] font-bold py-2.5 rounded-[14px] hover:bg-blue-700 transition"
+                        disabled={loading}
+                        className="w-full bg-[#237FEA] text-white 2xl:text-[18px] lg:text-[16px] font-bold py-2.5 rounded-[14px] hover:bg-blue-700 transition disabled:opacity-70 disabled:cursor-not-allowed flex justify-center items-center gap-2"
                     >
-                        Send Reset Link
+                        {loading && <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>}
+                        {loading ? "Sending..." : "Send Reset Link"}
                     </button>
 
                     <div className="text-center mt-5">

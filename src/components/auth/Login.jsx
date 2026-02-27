@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Eye, EyeOff } from 'lucide-react';
 import { Link } from "react-router-dom";
 import Swal from "sweetalert2";
+import { showError, showLoading } from "../../../utils/swalHelper";
 import axios from "axios";
 
 const Login = () => {
@@ -10,7 +11,7 @@ const Login = () => {
     password: "",
     remember: false,
   });
-
+  const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
   const [showPassword, setShowPassword] = useState(false);
   useEffect(() => {
@@ -54,9 +55,10 @@ const Login = () => {
 
     if (!formData.password) {
       newErrors.password = "Password is required";
-    } else if (formData.password.length < 6) {
-      newErrors.password = "Minimum 6 characters required";
-    }
+    } 
+    // else if (formData.password.length < 6) {
+    //   newErrors.password = "Minimum 6 characters required";
+    // }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -73,14 +75,7 @@ const Login = () => {
     const params = new URLSearchParams(window.location.search);
     const redirectTo = params.get("redirect") || "/parent";
 
-    Swal.fire({
-      title: "Logging in...",
-
-      message: "Please wait...",
-      allowOutsideClick: false,
-      didOpen: () => Swal.showLoading(),
-    });
-
+    setLoading(true);
     try {
       const response = await axios.post(
         `${API_URL}api/parent/auth/login`,
@@ -105,7 +100,7 @@ const Login = () => {
       window.location.replace(redirectTo);
 
     } catch (error) {
-      Swal.close();
+      setLoading(false);
 
       let message = "Something went wrong. Please try again.";
 
@@ -120,18 +115,14 @@ const Login = () => {
           "Invalid email or password.";
       }
 
-      Swal.fire({
-        icon: "error",
-        title: "Login Failed",
-        text: message,
-      });
+      showError("Login Failed", message);
     }
   };
 
 
 
   return (
-    <div className="w-full h-full bg-white flex items-center p-5 lg:p-10 xl:p-0">
+    <div className="w-full h-full overflow-auto bg-white flex items-center p-5 lg:p-10 xl:p-0">
       <div className="w-full flex flex-col items-center justify-center m-auto ">
         <div className="text-center w-full mb-6">
           <div className="text-5xl font-bold text-blue-700 2xl:max-w-[80px] lg:max-w-[50px] max-w-[60px] m-auto"> <img src="/assets/sambaLogoBlue.png" alt="" className="w-full" /></div>
@@ -203,9 +194,11 @@ const Login = () => {
           {/* BUTTON */}
           <button
             type="submit"
-            className="w-full my-10 md:my-0 bg-[#237FEA] text-white 2xl:text-[22px] lg:text-[16px] font-bold py-2.5 md:rounded-[14px] rounded-[10px] hover:bg-blue-700 transition"
+            disabled={loading}
+            className="w-full my-10 md:my-0 bg-[#237FEA] text-white 2xl:text-[22px] lg:text-[16px] font-bold py-2.5 md:rounded-[14px] rounded-[10px] hover:bg-blue-700 transition disabled:opacity-70 disabled:cursor-not-allowed flex justify-center items-center gap-2"
           >
-            Log In
+            {loading && <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>}
+            {loading ? "Logging In..." : "Log In"}
           </button>
         </form>
 

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Copy, Share2, Smartphone, Mail, Facebook, Instagram, Linkedin } from 'lucide-react';
-import Swal from "sweetalert2";
+import { showSuccess, showError } from "../../../utils/swalHelper";
 import PhoneInput from "react-phone-input-2";
 import "react-phone-input-2/lib/style.css";
 import { useState } from "react";
@@ -110,11 +110,7 @@ const ReferFriendTab = () => {
                 return data;
             })
             .then((result) => {
-                Swal.fire({
-                    icon: "success",
-                    title: "Success!",
-                    text: result.message || "Referral submitted successfully 🎉",
-                });
+                showSuccess("Success!", result.message || "Referral submitted successfully 🎉");
 
                 // optional: reset form
                 setFormData({
@@ -125,11 +121,7 @@ const ReferFriendTab = () => {
                 });
             })
             .catch((error) => {
-                Swal.fire({
-                    icon: "error",
-                    title: "Oops!",
-                    text: error.message || "Failed to submit referral",
-                });
+                showError("Oops!", error.message || "Failed to submit referral");
             })
             .finally(() => setLoading(false));
     };

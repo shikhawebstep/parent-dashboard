@@ -72,6 +72,11 @@ const Skills = () => {
 
         {/* Skills Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-6">
+          {Array.isArray(skill?.[currentFilter]) && skill[currentFilter].length === 0 && (
+            <div className="col-span-full text-center py-12 text-gray-500 font-medium">
+              No skills found for this level.
+            </div>
+          )}
           {Array.isArray(skill?.[currentFilter]) &&
             skill[currentFilter].length > 0 &&
             skill[currentFilter].map((item) => (

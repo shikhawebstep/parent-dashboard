@@ -63,21 +63,21 @@ const LoyaltyClubTab = () => {
             </div>
 
             {/* Ways To Collect (Rewards) */}
-            <div className="bg-white rounded-[30px] p-8 border border-[#DBDBDB]">
+            <div className="bg-white rounded-[30px] md:p-8 p-3 border border-[#DBDBDB]">
                 <h3 className="text-[#191919] font-bold md:text-[32px]  text-[26px] mb-8">Ways To Collect Your Points</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 lg:grid-cols-4 gap-8">
+                <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 lg:grid-cols-4 lg:gap-8 gap-4">
                     {rewards.map((reward) => (
                         <div key={reward.id} className="flex flex-col items-center text-center group">
                             <div className="w-full aspect-square rounded-2xl mb-4 flex items-center justify-center relative transition-all">
                                 {/* Placeholder for reward image */}
                                 <img src={reward.image} alt="" srcset="" />  </div>
-                            <h4 className="font-semibold text-[#191919] 2xl:text-[20px] text-[18px] ">{reward.title}</h4>
+                            <h4 className="font-semibold text-[#191919] 2xl:text-[20px] sm:text-[18px] text-[15px] ">{reward.title}</h4>
                             <p className="text-[16px] font-bold text-[#191919] mb-4">{reward.points} Points</p>
 
                             {points >= reward.points ? (
                                 <button
                                     onClick={() => handleRedeem(reward)}
-                                    className="bg-[#0DD180] text-white 2xl:px-6 px-4 py-3 rounded-[8px] inter text-[14px]  font-semibold hover:bg-[#00b572] transition-colors hover:shadow-md"
+                                    className="bg-[#0DD180] text-white 2xl:px-6 md:px-4 w-full md:w-max  py-3 rounded-[8px] inter md:text-[14px] text-[12px]  font-semibold hover:bg-[#00b572] transition-colors hover:shadow-md"
                                 >
                                     Redeem Reward
                                 </button>
@@ -86,7 +86,7 @@ const LoyaltyClubTab = () => {
                                     <div className="w-8 h-8 rounded-[8px] shadow bg-[#F38B4D] text-white flex items-center justify-center">
                                         <Lock size={16} />
                                     </div>
-                                    <p className="text-[16px] text-[#F38B4D] mt-2 leading-tight">
+                                    <p className="md:text-[16px] text-[13px] text-[#F38B4D] mt-2 leading-tight">
                                         You need {reward.points - points} more points to <br /> reach this reward
                                     </p>
                                 </div>

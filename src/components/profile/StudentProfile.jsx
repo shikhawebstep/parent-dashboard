@@ -41,10 +41,10 @@ const StudentProfile = () => {
   // Validation errors: array of objects per student
   const [errors, setErrors] = useState([{}]);
   useEffect(() => {
-    if (Array.isArray(profile?.uniqueProfiles?.students)) {
+    if (Array.isArray(profile?.uniqueProfiles?.students) && profile.uniqueProfiles.students.length > 0) {
       setStudents(profile.uniqueProfiles.students);
     } else {
-      setStudents([emptyStudent]); // fallback at least one parent
+      setStudents([]); // fallback empty
     }
   }, [profile]);
   const addStudent = () => {
@@ -179,6 +179,12 @@ const StudentProfile = () => {
           Add New Student
         </button>
       </div>
+
+      {students.length === 0 && (
+        <div className="bg-white lg:rounded-[30px] p-6 py-16 md:mb-6 text-center text-gray-500 text-[18px] font-medium border border-gray-100 shadow-sm">
+          No students found.
+        </div>
+      )}
 
       {students.map((student, index) => {
         const isEditing = editingIndex === index;

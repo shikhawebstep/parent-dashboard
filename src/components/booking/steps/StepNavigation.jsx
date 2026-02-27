@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useStep } from "../../../context/StepContext";
-import Swal from "sweetalert2";
+import { showSuccess, showError } from "../../../../utils/swalHelper";
 
 export default function StepNavigation() {
   const [loading, setLoading] = useState(false);
@@ -111,27 +111,19 @@ export default function StepNavigation() {
         throw new Error(result?.message || "Something went wrong");
       }
 
-      Swal.fire({
-        icon: "success",
-        title: "Booking Successful 🎉",
-        text: result?.message || "Holiday camp booked successfully",
-      });
+      showSuccess("Booking Successful 🎉", result?.message || "Holiday camp booked successfully");
 
       console.log(result);
     } catch (error) {
       console.error(error);
 
-      Swal.fire({
-        icon: "error",
-        title: "Oops!",
-        text: error.message || "Failed to book holiday camp",
-      });
+      showError("Oops!", error.message || "Failed to book holiday camp");
     } finally {
       setLoading(false);
     }
   };
 
-  console.log('currentStep',currentStep)
+  console.log('currentStep', currentStep)
 
   return (
     <div className="flex justify-center gap-3 md:mt-8">
