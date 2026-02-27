@@ -2,13 +2,33 @@ import { useState, useEffect } from "react";
 import { useStep } from "../../../context/StepContext";
 
 export default function StepStudent() {
-  const { formData, setFormData, errors, clearError } = useStep();
-
+  const { formData, setFormData, data, errors, clearError } = useStep();
   const [activeTab, setActiveTab] = useState("existing");
   const [selectedStudentId, setSelectedStudentId] = useState(null);
 
   const students = formData.students || [];
+  const filteredData = Array.isArray(data)
+    ? data.filter((item) => item?.venueId === formData?.venue)
+    : [];
+  const handleClassChange = (classId) => {
+    const selectedClass = (filteredData?.[0]?.classes ?? []).find(
+      (cls) => cls?.classId === Number(classId)
+    );
 
+    if (!selectedClass) return;
+    console.log('selectedClass', selectedClass)
+
+    setFormData((prev) => ({
+      ...prev,
+      student: {
+        ...prev.student,
+        classSchedule: selectedClass,
+        classScheduleId: selectedClass?.classId,
+        className: selectedClass?.className,
+        time: selectedClass?.time || selectedClass?.startTime || "",
+      },
+    }));
+  };
   /* ===============================
      Sync selected existing student
   =============================== */
@@ -112,7 +132,7 @@ export default function StepStudent() {
     `mt-1 w-full placeholder:text-[#9C9C9C] bg-white poppins font-normal mainShadow  ${hasError ? "border border-red-500" : ""
     } p-3 rounded-[6px] text-sm focus:ring-2 focus:ring-[#0496FF] outline-none`;
 
-  const data = formData.student || {};
+  const student = formData.student || {};
 
   return (
     <div className="max-w-4xl mx-auto bg-white py-4 px-0 md:px-6">
@@ -188,7 +208,7 @@ export default function StepStudent() {
 
                 <div>
                   <label className="text-[12px] text-[#939395] block font-normal mb-1 poppins">Class</label>
-                  <p className="text-[14px] text-[#282829] poppins font-medium">{student?.classSchedule?.className}</p>
+                  <p className="text-[14px] text-[#282829] poppins font-medium">{student?.classSchedule?.className || student?.className}</p>
                 </div>
               </div>
             </div>
@@ -206,7 +226,7 @@ export default function StepStudent() {
             </label>
             <input
               placeholder="Enter first name"
-              value={data.studentFirstName || ""}
+              value={student.studentFirstName || ""}
               onChange={e => handleFieldChange("studentFirstName", e.target.value)}
               className={inputClass(errors.studentstudentFirstName)}
             />
@@ -218,7 +238,7 @@ export default function StepStudent() {
             </label>
             <input
               placeholder="Enter last name"
-              value={data.studentLastName || ""}
+              value={student.studentLastName || ""}
               onChange={e => handleFieldChange("studentLastName", e.target.value)}
               className={inputClass(errors.studentLastName)}
             />
@@ -231,7 +251,7 @@ export default function StepStudent() {
             <input
               type="date"
               placeholder="Enter date of birth"
-              value={data.dateOfBirth || ""}
+              value={student.dateOfBirth || ""}
               onChange={e => handleFieldChange("dateOfBirth", e.target.value)}
               className={inputClass(errors.studentDob)}
             />
@@ -244,7 +264,7 @@ export default function StepStudent() {
             <input
               readOnly
               placeholder="Automatic entry"
-              value={data.age || ""}
+              value={student.age || ""}
               className={`${inputClass()} bg-white text-gray-500`}
             />
           </div>
@@ -254,7 +274,7 @@ export default function StepStudent() {
               Gender:
             </label>
             <select
-              value={data.gender || ""}
+              value={student.gender || ""}
               onChange={e => handleFieldChange("gender", e.target.value)}
               className={inputClass(errors.studentGender)}
             >
@@ -271,7 +291,7 @@ export default function StepStudent() {
             <div className="relative">
               <input
                 placeholder="Enter medical information"
-                value={data.medicalInformation || ""}
+                value={student.medicalInformation || ""}
                 onChange={e => handleFieldChange("medicalInformation", e.target.value)}
                 className={inputClass(errors.studentmedicalInformation)}
               />
@@ -282,16 +302,36 @@ export default function StepStudent() {
             <label className="block text-[14px] text-[#282829] poppins font-normal mb-1 capitalize">
               Class:
             </label>
+
             <div className="relative">
-              <input
-                readOnly
-                value={data?.classSchedule?.className || ""}
-                placeholder="4-7 years"
-                className={`${inputClass()} bg-white text-gray-700`}
-              />
+              <select
+                value={student?.classSchedule?.classId ?? ""}
+                onChange={(e) => handleClassChange(e.target.value)}
+                className={`${inputClass()} bg-white text-gray-700 appearance-none`}
+              >
+                <option value="">Select Class</option>
+
+                {(filteredData?.[0]?.classes ?? []).map((cls) => (
+                  <option key={cls?.classId} value={cls?.classId}>
+                    {cls?.className ?? "Unnamed Class"}
+                  </option>
+                ))}
+              </select>
+
+              {/* Dropdown Icon */}
               <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
-                <svg className="w-4 h-4 text-[#939395]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinectrokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
+                <svg
+                  className="w-4 h-4 text-[#939395]"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M19 9l-7 7-7-7"
+                  />
                 </svg>
               </div>
             </div>
@@ -304,6 +344,7 @@ export default function StepStudent() {
             <div className="relative">
               <input
                 readOnly
+                value={student?.time}
                 placeholder="Automatic entry"
                 className={`${inputClass()} bg-white text-gray-500`}
               />

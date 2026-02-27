@@ -80,19 +80,57 @@ const MyBookings = () => {
     console.log('filteredBookings', filteredBookings)
     console.log('bookings', bookings)
     const formatBooking = (booking) => {
-        const dateObj = new Date(booking.createdAt);
+        const dateObj = booking?.createdAt
+            ? new Date(booking.createdAt)
+            : null;
+
+        const isHolidayCamp = booking?.serviceType === "holiday camp";
+
+        // Student (safe)
+        const student = booking?.students?.[0];
+
+        // Class schedule (only exists in weekly membership)
+        const classSchedule = student?.classSchedule;
 
         return {
-            id: booking.id,
-            day: dateObj.toLocaleDateString("en-US", { weekday: "short" }),
-            date: dateObj.getDate(),
-            month: dateObj.toLocaleDateString("en-US", { month: "short" }),
-            venue: booking.venue?.name,
-            time: `${booking.students?.[0]?.classSchedule?.startTime} - ${booking.students?.[0]?.classSchedule?.endTime}`,
-            address: booking.venue?.address,
-            classType: booking.students?.[0]?.classSchedule?.className,
-            coach: "-", // not in API
-            status: booking.status
+            id: booking?.id ?? null,
+
+            day: dateObj
+                ? dateObj.toLocaleDateString("en-US", { weekday: "short" })
+                : "-",
+
+            date: dateObj ? dateObj.getDate() : "-",
+
+            month: dateObj
+                ? dateObj.toLocaleDateString("en-US", { month: "short" })
+                : "-",
+
+            // Venue only for weekly membership
+            venue: isHolidayCamp
+                ? booking?.holidayVenue?.name ?? "-"
+                : booking?.venue?.name ?? "-",
+
+            // Time handling
+            time: isHolidayCamp
+                ? booking?.holidayCamp?.holidayCampDates?.[0]?.startDate &&
+                    booking?.holidayCamp?.holidayCampDates?.[0]?.endDate
+                    ? `${booking.holidayCamp.holidayCampDates[0].startDate} - ${booking.holidayCamp.holidayCampDates[0].endDate}`
+                    : "-"
+                : classSchedule?.startTime && classSchedule?.endTime
+                    ? `${classSchedule.startTime} - ${classSchedule.endTime}`
+                    : "-",
+
+            address: isHolidayCamp
+                ? booking?.holidayVenue?.address
+                : booking?.venue?.address ?? "-",
+
+            classType: isHolidayCamp
+                ? "Holiday Camp"
+                : classSchedule?.className ?? "-",
+
+            coach: "-", // Not in API
+
+            status: booking?.status ?? "-",
         };
     };
     return (

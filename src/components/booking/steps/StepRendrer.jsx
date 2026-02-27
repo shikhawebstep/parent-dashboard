@@ -7,7 +7,7 @@ import StepPayment from "./StepPayment";
 import StepSummary from "./StepSummary";
 import VenueStep from "./VenueStep";
 import { useStep } from "../../../context/StepContext";
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { useProfile } from "../../../context/ProfileContext";
 import Loader from "../../Loader";
 
@@ -18,8 +18,14 @@ export default function StepRenderer() {
   const { fetchProfileData, profile } = useProfile();
 
   const booking = profile?.combinedBookings;
-  const holidayBooking = booking?.filter((booking) => booking?.serviceType === "holiday camp");
-  
+
+  const holidayBooking = useMemo(() => {
+    return booking?.filter(
+      (b) => b?.serviceType === "holiday camp"
+    ) || [];
+  }, [booking]);
+  console.log('holidayBooking', holidayBooking)
+
   useEffect(() => {
     let isMounted = true;
 
@@ -51,9 +57,6 @@ export default function StepRenderer() {
 
     setFormData((prev) => ({
       ...prev,
-      students: Array.isArray(profile.uniqueProfiles.students)
-        ? profile.uniqueProfiles.students
-        : [],
       parents: Array.isArray(profile.uniqueProfiles.parents)
         ? profile.uniqueProfiles.parents ?? null
         : null,
@@ -61,6 +64,28 @@ export default function StepRenderer() {
         ? profile.uniqueProfiles.emergencyContacts[0] ?? null
         : null,
     }));
+
+    if (!holidayBooking.length) return;
+
+    const allStudents = holidayBooking.flatMap(
+      (booking) => booking.students || []
+    );
+
+    const uniqueStudents = Array.from(
+      new Map(allStudents.map((s) => [s.id, s])).values()
+    );
+
+    setFormData((prev) => {
+      // 🔥 Prevent unnecessary re-render
+      if (JSON.stringify(prev.students) === JSON.stringify(uniqueStudents)) {
+        return prev;
+      }
+
+      return {
+        ...prev,
+        students: uniqueStudents,
+      };
+    });
   }, [profile]);
   if (loading) {
     return <Loader />
