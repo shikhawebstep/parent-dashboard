@@ -1,7 +1,7 @@
 {
   "name": "parent-dashboard",
   "private": true,
-  "homepage": "/",
+  "homepage": "/parent",
   "version": "0.0.0",
   "type": "module",
   "scripts": {
