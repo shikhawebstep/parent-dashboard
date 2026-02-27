@@ -24,7 +24,7 @@ function App() {
       <ProfileProvider>
         <SkillProvider>
           <FeedbackProvider>
-            <BrowserRouter basename="/parent">
+            <BrowserRouter>
               <Layout>
                 <Routes>
                   <Route path="/" element={<AccountInformation />} />
