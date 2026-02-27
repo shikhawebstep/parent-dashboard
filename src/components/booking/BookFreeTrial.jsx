@@ -420,6 +420,9 @@ const BookFreeTrial = () => {
                                                 <option value="">Select from drop down</option>
                                                 <option value="Google">Google</option>
                                                 <option value="Friend">Friend</option>
+                                                <option value="Facebook">Facebook</option>
+                                                <option value="Instagram">Instagram</option>
+                                                <option value="Referral">Referral</option>
                                             </select>
                                             <ChevronDown className="absolute right-3 top-8 -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
                                         </div>

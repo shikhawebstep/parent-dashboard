@@ -10,7 +10,7 @@ const NotFound = () => {
                 Oops! The page you are looking for does not exist. It might have been moved or deleted.
             </p>
             <Link
-                to="/parent"
+                to="/"
                 className="mt-8 bg-[#237FEA] text-white px-8 py-3 rounded-[14px] font-bold text-lg hover:bg-blue-700 transition shadow-lg"
             >
                 Go Back Home

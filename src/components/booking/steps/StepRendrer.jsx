@@ -17,8 +17,9 @@ export default function StepRenderer() {
   const { currentStep, fetchData, loading, setLoading, setFormData } = useStep();
   const { fetchProfileData, profile } = useProfile();
 
-
-
+  const booking = profile?.combinedBookings;
+  const holidayBooking = booking?.filter((booking) => booking?.serviceType === "holiday camp");
+  
   useEffect(() => {
     let isMounted = true;
 

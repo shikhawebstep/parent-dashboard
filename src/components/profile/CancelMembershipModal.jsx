@@ -1,11 +1,74 @@
 import React, { useState } from 'react';
 import { X, Info } from 'lucide-react';
+import { showError, showSuccess } from '../../../utils/swalHelper';
 
 export default function CancelMembershipModal({ isOpen, onClose, booking }) {
+    const [loading, setLoading] = useState(false);
+    const [reason, setReason] = useState("");
+
     if (!isOpen) return null;
 
+   const handleSubmit = async () => {
+    try {
+        setLoading(true);
+
+        const token = localStorage.getItem("parentToken");
+        const API_URL = import.meta.env.VITE_API_BASE_URL;
+
+        if (!token) {
+            throw new Error("Authentication token not found. Please login again.");
+        }
+
+        const response = await fetch(
+            `${API_URL}/api/parent/account-profile/cancel-booking`,
+            {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    bookingId: booking?.id,
+                    cancelReason: reason || "Student unavailable"
+                })
+            }
+        );
+
+        // Safely parse JSON (handles empty / invalid JSON)
+        let data = {};
+        try {
+            data = await response.json();
+        } catch (err) {
+            data = {};
+        }
+
+        // Handle both HTTP errors AND custom backend status errors
+        if (!response.ok || data?.status === false) {
+            const errorMessage =
+                data?.message ||
+                data?.error ||
+                (Array.isArray(data?.errors) ? data.errors[0] : null) ||
+                "Something went wrong";
+
+            throw new Error(errorMessage);
+        }
+
+        // Success
+        showSuccess(data?.message || "Cancellation request sent successfully!");
+
+        // Close modal after short delay
+        setTimeout(() => {
+            onClose();
+        }, 2000);
+
+    } catch (err) {
+        showError(err?.message || "Failed to send request");
+    } finally {
+        setLoading(false);
+    }
+};
     return (
-        <div className="fixed inset-0 bg-black/50 z-[9999] flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-black/50 z-[99] flex items-center justify-center p-4">
             <div className="bg-white rounded-2xl w-full max-w-lg shadow-xl relative overflow-hidden max-h-[85vh] flex flex-col">
                 {/* Header */}
                 <div className="p-6 pb-2 shrink-0 border-b border-[#EBEBEB]">
@@ -67,16 +130,24 @@ export default function CancelMembershipModal({ isOpen, onClose, booking }) {
                     <div className="space-y-2">
                         <label className="block text-sm font-medium text-[#1B1B1E]">Please provide details of your request</label>
                         <textarea
+                            value={reason}
+                            onChange={(e) => setReason(e.target.value)}
                             className="w-full bg-[#F9FAFB] h-32 p-3 border border-gray-200 rounded-xl resize-none focus:ring-2 focus:ring-blue-500 outline-none text-sm placeholder:text-gray-400"
                             placeholder="Enter a description..."
-                        ></textarea>
+                        />
                     </div>
 
                     {/* Footer */}
                     <div className="md:flex justify-between items-center pt-2">
                         <p className="text-sm text-[#4B4B56] font-semibold">Our team will get in touch shortly.</p>
-                        <button className="bg-[#237FEA] mt-4 md:mt-0 text-white px-6 py-2.5 rounded-xl font-semibold hover:bg-blue-700 transition-colors">
-                            Send request
+                        <button
+                            onClick={handleSubmit}
+                            disabled={loading}
+                            className={`bg-[#237FEA] mt-4 md:mt-0 text-white px-6 py-2.5 rounded-xl font-semibold transition-colors
+                                ${loading ? "opacity-60 cursor-not-allowed" : "hover:bg-blue-700"}
+                            `}
+                        >
+                            {loading ? "Sending..." : "Send request"}
                         </button>
                     </div>
                 </div>

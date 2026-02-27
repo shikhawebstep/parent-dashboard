@@ -58,7 +58,7 @@ const Surveys = () => {
                                     </td>
                                     <td className=" text-right">
                                         <button
-                                            onClick={() => navigate(`/parent/surveys/${survey.id}`)}
+                                            onClick={() => navigate(`/surveys/${survey.id}`)}
                                             className="bg-[#042C89] text-white px-6 py-2.5 rounded-[14px] text-[16px] font-bold hover:bg-[#032066] transition-colors shadow-sm"
                                         >
                                             Complete survey

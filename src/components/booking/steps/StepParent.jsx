@@ -155,11 +155,12 @@ export default function StepParent() {
                                 onChange={(e) => handleChange(index, e)}
                                 className="w-full mainShadow bg-white rounded-lg px-4 py-3 text-sm text-[#494949] font-medium placeholder:text-[#ADA8A8] appearance-none outline-none focus:ring-2 focus:ring-[#0496FF] poppins"
                             >
+                              
                                 <option value="">Select</option>
                                 <option value="Google">Google</option>
                                 <option value="Friend">Friend</option>
-                                <option value="Website">Website</option>
-                                <option value="Social Media">Social Media</option>
+                                <option value="Facebook">Facebook</option>
+                                <option value="Instagram">Instagram</option>
                                 <option value="Referral">Referral</option>
                             </select>
                             <ChevronDown

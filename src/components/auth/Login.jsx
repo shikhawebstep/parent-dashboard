@@ -18,7 +18,7 @@ const Login = () => {
     const token = localStorage.getItem("parentToken");
 
     if (token) {
-      window.location.href = "/parent";
+      window.location.href = "/";
     }
   }, []);
 
@@ -73,7 +73,7 @@ const Login = () => {
 
     const API_URL = import.meta.env.VITE_API_BASE_URL;
     const params = new URLSearchParams(window.location.search);
-    const redirectTo = params.get("redirect") || "/parent";
+    const redirectTo = params.get("redirect") || "/";
 
     setLoading(true);
     try {
@@ -186,7 +186,7 @@ const Login = () => {
               />
               Remember me
             </label>
-            <Link to="/parent/auth/forgot-password" className="text-[#282829] hover:underline m-0">
+            <Link to="/auth/forgot-password" className="text-[#282829] hover:underline m-0">
               Forgot password?
             </Link>
           </div>

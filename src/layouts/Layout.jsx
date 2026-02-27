@@ -12,7 +12,7 @@ const Layout = ({ children }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   // 🔒 Login & Forgot Password (No Middleware, No Sidebar/Header)
-  if (location.pathname === "/parent/auth/login" || location.pathname === "/parent/auth/forgot-password") {
+  if (location.pathname === "/auth/login" || location.pathname === "/auth/forgot-password") {
     return (
       <div className="flex containerMain min-h-screen bg-gray-100">
         <main className="flex-1 w-full bg-white xl:bg-transparent">

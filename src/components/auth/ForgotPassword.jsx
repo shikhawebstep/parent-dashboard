@@ -100,7 +100,7 @@ const ForgotPassword = () => {
                     </button>
 
                     <div className="text-center mt-5">
-                        <Link to="/parent/auth/login" className="text-[#237FEA] font-semibold hover:underline">
+                        <Link to="/auth/login" className="text-[#237FEA] font-semibold hover:underline">
                             Back to Login
                         </Link>
                     </div>

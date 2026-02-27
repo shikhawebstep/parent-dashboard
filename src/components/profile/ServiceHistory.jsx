@@ -69,7 +69,7 @@ export default function ServiceHistory() {
             )}
           </div>
           <button
-            onClick={() => navigate('/parent/booking')}
+            onClick={() => navigate('/booking')}
             className="inline-flex items-center gap-2 font-semibold lg:text-[18px] text-[16px] px-4 py-2 bg-[#0DD180] text-white rounded-[12px] hover:bg-green-700"
           >
             <Plus size={20} className="text-white font-bold" />

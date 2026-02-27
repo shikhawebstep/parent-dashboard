@@ -14,7 +14,7 @@ const Middleware = ({ children }) => {
             if (!token) {
                 // 🔁 store intended route
                 window.location.replace(
-                    `/parent/auth/login?redirect=${encodeURIComponent(currentPath)}`
+                    `/auth/login?redirect=${encodeURIComponent(currentPath)}`
                 );
                 return;
             }
@@ -33,7 +33,7 @@ const Middleware = ({ children }) => {
             } catch (error) {
                 localStorage.removeItem("parentToken");
                 window.location.replace(
-                    `/parent/auth/login?redirect=${encodeURIComponent(currentPath)}`
+                    `/auth/login?redirect=${encodeURIComponent(currentPath)}`
                 );
             }
         };

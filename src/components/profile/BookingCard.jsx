@@ -22,6 +22,7 @@ const BookingCard = ({ booking, onSeeDetails }) => {
         };
         return images[type?.toLowerCase()] || "/assets/crown.png";
     };
+
     const renderTitle = (type = "") => {
         const title = {
             "weekly class membership": "Weekly Class Membership",
@@ -109,7 +110,7 @@ const BookingCard = ({ booking, onSeeDetails }) => {
                                     )}
 
 
-                                    {renderField("Venue", safeValue(booking?.classSchedule?.venue?.name))}
+                                    {renderField("Venue", safeValue(booking?.classSchedule?.venue?.name || booking?.venue?.name))}
                                     {renderField("KGo/Cardless ID", safeValue(booking?.id))}
                                     {renderField("Monthly Price", safePrice(booking?.paymentPlan?.price))}
                                     {renderField("Date Of Booking", safeDate(booking?.createdAt))}
@@ -170,7 +171,7 @@ const BookingCard = ({ booking, onSeeDetails }) => {
                                         "Date of Booking",
                                         formatDate(booking?.createdAt)
                                     )}
-                                    {renderField("Venue", booking?.classSchedule?.venue?.name)}
+                                    {renderField("Venue", booking?.classSchedule?.venue?.name || booking?.venue?.name)}
                                     {renderField("Discount", booking?.payment?.discount_amount)}
                                     {renderField("Booking Source", booking?.marketingChannel || booking?.bookedByAdmin?.firstName + ' ' + booking?.bookedByAdmin?.lastName)}
                                 </>

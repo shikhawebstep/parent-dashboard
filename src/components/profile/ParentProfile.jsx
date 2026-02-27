@@ -15,11 +15,13 @@ const options = [
 ];
 const howDidHearOptions = [
     { value: "", label: "Select" },
-    { value: "Social Media", label: "Social Media" },
     { value: "Google", label: "Google" },
-    { value: "Website", label: "Website" },
-    { value: "Referral", label: "Referral" },
+    { value: "Facebook", label: "Facebook" },
+    { value: "Instagram", label: "Instagram" },
+    { value: "Friend", label: "Friend" },
+    { value: "Flyer", label: "Flyer" },
 ];
+
 
 const emptyParent = {
     parentFirstName: "",

@@ -82,7 +82,7 @@ const Skills = () => {
             skill[currentFilter].map((item) => (
               <div
                 key={item.id}
-                onClick={() => navigate(`/parent/skills/${item.id}`, { state: { skill: item } })}
+                onClick={() => navigate(`/skills/${item.id}`, { state: { skill: item } })}
                 className="bg-white rounded-[20px] p-4 shadow-sm border border-[#E1E2E6] cursor-pointer hover:shadow-md transition-shadow"
               >
                 {/* Banner */}

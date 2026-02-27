@@ -28,7 +28,8 @@ export default function StepStudent() {
           dateOfBirth: student.dateOfBirth,
           age: student.age,
           gender: student.gender,
-          className: student.className,
+          classScheduleId: student.classSchedule?.id,
+          className: student?.classSchedule?.className,
           medicalInformation: student.medicalInformation || "",
           type: "existing",
         },
@@ -187,7 +188,7 @@ export default function StepStudent() {
 
                 <div>
                   <label className="text-[12px] text-[#939395] block font-normal mb-1 poppins">Class</label>
-                  <p className="text-[14px] text-[#282829] poppins font-medium">{student.className}</p>
+                  <p className="text-[14px] text-[#282829] poppins font-medium">{student?.classSchedule?.className}</p>
                 </div>
               </div>
             </div>
@@ -284,7 +285,7 @@ export default function StepStudent() {
             <div className="relative">
               <input
                 readOnly
-                value={data.class || ""}
+                value={data?.classSchedule?.className || ""}
                 placeholder="4-7 years"
                 className={`${inputClass()} bg-white text-gray-700`}
               />

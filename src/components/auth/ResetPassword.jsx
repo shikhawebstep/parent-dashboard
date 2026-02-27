@@ -24,7 +24,7 @@ const ResetPassword = () => {
         if (!token) {
             showError("Invalid Link", "Reset token is missing. Please request a new password reset link.")
                 .then(() => {
-                    navigate("/parent/auth/login");
+                    navigate("/auth/login");
                 });
         }
     }, [token, navigate]);
@@ -74,7 +74,7 @@ const ResetPassword = () => {
 
             showSuccess("Password Reset Successful", "You can now login with your new password.")
                 .then(() => {
-                    navigate("/parent/auth/login");
+                    navigate("/auth/login");
                 });
 
         } catch (error) {
@@ -173,7 +173,7 @@ const ResetPassword = () => {
                     </button>
 
                     <div className="text-center mt-5">
-                        <Link to="/parent/auth/login" className="text-[#237FEA] font-semibold hover:underline">
+                        <Link to="/auth/login" className="text-[#237FEA] font-semibold hover:underline">
                             Back to Login
                         </Link>
                     </div>

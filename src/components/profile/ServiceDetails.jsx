@@ -14,11 +14,10 @@ export default function ServiceDetails({ booking, onBack }) {
     // But simplistic approach:
     const activeParent = booking?.parents?.[0];
     const classSchedule = booking?.classSchedule;
-    const venue = classSchedule?.venue;
+    const venue = classSchedule?.venue || booking?.venue;
     const payment = booking?.payments?.[0];
     const paymentPlan = booking?.paymentPlan;
 
-    console.log('booking', booking)
     return (
         <div className="animate-fadeIn">
             {/* Back Button */}
@@ -51,7 +50,7 @@ export default function ServiceDetails({ booking, onBack }) {
                                 </div>
                             </div>
                             <div className="space-y-1">
-                                <label className="lg:text-[16px] text-[14px] font-medium text-[#282829] font-medium">Last name</label>
+                                <label className="lg:text-[16px] text-[14px] font-medium text-[#282829]">Last name</label>
                                 <div className="relative">
                                     <input
                                         type="text"
@@ -91,7 +90,7 @@ export default function ServiceDetails({ booking, onBack }) {
                                 <label className="lg:text-[16px] text-[14px] font-medium text-[#282829]">Class</label>
                                 <input
                                     type="text"
-                                    value={classSchedule?.className || "N/A"}
+                                    value={student?.classSchedule?.className || "N/A"}
                                     className="w-full lg:p-3 p-2 border border-[#E2E1E5] rounded-[12px] focus:outline-none text-[#383A46] font-medium bg-white"
                                     readOnly
                                 />
@@ -100,7 +99,7 @@ export default function ServiceDetails({ booking, onBack }) {
                                 <label className="lg:text-[16px] text-[14px] font-medium text-[#282829]">Time</label>
                                 <input
                                     type="text"
-                                    value={classSchedule?.startTime && classSchedule?.endTime ? `${classSchedule.startTime} - ${classSchedule.endTime}` : "N/A"}
+                                    value={student?.classSchedule?.startTime && student?.classSchedule?.endTime ? `${student?.classSchedule.startTime} - ${student?.classSchedule.endTime}` : "N/A"}
                                     className="w-full lg:p-3 p-2 border border-[#E2E1E5] rounded-[12px] focus:outline-none text-[#383A46] font-medium bg-white"
                                     readOnly
                                 />
@@ -146,7 +145,7 @@ export default function ServiceDetails({ booking, onBack }) {
                                 <div className="border-b border-[#495362] pb-2">
                                     <p className="text-white 2xl:text-[20px] xl:text-[18px] lg:text-[16px] text-[14px] font-medium mb-1">Venue</p>
                                     <span className="bg-[#3B82F6] text-white px-3 py-1 rounded text-xs font-semibold inline-block">
-                                        {venue?.area || venue?.name || "N/A"}
+                                        {venue?.address || venue?.name || "N/A"}
                                     </span>
                                 </div>
 

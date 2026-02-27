@@ -34,7 +34,7 @@ const Header = ({ onMenuClick }) => {
     showConfirm("Are you sure?", "You want to logout?", "Yes, logout!").then((result) => {
       if (result.isConfirmed) {
         localStorage.removeItem("parentToken");
-        navigate("/parent/auth/login");
+        navigate("/auth/login");
         showSuccess("Logged Out!", "You have been logged out.");
       }
     });

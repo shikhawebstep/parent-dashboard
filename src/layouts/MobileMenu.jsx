@@ -8,31 +8,31 @@ import { showConfirm, showSuccess } from "../../utils/swalHelper";
 const menu = [
     {
         name: "Account Profile",
-        path: "/parent",
+        path: "/",
         icon: "/assets/dashboard.png",
         activeImg: "/assets/dashboard-active.png",
     },
     {
         name: "My Bookings",
-        path: "/parent/bookings",
+        path: "/bookings",
         icon: "/assets/booking.png",
         activeImg: "/assets/booking-active.png",
     },
     {
         name: "Refer a friend",
-        path: "/parent/refer",
+        path: "/refer",
         icon: "/assets/refer.png",
         activeImg: "/assets/refer-active.png",
     },
     {
         name: "Surveys",
-        path: "/parent/surveys",
+        path: "/surveys",
         icon: "/assets/online-learning.png",
         activeImg: "/assets/online-learning-active.png",
     },
     {
         name: "Settings",
-        path: "/parent/settings",
+        path: "/settings",
         icon: "/assets/setting-02.png",
         activeImg: "/assets/setting-active.png",
     },
@@ -48,7 +48,7 @@ const MobileMenu = ({ isOpen, onClose }) => {
         showConfirm("Are you sure?", "You want to logout?", "Yes, logout!").then((result) => {
             if (result.isConfirmed) {
                 localStorage.removeItem("parentToken");
-                navigate("/parent/auth/login");
+                navigate("/auth/login");
                 showSuccess("Logged Out!", "You have been logged out.");
             }
         });
