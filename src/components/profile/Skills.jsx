@@ -10,8 +10,12 @@ const Skills = () => {
   const { skill, fetchSkillData, loading } = useSkill();
   const navigate = useNavigate();
   const { profile } = useProfile();
-  const students = profile?.uniqueProfiles?.students;
-  const [selectedStudent, setSelectedStudent] = useState(students[0]?.studentFirstName + ' ' + students[0]?.studentLastName);
+  const students = profile?.uniqueProfiles?.students || [];
+
+  const defaultStudent = students.length > 0
+    ? `${students[0]?.studentFirstName || ''} ${students[0]?.studentLastName || ''}`.trim()
+    : '';
+  const [selectedStudent, setSelectedStudent] = useState(defaultStudent);
 
   const filterTabs = [
     { id: "Beginner", label: "Beginners" },
@@ -38,18 +42,24 @@ const Skills = () => {
         </h2>
 
         <div className="flex gap-3">
-          {students.map((student) => (
-            <button
-              key={student?.id}
-              onClick={() => setSelectedStudent(student?.studentFirstName + ' ' + student?.studentLastName)}
-              className={`px-4 py-2 rounded-[12px] text-[16px] font-semibold transition-colors ${selectedStudent === student?.studentFirstName + ' ' + student?.studentLastName
-                ? "bg-[#237FEA] text-white"
-                : "border-[#E2E1E5] border text-black "
-                }`}
-            >
-              {student?.studentFirstName + ' ' + student?.studentLastName}
-            </button>
-          ))}
+          {students?.length > 0 ? students.map((student) => {
+            const fullName = `${student?.studentFirstName || ""} ${student?.studentLastName || ""}`.trim();
+
+            return (
+              <button
+                key={student?.id || Math.random()}
+                onClick={() => setSelectedStudent(fullName)}
+                className={`px-4 py-2 rounded-[12px] text-[16px] font-semibold transition-colors ${selectedStudent === fullName
+                  ? "bg-[#237FEA] text-white"
+                  : "border-[#E2E1E5] border text-black "
+                  }`}
+              >
+                {fullName || "Unknown Student"}
+              </button>
+            );
+          }) : (
+            <p className="text-gray-500 text-sm">No students available.</p>
+          )}
         </div>
       </div>
 

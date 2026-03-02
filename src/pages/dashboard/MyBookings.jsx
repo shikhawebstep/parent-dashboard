@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { showError } from '../../../utils/swalHelper';
+import Loader from '../../components/Loader';
 
 const MyBookings = () => {
     const [activeTab, setActiveTab] = useState('Upcoming');
@@ -10,8 +11,10 @@ const MyBookings = () => {
         past: [],
         cancelled: []
     });
+    const [loading, setLoading] = useState(false);
 
     const fetchBooking = async () => {
+        setLoading(true);
         try {
             const token = localStorage.getItem("parentToken");
             const parentData = JSON.parse(localStorage.getItem("parentData"));
@@ -55,6 +58,8 @@ const MyBookings = () => {
 
         } catch (error) {
             showError(error?.message || "Something went wrong");
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -80,61 +85,91 @@ const MyBookings = () => {
     console.log('filteredBookings', filteredBookings)
     console.log('bookings', bookings)
     const formatBooking = (booking) => {
-        const dateObj = booking?.createdAt
-            ? new Date(booking.createdAt)
-            : null;
+        const sType = booking?.serviceType?.toLowerCase();
 
-        const isHolidayCamp = booking?.serviceType === "holiday camp";
+        let dateObj = booking?.createdAt ? new Date(booking.createdAt) : null;
+        let venue = "-";
+        let time = "-";
+        let address = "-";
+        let classType = booking?.serviceType || "-";
+        let coachName = "-";
 
-        // Student (safe)
+        if (booking?.coach?.firstName) {
+            coachName = `${booking.coach.firstName} ${booking.coach.lastName || ''}`.trim();
+        }
+
         const student = booking?.students?.[0];
+        console.log('student', student)
 
-        // Class schedule (only exists in weekly membership)
-        const classSchedule = student?.classSchedule;
+        if (sType === "holiday camp") {
+            venue = booking?.holidayVenue?.name ?? "-";
+            address = booking?.holidayVenue?.address ?? "-";
+            classType = student?.holidayClassSchedules?.className;
+
+            const startDate = booking?.holidayCamp?.holidayCampDates?.[0]?.startDate;
+            if (startDate) {
+                dateObj = new Date(startDate);
+            }
+
+            const schedule = student?.holidayClassSchedules;
+            if (schedule?.startTime && schedule?.endTime) {
+                time = `${schedule.startTime} - ${schedule.endTime}`;
+            } else if (startDate && booking?.holidayCamp?.holidayCampDates?.[0]?.endDate) {
+                time = `${startDate} - ${booking.holidayCamp.holidayCampDates[0].endDate}`;
+            }
+
+        } else if (sType === "weekly class membership") {
+            venue = booking?.venue?.name ?? "-";
+            address = booking?.venue?.address ?? "-";
+
+            const schedule = student?.classSchedule || student?.holidayClassSchedule;
+            if (schedule) {
+                classType = schedule.className ?? "Weekly Class";
+                if (schedule.startTime && schedule.endTime) {
+                    time = `${schedule.startTime} - ${schedule.endTime}`;
+                }
+            }
+        } else if (sType === "one to one") {
+            venue = booking?.location ?? "-";
+            address = booking?.address ?? "-";
+            if (booking?.date) {
+                dateObj = new Date(booking.date);
+            }
+            if (booking?.time) {
+                time = booking.time;
+            }
+            classType = "One to One";
+        } else if (sType === "birthday party") {
+            if (booking?.leads?.partyDate) {
+                dateObj = new Date(booking.leads.partyDate);
+            }
+            classType = "Birthday Party";
+            venue = booking?.location ?? "-";
+            address = booking?.address ?? "-";
+        }
 
         return {
-            id: booking?.id ?? null,
-
-            day: dateObj
-                ? dateObj.toLocaleDateString("en-US", { weekday: "short" })
-                : "-",
-
+            id: booking?.id ?? Math.random(),
+            day: dateObj ? dateObj.toLocaleDateString("en-US", { weekday: "short" }) : "-",
             date: dateObj ? dateObj.getDate() : "-",
-
-            month: dateObj
-                ? dateObj.toLocaleDateString("en-US", { month: "short" })
-                : "-",
-
-            // Venue only for weekly membership
-            venue: isHolidayCamp
-                ? booking?.holidayVenue?.name ?? "-"
-                : booking?.venue?.name ?? "-",
-
-            // Time handling
-            time: isHolidayCamp
-                ? booking?.holidayCamp?.holidayCampDates?.[0]?.startDate &&
-                    booking?.holidayCamp?.holidayCampDates?.[0]?.endDate
-                    ? `${booking.holidayCamp.holidayCampDates[0].startDate} - ${booking.holidayCamp.holidayCampDates[0].endDate}`
-                    : "-"
-                : classSchedule?.startTime && classSchedule?.endTime
-                    ? `${classSchedule.startTime} - ${classSchedule.endTime}`
-                    : "-",
-
-            address: isHolidayCamp
-                ? booking?.holidayVenue?.address
-                : booking?.venue?.address ?? "-",
-
-            classType: isHolidayCamp
-                ? "Holiday Camp"
-                : classSchedule?.className ?? "-",
-
-            coach: "-", // Not in API
-
+            month: dateObj ? dateObj.toLocaleDateString("en-US", { month: "short" }) : "-",
+            fullMonth: dateObj ? dateObj.toLocaleDateString("en-US", { month: "long" }) : "-",
+            year: dateObj ? dateObj.getFullYear() : "-",
+            venue,
+            time,
+            address,
+            classType,
+            coach: coachName,
             status: booking?.status ?? "-",
         };
     };
+
+    if (loading) {
+        return <Loader />;
+    }
+
     return (
-        <div className="p-4 md:space-y-8 animate-fadeIn min-h-screen bg-[#fff] rounded-[30px] md:m-6 m-4">
+        <div className="md:p-4 p-2 md:space-y-8 animate-fadeIn min-h-screen bg-[#fff] rounded-[30px] md:m-6 m-4">
             {/* Tabs */}
             <div className="flex items-center md:gap-8 gap-2 mb-12 md:mb-0  pb-1">
                 {tabs.map((tab) => (
@@ -154,23 +189,31 @@ const MyBookings = () => {
             {/* Content */}
             <div className="space-y-6 relative">
                 {(activeTab === 'Upcoming' && filteredBookings.length > 0) && (
-                    <div className="mb-4 absolute -top-4 left-4">
+                    <div className="mb-4 absolute -top-5 left-4">
                         <span className="bg-[#0DD180] text-white text-[12px] font-bold px-3 py-1 rounded-[16px] uppercase">
                             Coming Up
                         </span>
                     </div>
                 )}
-                {filteredBookings.length > 0 ? (
-                    filteredBookings.map((booking, index) => {
+                {filteredBookings.length > 0 ? (() => {
+                    const seenMonths = new Set();
+                    return filteredBookings.map((booking, index) => {
                         const formatted = formatBooking(booking);
+                        const monthKey = `${formatted.fullMonth}-${formatted.year}`;
+
+                        let showMonthHeader = false;
+                        if (formatted.fullMonth !== "-" && !seenMonths.has(monthKey)) {
+                            showMonthHeader = true;
+                            seenMonths.add(monthKey);
+                        }
 
                         return (
                             <div key={formatted.id || index}>
 
-                                {index === 3 && (
+                                {showMonthHeader && (
                                     <div className="flex items-center gap-4 mb-4 mt-8 bg-[#EAF0FF] p-2 px-6 md:text-[24px] text-[20px] rounded-[15px] text-[#042C89] font-bold uppercase w-full">
                                         <img src="/assets/calender.png" className='w-6' alt="" />
-                                        MAY
+                                        {formatted.fullMonth} {formatted.year}
                                     </div>
                                 )}
                                 <div className="bg-[#F8F8F8] p-6 rounded-[16px] flex flex-col md:flex-row  overflow-hidden mb-4">
@@ -219,8 +262,8 @@ const MyBookings = () => {
                                 </div>
                             </div>
                         )
-                    })
-                ) : (
+                    });
+                })() : (
                     <div className="text-center py-10 text-gray-500">
                         No bookings found.
                     </div>

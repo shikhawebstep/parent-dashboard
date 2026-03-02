@@ -2,19 +2,22 @@ import React, { useState } from 'react';
 import { X } from 'lucide-react';
 import { useProfile } from '../../context/ProfileContext';
 import axios from 'axios';
-import Swal from 'sweetalert2';
-import { showError } from '../../../utils/swalHelper';
+import { showError, showSuccess } from '../../../utils/swalHelper';
+import { useFeedback } from '../../context/FeedbackContext';
 const AddFeedbackModal = ({ isOpen, onClose }) => {
     const { profile } = useProfile();
+    const { feedback, fetchFeedbackData } = useFeedback();
+
     const booking = profile?.combinedBookings;
-    const holidayBooking = booking?.filter((booking) => booking?.serviceType === "holiday camp");
+    const holidayClasses = feedback?.holidayClasses;
+    const holidayBooking = booking?.filter((booking) => booking?.serviceType == "holiday camp");
     const [loading, setLoading] = useState(false);
-    const classes = holidayBooking?.map((booking) => {
+    const classes = holidayClasses?.map((booking) => {
         return {
-            id: booking?.classSchedule?.id,
-            name: booking?.classSchedule?.className
+            id: booking?.id,
+            name: booking?.className
         }
-    })
+    });
     const uniqueClasses = classes?.filter((classSchedule, index) => classes?.findIndex((item) => item?.id === classSchedule?.id) === index)
     const [form, setForm] = useState({
         holidayClassScheduleId: "",
@@ -46,7 +49,7 @@ const AddFeedbackModal = ({ isOpen, onClose }) => {
         setLoading(true);
 
         try {
-            const response = await axios.post(
+            await axios.post(
                 `${API_URL}api/parent/holiday/feedback/create`,
                 {
                     holidayBookingId: form.holidayBookingId,
@@ -64,11 +67,10 @@ const AddFeedbackModal = ({ isOpen, onClose }) => {
                 }
             );
 
-            console.log("Feedback submitted:", response.data);
+            showSuccess("Success", "Feedback submitted successfully");
 
-
-
-            // ✅ CLOSE MODAL ON SUCCESS
+            // ✅ CLOSE MODAL AND REFRESH DATA ON SUCCESS
+            fetchFeedbackData();
             onClose();
             emptyForm();
         } catch (error) {
@@ -178,7 +180,7 @@ const AddFeedbackModal = ({ isOpen, onClose }) => {
                                 <option>Select</option>
                                 {
                                     holidayBooking?.map((booking) => (
-                                        <option key={booking?.id} value={booking?.id}>{booking?.classSchedule?.venue?.address + ', ' + `(${booking?.id})`}</option>
+                                        <option key={booking?.id} value={booking?.id}>{booking?.holidayVenue?.address + ', ' + `(${booking?.id})`}</option>
                                     ))
                                 }
                             </select>

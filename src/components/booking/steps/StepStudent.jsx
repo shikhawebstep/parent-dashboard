@@ -4,9 +4,10 @@ import { useStep } from "../../../context/StepContext";
 export default function StepStudent() {
   const { formData, setFormData, data, errors, clearError } = useStep();
   const [activeTab, setActiveTab] = useState("existing");
-  const [selectedStudentId, setSelectedStudentId] = useState(null);
 
-  const students = formData.students || [];
+  const availableStudents = formData.availableStudents || [];
+  const selectedStudents = formData.students || [];
+
   const filteredData = Array.isArray(data)
     ? data.filter((item) => item?.venueId === formData?.venue)
     : [];
@@ -32,29 +33,52 @@ export default function StepStudent() {
   /* ===============================
      Sync selected existing student
   =============================== */
-  /* ===============================
-     Sync selected existing student
-  =============================== */
-  useEffect(() => {
-    if (activeTab === "existing" && selectedStudentId && students.length > 0) {
-      const student = students.find(s => s.id === selectedStudentId);
-      if (!student) return;
+  const handleExistingClassChange = (studentId, classId) => {
+    const selectedClass = (filteredData?.[0]?.classes ?? []).find(
+      (cls) => cls?.classId === Number(classId)
+    );
+    if (!selectedClass) return;
 
-      setFormData(prev => ({
+    setFormData(prev => ({
+      ...prev,
+      students: (prev.students || []).map(s => s.id === studentId ? {
+        ...s,
+        classSchedule: selectedClass,
+        classScheduleId: selectedClass?.classId,
+        className: selectedClass?.className,
+        time: selectedClass?.time || selectedClass?.startTime || "",
+      } : s)
+    }));
+  };
+
+  const handleToggleStudent = (student) => {
+    const isSelected = selectedStudents.some((s) => s.id === student.id);
+
+    if (isSelected) {
+      setFormData((prev) => ({
         ...prev,
-        student: {
-          studentFirstName: student.studentFirstName,
-          studentLastName: student.studentLastName,
-          dateOfBirth: student.dateOfBirth,
-          age: student.age,
-          gender: student.gender,
-          classScheduleId: student.classSchedule?.id,
-          className: student?.classSchedule?.className,
+        students: (prev.students || []).filter((s) => s.id !== student.id)
+      }));
+    } else {
+      const classes = filteredData?.[0]?.classes ?? [];
+      const autoClass = classes.length === 1 ? classes[0] : null;
+
+      setFormData((prev) => ({
+        ...prev,
+        students: [...(prev.students || []), {
+          ...student,
+          classSchedule: autoClass || student.classSchedule || student?.holidayClassSchedules,
+          classScheduleId: autoClass?.classId || student.classScheduleId || student.classSchedule?.classId || student.classSchedule?.id || "",
+          className: autoClass?.className || student.className || student?.classSchedule?.className || student?.holidayClassSchedules?.className || "",
+          time: autoClass?.time || autoClass?.startTime || student.time || student?.classSchedule?.time || student?.classSchedule?.startTime || "",
           medicalInformation: student.medicalInformation || "",
           type: "existing",
-        },
+        }]
       }));
     }
+  };
+
+  useEffect(() => {
 
     if (activeTab === "new") {
       setFormData(prev => ({
@@ -66,12 +90,15 @@ export default function StepStudent() {
           age: "",
           gender: "",
           className: "",
+          classSchedule: null,
+          classScheduleId: "",
+          time: "",
           medicalInformation: "",
           type: "new",
         },
       }));
     }
-  }, [activeTab, selectedStudentId, students]);
+  }, [activeTab]);
 
   /* ===============================
      Handle field change
@@ -114,17 +141,20 @@ export default function StepStudent() {
       dateOfBirth: s.dateOfBirth,
       age: s.age,
       gender: s.gender,
-      class: s.class,
+      classSchedule: s.classSchedule,
+      classScheduleId: s.classScheduleId,
+      className: s.className,
+      time: s.time,
       medicalInformation: s.medicalInformation || "",
     };
 
     setFormData(prev => ({
       ...prev,
-      students: [...(prev.students || []), newStudent],
-      student: { ...newStudent, type: "existing" },
+      availableStudents: [...(prev.availableStudents || []), newStudent],
+      students: [...(prev.students || []), { ...newStudent, type: "existing" }],
+      student: {},
     }));
 
-    setSelectedStudentId(newStudent.id);
     setActiveTab("existing");
   };
 
@@ -166,53 +196,78 @@ export default function StepStudent() {
 
       {/* Existing Students */}
       {activeTab === "existing" && (
-        <div className="grid sm:grid-cols-2 max-w-[500px] mx-auto gap-6">
-          {students.length === 0 && (
+        <div className="grid sm:grid-cols-2 max-w-[670px] mx-auto gap-6">
+          {availableStudents.length === 0 && (
             <div className="col-span-2 text-center py-8">
               <p className="text-[#939395] text-sm poppins">
-                No students added yet
+                No existing children found. Please add a new child.
               </p>
             </div>
           )}
 
-          {students.map(student => (
-            <div
-              key={student.id}
-              onClick={() => setSelectedStudentId(student.id)}
-              className={`border rounded-xl p-6 cursor-pointer relative transition-all ${selectedStudentId === student.id
-                ? "border-[#0496FF] bg-white shadow-sm"
-                : "border-gray-200 bg-white hover:border-gray-300"
-                }`}
-            >
-              <h3 className={`font-medium text-[16px] mb-4 poppins ${selectedStudentId === student.id ? "text-[#0496FF]" : "text-[#0496FF]"}`}>
-                {student.studentFirstName} {student.studentLastName}
-              </h3>
+          {availableStudents.map(student => {
+            const isSelected = selectedStudents.some(s => s.id === student.id);
+            return (
+              <div
+                key={student.id}
+                onClick={() => handleToggleStudent(student)}
+                className={`border rounded-xl p-6 cursor-pointer relative transition-all ${isSelected
+                  ? "border-[#0496FF] bg-blue-50/30 shadow-sm"
+                  : "border-gray-200 bg-white hover:border-gray-300"
+                  }`}
+              >
+                {isSelected && (
+                  <div className="absolute top-4 right-4 text-[#0496FF]">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                )}
+                <h3 className={`font-semibold text-[18px] mb-4 poppins ${isSelected ? "text-[#0496FF]" : "text-[#282829]"}`}>
+                  {student.studentFirstName} {student.studentLastName}
+                </h3>
 
-              <div className="grid grid-cols-2 gap-y-4 gap-x-2">
-                <div>
-                  <label className="text-[12px] text-[#939395] block font-normal mb-1 poppins">Date of birth</label>
-                  <p className="text-[14px] text-[#282829] poppins font-medium">{student.dateOfBirth}</p>
-                </div>
+                <div className="grid grid-cols-2 gap-y-4 gap-x-2">
+                  <div>
+                    <label className="text-[12px] text-[#939395] block font-normal mb-1 poppins">Date of birth</label>
+                    <p className="text-[14px] text-[#282829] poppins font-medium">{student.dateOfBirth}</p>
+                  </div>
 
-                <div>
-                  <label className="text-[12px] text-[#939395] block font-normal mb-1 poppins">Age</label>
-                  <p className="text-[14px] text-[#282829] poppins font-medium">{student.age}</p>
-                </div>
+                  <div>
+                    <label className="text-[12px] text-[#939395] block font-normal mb-1 poppins">Age</label>
+                    <p className="text-[14px] text-[#282829] poppins font-medium">{student.age}</p>
+                  </div>
 
-                <div>
-                  <label className="text-[12px] text-[#939395] block font-normal mb-1 poppins">Gender</label>
-                  <p className="text-[14px] text-[#282829] poppins font-medium">
-                    {student.gender === "Male" ? "M" : student.gender === "Female" ? "F" : student.gender}
-                  </p>
-                </div>
+                  <div>
+                    <label className="text-[12px] text-[#939395] block font-normal mb-1 poppins">Gender</label>
+                    <p className="text-[14px] text-[#282829] poppins font-medium">
+                      {student.gender === "Male" ? "M" : student.gender === "Female" ? "F" : student.gender}
+                    </p>
+                  </div>
 
-                <div>
-                  <label className="text-[12px] text-[#939395] block font-normal mb-1 poppins">Class</label>
-                  <p className="text-[14px] text-[#282829] poppins font-medium">{student?.classSchedule?.className || student?.className}</p>
+                  <div onClick={(e) => e.stopPropagation()}>
+                    <label className="text-[12px] text-[#939395] block font-normal mb-1 poppins">Class</label>
+                    {isSelected ? (
+                      <select
+                        value={selectedStudents.find(s => s.id === student.id)?.classScheduleId || ""}
+                        onChange={(e) => handleExistingClassChange(student.id, e.target.value)}
+                        className="bg-white border rounded text-[#282829] text-[14px] poppins p-1 w-[90%] outline-none focus:ring-1 focus:ring-[#0496FF] transition-all"
+                      >
+                        <option value="">Select Class</option>
+                        {(filteredData?.[0]?.classes ?? []).map(cls => (
+                          <option key={cls?.classId} value={cls?.classId}>{cls?.className}</option>
+                        ))}
+                      </select>
+                    ) : (
+                      <p className="text-[14px] text-[#282829] poppins font-medium">
+                        {student?.classSchedule?.className || student?.className || student?.holidayClassSchedules?.className || "-"}
+                      </p>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
@@ -305,7 +360,7 @@ export default function StepStudent() {
 
             <div className="relative">
               <select
-                value={student?.classSchedule?.classId ?? ""}
+                value={student?.classScheduleId ?? student?.classSchedule?.classId ?? ""}
                 onChange={(e) => handleClassChange(e.target.value)}
                 className={`${inputClass()} bg-white text-gray-700 appearance-none`}
               >

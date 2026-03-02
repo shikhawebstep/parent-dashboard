@@ -1,10 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import ReferFriendTab from '../../components/referral/ReferFriendTab';
 import YourReferralsTab from '../../components/referral/YourReferralsTab';
 import LoyaltyClubTab from '../../components/referral/LoyaltyClubTab';
+import { useProfile } from '../../context/ProfileContext';
 
 const ReferFriend = () => {
     const [activeTab, setActiveTab] = useState('Refer a friend');
+    const { fetchProfileData } = useProfile();
+
+    useEffect(() => {
+        fetchProfileData();
+    }, [fetchProfileData]);
 
     const tabs = ['Refer a friend', 'Your referrals', 'Your Loyalty Points'];
 

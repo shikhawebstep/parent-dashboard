@@ -159,21 +159,21 @@ const ReferFriendTab = () => {
                         <div className="mb-8">
                             <h3 className="text-[#191919] font-bold text-[24px] mb-4">Share</h3>
                             <div className="flex gap-4">
-                                <button className="w-10 h-10 rounded-full bg-[#0DD180] text-white flex items-center justify-center hover:bg-[#0bb56e] transition-colors">
+                                <a href={`whatsapp://send?text=${encodeURIComponent("Join us using my referral link: " + referalCode)}`} target="_blank" rel="noreferrer" className="w-10 h-10 rounded-full bg-[#0DD180] text-white flex items-center justify-center hover:bg-[#0bb56e] transition-colors">
                                     <Smartphone size={20} />
-                                </button>
-                                <button className="w-10 h-10 rounded-full bg-[#0DD180] text-white flex items-center justify-center hover:bg-[#0bb56e] transition-colors">
+                                </a>
+                                <a href={`mailto:?subject=${encodeURIComponent("Join me!")}&body=${encodeURIComponent("Use my referral link: " + referalCode)}`} className="w-10 h-10 rounded-full bg-[#0DD180] text-white flex items-center justify-center hover:bg-[#0bb56e] transition-colors">
                                     <Mail size={20} />
-                                </button>
-                                <button className="w-10 h-10 rounded-full bg-[#0DD180] text-white flex items-center justify-center hover:bg-[#0bb56e] transition-colors">
+                                </a>
+                                <a href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(referalCode)}`} target="_blank" rel="noreferrer" className="w-10 h-10 rounded-full bg-[#0DD180] text-white flex items-center justify-center hover:bg-[#0bb56e] transition-colors">
                                     <Facebook size={20} />
-                                </button>
-                                <button className="w-10 h-10 rounded-full bg-[#0DD180] text-white flex items-center justify-center hover:bg-[#0bb56e] transition-colors">
+                                </a>
+                                <a title="Copy Link for Instagram" onClick={(e) => { e.preventDefault(); handleCopy(); showSuccess("Success", "Link copied for Instagram!"); }} href="#" className="w-10 h-10 rounded-full bg-[#0DD180] text-white flex items-center justify-center hover:bg-[#0bb56e] transition-colors">
                                     <Instagram size={20} />
-                                </button>
-                                <button className="w-10 h-10 rounded-full bg-[#0DD180] text-white flex items-center justify-center hover:bg-[#0bb56e] transition-colors">
+                                </a>
+                                <a href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(referalCode)}`} target="_blank" rel="noreferrer" className="w-10 h-10 rounded-full bg-[#0DD180] text-white flex items-center justify-center hover:bg-[#0bb56e] transition-colors">
                                     <Linkedin size={20} />
-                                </button>
+                                </a>
                             </div>
                         </div>
 

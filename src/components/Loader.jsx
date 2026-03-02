@@ -1,8 +1,8 @@
 
 const Loader = () => {
   return (
-    <div className="flex items-center justify-center min-h-[150px] animate-spin [animation-duration:2s] ">
-      <img src="/assets/loader.png" className="max-w-12 w-12 h-12" alt="" />
+    <div className="flex min-h-[50vh] w-full items-center justify-center">
+      <img src="/assets/loader.png" className="w-12 h-12 animate-spin [animation-duration:2s]" alt="Loading..." />
       {/* <HashLoader color="#FFDE14" loading={loading} size={size} /> */}
     </div>
   );

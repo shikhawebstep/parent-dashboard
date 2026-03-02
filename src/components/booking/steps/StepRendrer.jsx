@@ -77,13 +77,13 @@ export default function StepRenderer() {
 
     setFormData((prev) => {
       // 🔥 Prevent unnecessary re-render
-      if (JSON.stringify(prev.students) === JSON.stringify(uniqueStudents)) {
+      if (JSON.stringify(prev.availableStudents) === JSON.stringify(uniqueStudents)) {
         return prev;
       }
 
       return {
         ...prev,
-        students: uniqueStudents,
+        availableStudents: uniqueStudents,
       };
     });
   }, [profile]);

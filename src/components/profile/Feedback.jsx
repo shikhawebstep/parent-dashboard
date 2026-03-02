@@ -3,12 +3,9 @@ import { Plus } from "lucide-react";
 import AddFeedbackModal from './AddFeedbackModal';
 import Loader from '../Loader';
 import { useFeedback } from '../../context/FeedbackContext';
-import { useSearchParams } from 'react-router-dom';
 import Select from 'react-select';
 const Feedback = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [searchParams] = useSearchParams();
-  const serviceType = searchParams.get("serviceType");
   const [openResolve, setOpenResolve] = useState(false);
   const [resolveData, setResolveData] = useState({});
 
@@ -20,14 +17,23 @@ const Feedback = () => {
       : "",
   });
   const { feedback, fetchFeedbackData, loading } = useFeedback();
+
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
+
   useEffect(() => {
     fetchFeedbackData()
   }, []);
+
+  // Compute pagination
+  const feedbackList = Array.isArray(feedback?.["holiday camp"]) ? feedback["holiday camp"] : [];
+  const totalPages = Math.ceil(feedbackList.length / itemsPerPage);
+  const currentItems = feedbackList.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
   const handleResolve = (id, item) => {
     setOpenResolve(true)
     setResolveData(item)
   }
-  const serviceParam = searchParams.get("serviceType");
 
   // Helpers for safe data rendering
   const renderValue = (val) => {
@@ -94,102 +100,123 @@ const Feedback = () => {
               </tr>
             </thead>
             <tbody>
-              {Array.isArray(feedback?.["holiday camp"]) && feedback["holiday camp"].length === 0 && (
+              {feedbackList.length === 0 && (
                 <tr>
                   <td colSpan="8" className="text-center py-12 text-gray-500 font-medium gilory">
                     No feedback found.
                   </td>
                 </tr>
               )}
-              {Array.isArray(feedback?.["holiday camp"]) &&
-                feedback["holiday camp"].map((item, idx) => (
-                  <tr key={idx} className="border-t font-semibold text-[#282829] border-[#EFEEF2] hover:bg-gray-50">
+              {currentItems.map((item, idx) => (
+                <tr key={idx} className="border-t font-semibold text-[#282829] border-[#EFEEF2] hover:bg-gray-50">
 
-                    <td className="p-4 text-sm text-[#282829] font-medium gilory"> <div className="flex items-center gap-3">
-                      <input
-                        type="checkbox"
-                        className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
-                      />{formatDate(item?.createdAt)}</div></td>
-                    <td className="p-4 text-sm text-[#282829] font-medium gilory">{renderValue(item?.feedbackType)}</td>
-                    <td className="p-4 text-sm text-[#282829] font-medium gilory">{renderValue(item?.holidayVenue?.name)}</td>
-                    <td className="p-4 text-sm text-[#282829] font-medium gilory">{renderValue(item?.category)}</td>
-                    <td className="p-4 text-sm text-[#282829] font-medium gilory max-w-xs truncate" title={item?.notes}>{renderValue(item?.notes)}</td>
-                    <td className="p-4 text-sm text-[#282829] font-medium gilory whitespace-nowrap">
-                      {item?.assignedAgent ? (
-                        <div className="flex items-center gap-1 w-full">
-                          <img src="/assets/Ethan-test1.png" className='w-7' alt="" /><span>{renderAgentName(item.assignedAgent)}</span></div>
-                      ) : "-"}
-                    </td>
-                    <td className="p-4 whitespace-nowrap">
-                      <span className="2xl:px-4 px-2 py-1.5 bg-[#FDF6E5] text-[#EDA600] rounded-[8px]  text-sm font-semibold gilory">
-                        {item?.status ? item.status.replace("_", " ") : "-"}
-                      </span>
-                    </td>
-                    <td className="2xl:p-4 p-2 text-right">
-                      <button onClick={() => handleResolve(item?.id, item)} className="2xl:px-6 px-4 py-2 bg-[#237FEA] text-white rounded-[8px] text-sm font-semibold gilory hover:bg-blue-600 transition-colors">
-                        Resolve
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                  <td className="p-4 text-sm text-[#282829] font-medium gilory"> <div className="flex items-center gap-3">
+                    <input
+                      type="checkbox"
+                      className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                    />{formatDate(item?.createdAt)}</div></td>
+                  <td className="p-4 text-sm text-[#282829] font-medium gilory">{renderValue(item?.feedbackType)}</td>
+                  <td className="p-4 text-sm text-[#282829] font-medium gilory">{renderValue(item?.holidayVenue?.name)}</td>
+                  <td className="p-4 text-sm text-[#282829] font-medium gilory">{renderValue(item?.category)}</td>
+                  <td className="p-4 text-sm text-[#282829] font-medium gilory max-w-xs truncate" title={item?.notes}>{renderValue(item?.notes)}</td>
+                  <td className="p-4 text-sm text-[#282829] font-medium gilory whitespace-nowrap">
+                    {item?.assignedAgent ? (
+                      <div className="flex items-center gap-1 w-full">
+                        <img src="/assets/Ethan-test1.png" className='w-7' alt="" /><span>{renderAgentName(item.assignedAgent)}</span></div>
+                    ) : "-"}
+                  </td>
+                  <td className="p-4 whitespace-nowrap">
+                    <span className="2xl:px-4 px-2 py-1.5 bg-[#FDF6E5] text-[#EDA600] rounded-[8px]  text-sm font-semibold gilory">
+                      {item?.status ? item.status.replace("_", " ") : "-"}
+                    </span>
+                  </td>
+                  <td className="2xl:p-4 p-2 text-right">
+                    <button onClick={() => handleResolve(item?.id, item)} className="2xl:px-6 px-4 py-2 bg-[#237FEA] text-white rounded-[8px] text-sm font-semibold gilory hover:bg-blue-600 transition-colors">
+                      Resolve
+                    </button>
+                  </td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>
 
         {/* Mobile View */}
-        <div className="md:hidden space-y-4">
-          {Array.isArray(feedback?.["holiday camp"]) && feedback["holiday camp"].length === 0 && (
+        <div className="md:hidden space-y-4 mt-4">
+          {feedbackList.length === 0 && (
             <div className="text-center py-10 text-gray-500 font-medium gilory">
               No feedback found.
             </div>
           )}
-          {Array.isArray(feedback?.["holiday camp"]) &&
-            feedback["holiday camp"].map((item, idx) => (
-              <div key={idx} className="bg-white rounded-[20px] p-3.5 shadow-sm border border-[#EFEEF2]">
-                <div className="space-y-4">
-                  {/* Rows mapping label to value */}
-                  <div className="grid grid-cols-[140px_1fr] gap-4 items-center">
-                    <span className="text-[#878787] font-semibold text-[15px]">Date summmited</span>
-                    <span className="text-[#282829] font-semibold text-[15px]">{formatDate(item?.createdAt)}</span>
-                  </div>
-                  <div className="grid grid-cols-[140px_1fr] gap-4 items-center">
-                    <span className="text-[#878787] font-semibold text-[15px]">Type of feedback</span>
-                    <span className="text-[#282829] font-semibold text-[15px]">{renderValue(item?.feedbackType)}</span>
-                  </div>
-                  <div className="grid grid-cols-[140px_1fr] gap-4 items-center">
-                    <span className="text-[#878787] font-semibold text-[15px]">Venue</span>
-                    <span className="text-[#282829] font-semibold text-[15px]">{renderValue(item?.holidayVenue?.name)}</span>
-                  </div>
-                  <div className="grid grid-cols-[140px_1fr] gap-4 items-center">
-                    <span className="text-[#878787] font-semibold text-[15px]">Category</span>
-                    <span className="text-[#282829] font-semibold text-[15px]">{renderValue(item?.category)}</span>
-                  </div>
-                  <div className="grid grid-cols-[140px_1fr] gap-4 items-start">
-                    <span className="text-[#878787] font-semibold text-[15px]">Notes</span>
-                    <span className="text-[#282829] font-semibold text-[15px]">{renderValue(item?.notes)}</span>
-                  </div>
+          {currentItems.map((item, idx) => (
+            <div key={idx} className="bg-white rounded-[20px] p-3.5 shadow-sm border border-[#EFEEF2]">
+              <div className="space-y-4">
+                {/* Rows mapping label to value */}
+                <div className="grid grid-cols-[140px_1fr] gap-4 items-center">
+                  <span className="text-[#878787] font-semibold text-[15px]">Date summmited</span>
+                  <span className="text-[#282829] font-semibold text-[15px]">{formatDate(item?.createdAt)}</span>
                 </div>
-
-                <div className="mt-6 flex items-center justify-between pt-4 border-t border-gray-100">
-                  {item?.assignedAgent ? (
-                    <div className="flex items-center gap-2">
-                      <img src="/assets/Ethan-test1.png" className='w-9 h-9 rounded-full object-cover' alt="" />
-                      <span className="font-semibold text-[#282829] text-[15px]">{renderAgentName(item?.assignedAgent)}</span>
-                    </div>
-                  ) : <div />}
-
-                  <div className="flex items-center gap-3">
-                    <span className="px-3 py-1.5 bg-[#FDF6E5] text-[#EDA600] rounded-[8px] text-[13px] ">
-                      {item?.status || "-"}
-                    </span>
-                    <button onClick={() => handleResolve(item?.id, item)} className="px-3 py-1.5 bg-[#237FEA] text-white rounded-[8px] text-[14px] hover:bg-blue-600 transition-colors">
-                      Resolve
-                    </button>
-                  </div>
+                <div className="grid grid-cols-[140px_1fr] gap-4 items-center">
+                  <span className="text-[#878787] font-semibold text-[15px]">Type of feedback</span>
+                  <span className="text-[#282829] font-semibold text-[15px]">{renderValue(item?.feedbackType)}</span>
+                </div>
+                <div className="grid grid-cols-[140px_1fr] gap-4 items-center">
+                  <span className="text-[#878787] font-semibold text-[15px]">Venue</span>
+                  <span className="text-[#282829] font-semibold text-[15px]">{renderValue(item?.holidayVenue?.name)}</span>
+                </div>
+                <div className="grid grid-cols-[140px_1fr] gap-4 items-center">
+                  <span className="text-[#878787] font-semibold text-[15px]">Category</span>
+                  <span className="text-[#282829] font-semibold text-[15px]">{renderValue(item?.category)}</span>
+                </div>
+                <div className="grid grid-cols-[140px_1fr] gap-4 items-start">
+                  <span className="text-[#878787] font-semibold text-[15px]">Notes</span>
+                  <span className="text-[#282829] font-semibold text-[15px]">{renderValue(item?.notes)}</span>
                 </div>
               </div>
-            ))}
+
+              <div className="mt-6 flex items-center justify-between pt-4 border-t border-gray-100">
+                {item?.assignedAgent ? (
+                  <div className="flex items-center gap-2">
+                    <img src="/assets/Ethan-test1.png" className='w-9 h-9 rounded-full object-cover' alt="" />
+                    <span className="font-semibold text-[#282829] text-[15px]">{renderAgentName(item?.assignedAgent)}</span>
+                  </div>
+                ) : <div />}
+
+                <div className="flex items-center gap-3">
+                  <span className="px-3 py-1.5 bg-[#FDF6E5] text-[#EDA600] rounded-[8px] text-[13px] ">
+                    {item?.status || "-"}
+                  </span>
+                  <button onClick={() => handleResolve(item?.id, item)} className="px-3 py-1.5 bg-[#237FEA] text-white rounded-[8px] text-[14px] hover:bg-blue-600 transition-colors">
+                    Resolve
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
+
+        {/* Pagination UI */}
+        {totalPages > 1 && (
+          <div className="flex justify-between md:justify-end md:gap-3 items-center mt-6 w-full px-2">
+            <button
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage(p => p - 1)}
+              className="px-4 py-2 border border-[#E2E1E5] rounded-[10px] text-[14px] font-semibold text-[#717073] hover:bg-gray-50 disabled:opacity-50 transition-colors"
+            >
+              Previous
+            </button>
+            <span className="text-[14px] font-bold text-[#282829]">
+              Page {currentPage} of {totalPages}
+            </span>
+            <button
+              disabled={currentPage === totalPages}
+              onClick={() => setCurrentPage(p => p + 1)}
+              className="px-4 py-2 border border-[#E2E1E5] rounded-[10px] text-[14px] font-semibold text-[#717073] hover:bg-gray-50 disabled:opacity-50 transition-colors"
+            >
+              Next
+            </button>
+          </div>
+        )}
 
         <AddFeedbackModal
           isOpen={isModalOpen}

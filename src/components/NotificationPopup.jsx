@@ -1,56 +1,39 @@
 import React, { useState } from "react";
 import { Plus, X, Check } from "lucide-react";
 
-export const notificationsData = [
-    {
-        group: "Today",
-        items: [
-            {
-                id: 1,
-                title: "New Training Course Added",
-                description: "Health and Safety video now released",
-                type: "plus",
-                color: "blue",
-                unread: true,
-            }
-        ]
-    },
-    {
-        group: "Yesterday",
-        items: [
-            {
-                id: 2,
-                title: "Class Cancelled",
-                description: "Your class on Saturday 18th May has been cancelled.",
-                type: "cross",
-                color: "red",
-                unread: false,
-            }
-        ]
-    },
-    {
-        group: "December 11, 2024",
-        items: [
-            {
-                id: 3,
-                title: "Annual Training Dates",
-                description: "Our Annual Training is on 18th Sept",
-                image: "/assets/user.png", // Placeholder for avatar with ball
-                unread: false,
-            },
-            {
-                id: 4,
-                title: "Birthday Party Booking",
-                description: "You've been booked on Sat 19th May",
-                image: "/assets/user.png", // Placeholder for avatar with thumbs up
-                unread: false,
-            }
-        ]
-    }
-];
-
-const NotificationPopup = () => {
+const NotificationPopup = ({ notifications = [] }) => {
     const [hideRead, setHideRead] = useState(false);
+
+    const parentData = JSON.parse(localStorage.getItem("parentData"));
+
+    const groupedData = notifications.reduce((acc, item) => {
+        if (!item) return acc;
+
+        const d = new Date(item.createdAt);
+        const today = new Date();
+        const yesterday = new Date();
+        yesterday.setDate(today.getDate() - 1);
+
+        let group = d.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
+        if (d.toDateString() === today.toDateString()) group = "Today";
+        else if (d.toDateString() === yesterday.toDateString()) group = "Yesterday";
+
+        if (!acc[group]) acc[group] = [];
+
+        const recipient = item.recipients?.find(r => r.recipientId === parentData?.id) || item.recipients?.[0];
+
+        acc[group].push({
+            ...item,
+            unread: recipient ? recipient.isRead === false : false,
+            image: item.createdBy?.profile || null,
+        });
+        return acc;
+    }, {});
+
+    const displayData = Object.keys(groupedData).map(group => ({
+        group,
+        items: groupedData[group] // already sorted implicitly based on backend arrival if they are DESC by createdAt
+    }));
 
     return (
         <div className="absolute top-full right-0 mt-4 w-[400px] bg-white rounded-[24px] shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-gray-100 overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-200 p-6 poppins">
@@ -73,7 +56,7 @@ const NotificationPopup = () => {
             </div>
 
             <div className="max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
-                {notificationsData.map((group, groupIdx) => (
+                {displayData.map((group, groupIdx) => (
                     <div key={groupIdx} className="mb-6">
                         <h3 className="text-[18px] font-bold text-[#282829] mb-4">{group.group}</h3>
                         <div className="space-y-4">

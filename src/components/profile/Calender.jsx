@@ -23,11 +23,16 @@ const options = [
   "Birthday",
 ];
 
-export default function Calendar() {
-  const [selected, setSelected] = useState(["All time"]);
+export default function Calendar({ 
+  selected, 
+  setSelected, 
+  startDate, 
+  setStartDate, 
+  endDate, 
+  setEndDate, 
+  onApply 
+}) {
   const [currentMonth, setCurrentMonth] = useState(new Date());
-  const [startDate, setStartDate] = useState(null);
-  const [endDate, setEndDate] = useState(null);
 
   const days = eachDayOfInterval({
     start: startOfMonth(currentMonth),
@@ -64,7 +69,10 @@ export default function Calendar() {
       {/* Header */}
       <div className="flex justify-between items-center mb-4">
         <h2 className="font-semibold text-[24px] ">Filter</h2>
-        <button className="bg-[#0DD180] text-white flex  gap-2 items-center sm:px-3 px-2 py-2.5 w-max rounded-[12px] text-[16px] font-semibold">
+        <button 
+          onClick={onApply}
+          className="bg-[#0DD180] text-white flex  gap-2 items-center sm:px-3 px-2 py-2.5 w-max rounded-[12px] text-[16px] font-semibold"
+        >
           <img src="/assets/filter-vertical-white.png" className="sm:w-5 w-4" alt="" /> Apply Filter
         </button>
       </div>

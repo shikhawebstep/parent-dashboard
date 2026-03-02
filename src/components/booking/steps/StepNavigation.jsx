@@ -13,117 +13,96 @@ export default function StepNavigation() {
 
 
   console.log('formData', formData)
-  const handleSubmit = async () => {
-    try {
-      setLoading(true);
+ const handleSubmit = async () => {
+  try {
+    setLoading(true);
 
-      const token = localStorage.getItem("parentToken");
-      const parentData = JSON.parse(localStorage.getItem("parentData"));
-      const parentId = parentData?.id;
-      const API_URL = import.meta.env.VITE_API_BASE_URL;
-      const studentsArray = Array.isArray(formData?.students)
+    const token = localStorage.getItem("parentToken");
+    const parentData = JSON.parse(localStorage.getItem("parentData"));
+    const parentId = parentData?.id;
+    const API_URL = import.meta.env.VITE_API_BASE_URL;
+
+    // ✅ Students array handling
+    const studentsArray =
+      Array.isArray(formData?.students) && formData.students.length > 0
         ? formData.students
-        : formData?.student
-          ? [formData.student]
-          : [];
+        : formData?.student && Object.keys(formData.student).length > 0
+        ? [formData.student]
+        : [];
 
-      const cleanedStudents = studentsArray.map(
-        ({
-          studentFirstName,
-          studentLastName,
-          dateOfBirth,
-          age,
-          gender,
-          medicalInformation,
-        }) => ({
-          studentFirstName,
-          studentLastName,
-          dateOfBirth,
-          age,
-          gender,
-          medicalInformation,
-        })
-      );
+    // ✅ Clean students properly
+    const cleanedStudents = studentsArray.map((student) => ({
+      studentFirstName: student.studentFirstName,
+      studentLastName: student.studentLastName,
+      dateOfBirth: student.dateOfBirth,
+      age: student.age,
+      gender: student.gender,
+      medicalInformation: student.medicalInformation,
+      classScheduleId: student.classScheduleId, // ✅ FIXED
+    }));
 
+    // ✅ Clean parents
+    const finalParents =
+      formData?.parents?.map((parent) => ({
+        parentFirstName: parent.parentFirstName,
+        parentLastName: parent.parentLastName,
+        parentEmail: parent.parentEmail,
+        parentPhoneNumber: parent.parentPhoneNumber,
+        relationToChild: parent.relationChild,
+        howDidYouHear: parent.howDidHear,
+      })) || [];
 
-      const cleanedParents = formData?.parents?.map(
-        ({ relationChild, howDidHear, ...rest }) => ({
-          ...rest,
-          relationToChild: relationChild,
-          howDidYouHear: howDidHear,
-        })
-      );
-
-
-
-      const finalParents = cleanedParents.map(
-        ({
-          parentFirstName,
-          parentLastName,
-          parentEmail,
-          parentPhoneNumber,
-          relationToChild,
-          howDidYouHear
-        }) => ({
-          parentFirstName,
-          parentLastName,
-          parentEmail,
-          parentPhoneNumber,
-          relationToChild,
-          howDidYouHear
-        })
-      );
-      const emergency = formData?.emergency
-      const cleanedEmergency = {
-        emergencyFirstName: emergency.emergencyFirstName,
-        emergencyLastName: emergency.emergencyLastName,
-        emergencyPhoneNumber: emergency.emergencyPhoneNumber,
-        emergencyRelation: emergency.emergencyRelation,
-      }
-
-
-      const response = await fetch(
-        `${API_URL}api/parent/holiday/book-a-camp`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            venueId: formData?.venue,
-            totalStudents: formData?.student ? 1 : cleanedStudents.length,
-            parentAdminId: parentId,
-            classScheduleId: filteredData?.[0]?.classes?.[0]?.classId,
-            paymentPlanId: formData?.plan,
-            holidayCampId: filteredData?.[0]?.holidayCamps[0]?.id,
-            students: formData?.student ? [formData?.student] : cleanedStudents,
-            parents: finalParents, // ✅ updated here
-            emergency: cleanedEmergency,
-            payment: formData?.payment,
-          }),
+    // ✅ Clean emergency safely
+    const cleanedEmergency = formData?.emergency
+      ? {
+          emergencyFirstName: formData.emergency.emergencyFirstName,
+          emergencyLastName: formData.emergency.emergencyLastName,
+          emergencyPhoneNumber: formData.emergency.emergencyPhoneNumber,
+          emergencyRelation: formData.emergency.emergencyRelation,
         }
-      );
+      : null;
 
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result?.message || "Something went wrong");
+    const response = await fetch(
+      `${API_URL}api/parent/holiday/book-a-camp`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          venueId: formData?.venue,
+          totalStudents: cleanedStudents.length,
+          parentAdminId: parentId,
+          paymentPlanId: formData?.plan,
+          holidayCampId: filteredData?.[0]?.holidayCamps?.[0]?.id,
+          students: cleanedStudents,
+          parents: finalParents,
+          emergency: cleanedEmergency,
+          payment: formData?.payment,
+        }),
       }
+    );
 
-      showSuccess("Booking Successful 🎉", result?.message || "Holiday camp booked successfully");
+    const result = await response.json();
 
-      console.log(result);
-    } catch (error) {
-      console.error(error);
-
-      showError("Oops!", error.message || "Failed to book holiday camp");
-    } finally {
-      setLoading(false);
+    if (!response.ok) {
+      throw new Error(result?.message || "Something went wrong");
     }
-  };
 
-  console.log('currentStep', currentStep)
+    showSuccess(
+      "Booking Successful 🎉",
+      result?.message || "Holiday camp booked successfully"
+    );
+
+    console.log(result);
+  } catch (error) {
+    console.error(error);
+    showError("Oops!", error.message || "Failed to book holiday camp");
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <div className="flex justify-center gap-3 md:mt-8">

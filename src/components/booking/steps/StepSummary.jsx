@@ -35,7 +35,7 @@ export default function StepSummary() {
                 <div className="poppins bg-[#00A6E3] text-white rounded-xl px-6 py-4 flex items-center justify-center gap-3 mb-3">
                     <img src="/assets/location-01.png" className="poppins w-5 h-5" alt="location" />
                     <p className="poppins font-semibold text-left">
-                        Venue: <span className="poppins font-normal">{filteredData[0].address}</span>
+                        Venue: <span className="poppins font-normal">{filteredData?.[0]?.address}</span>
                     </p>
                 </div>
 
@@ -43,12 +43,12 @@ export default function StepSummary() {
                 <div className="poppins bg-[#F6F6F7] border border-[#FCF9F6] rounded-xl md:p-6 p-3 mb-1">
                     <div className="poppins grid grid-cols-3 items-center justify-center mb-4 max-w-[500px]  mx-auto">
                         <div className="poppins text-left ps-4">
-                            <p className="poppins font-semibold">{filteredData[0].area}</p>
+                            <p className="poppins font-semibold">{filteredData?.[0]?.area}</p>
                         </div>
 
                         <div className="poppins border-x-4 border-white">
-                            <p className="poppins font-semibold">{filteredData[0].day}</p>
-                            <p className="poppins text-sm text-gray-500">{filteredData[0].facility}</p>
+                            <p className="poppins font-semibold">{filteredData?.[0]?.day}</p>
+                            <p className="poppins text-sm text-gray-500">{filteredData?.[0]?.facility}</p>
                         </div>
 
                         <div className="poppins text-left ps-8">
@@ -87,12 +87,18 @@ export default function StepSummary() {
 
                                         <div className="poppins flex flex-col md:flex-row items-center md:text-left justify-center gap-2 truncate">
                                             <img src="/assets/content.png" alt="content" className="poppins w-4 h-4 text-sky-500" />
-                                            <span className="poppins truncate">{student.className || filteredData[0].ageGroup}</span>
+                                            <span className="poppins truncate">{student?.className || student?.holidayClassSchedules?.className || filteredData?.[0]?.ageGroup}</span>
                                         </div>
 
                                         <div className="poppins flex flex-col md:flex-row items-center md:text-left justify-center gap-2 truncate">
                                             <img src="/assets/clock.png" alt="clock" className="poppins w-4 h-4 text-sky-500" />
-                                            <span className="poppins text-left truncate">{student?.startTime + '-' + student.endTime || filteredData[0].time}</span>
+                                            <span className="poppins text-left truncate">
+                                                {student?.startTime && student?.endTime
+                                                    ? `${student.startTime}-${student.endTime}`
+                                                    : student?.holidayClassSchedules?.startTime && student?.holidayClassSchedules?.endTime
+                                                        ? `${student.holidayClassSchedules.startTime}-${student.holidayClassSchedules.endTime}`
+                                                        : filteredData?.[0]?.time}
+                                            </span>
                                         </div>
                                     </div>
                                 ))

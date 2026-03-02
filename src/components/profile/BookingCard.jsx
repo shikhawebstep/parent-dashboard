@@ -110,7 +110,7 @@ const BookingCard = ({ booking, onSeeDetails }) => {
                                     )}
 
 
-                                    {renderField("Venue", safeValue(booking?.classSchedule?.venue?.name || booking?.venue?.name))}
+                                    {renderField("Venue", safeValue(booking?.classSchedule?.venue?.name || booking?.venue?.name ))}
                                     {renderField("KGo/Cardless ID", safeValue(booking?.id))}
                                     {renderField("Monthly Price", safePrice(booking?.paymentPlan?.price))}
                                     {renderField("Date Of Booking", safeDate(booking?.createdAt))}
@@ -171,7 +171,7 @@ const BookingCard = ({ booking, onSeeDetails }) => {
                                         "Date of Booking",
                                         formatDate(booking?.createdAt)
                                     )}
-                                    {renderField("Venue", booking?.classSchedule?.venue?.name || booking?.venue?.name)}
+                                    {renderField("Venue", booking?.classSchedule?.venue?.name || booking?.venue?.name || booking?.holidayVenue?.name || booking?.holidayVenue?.name )}
                                     {renderField("Discount", booking?.payment?.discount_amount)}
                                     {renderField("Booking Source", booking?.marketingChannel || booking?.bookedByAdmin?.firstName + ' ' + booking?.bookedByAdmin?.lastName)}
                                 </>

@@ -3,20 +3,24 @@ import { Menu, User, Settings, LogOut } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { showConfirm, showSuccess } from "../../utils/swalHelper";
-import NotificationPopup, { notificationsData } from "../components/NotificationPopup";
+import NotificationPopup from "../components/NotificationPopup";
 const Header = ({ onMenuClick }) => {
   const [dateTime, setDateTime] = useState(new Date());
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
+  const [notifications, setNotifications] = useState([]);
   const dropdownRef = useRef(null);
   const notificationRef = useRef(null);
   const navigate = useNavigate();
 
-  const unreadCount = notificationsData.reduce((acc, group) => {
-    return acc + group.items.filter(item => item.unread).length;
-  }, 0);
-
   const parentData = JSON.parse(localStorage.getItem("parentData"));
+
+  // Compute unread count from the dynamic API notifications state
+  const unreadCount = notifications.filter(item => {
+    if (!item || !item.recipients) return false;
+    const recipient = item.recipients.find(r => r.recipientId === parentData?.id) || item.recipients[0];
+    return recipient ? recipient.isRead === false : false;
+  }).length;
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -28,6 +32,43 @@ const Header = ({ onMenuClick }) => {
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  useEffect(() => {
+    const fetchNotificationList = () => {
+      const token = localStorage.getItem("parentToken");
+      if (!token) return;
+
+      const myHeaders = new Headers();
+      myHeaders.append("Authorization", `Bearer ${token}`);
+
+      const requestOptions = {
+        method: "GET",
+        headers: myHeaders,
+        redirect: "follow"
+      };
+
+      const API_URL = import.meta.env.VITE_API_BASE_URL;
+
+      fetch(`${API_URL}/api/parent/notification`, requestOptions)
+        .then((response) => response.json())
+        .then((result) => {
+          // Ensure we handle arrays properly assuming data payload
+          if (result?.data) {
+            setNotifications(result.data?.customNotifications);
+          }
+        })
+        .catch((error) => console.error(error));
+    };
+
+    // Run immediately on mount
+    fetchNotificationList();
+
+    // Then poll every 5 seconds globally
+    const intervalId = setInterval(fetchNotificationList, 5000);
+
+    // Cleanup on unmount
+    return () => clearInterval(intervalId);
   }, []);
 
   const handleLogout = () => {
@@ -91,7 +132,7 @@ const Header = ({ onMenuClick }) => {
               )}
             </button>
 
-            {isNotificationOpen && <NotificationPopup />}
+            {isNotificationOpen && <NotificationPopup notifications={notifications} />}
           </div>
 
           {/* Date */}
