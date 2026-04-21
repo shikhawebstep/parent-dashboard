@@ -6,7 +6,20 @@ import CancelMembershipModal from "./CancelMembershipModal";
 export default function ServiceDetails({ booking, onBack }) {
     const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
 
-
+    if (!booking) {
+        return (
+            <div className="animate-fadeIn p-6 text-center bg-white rounded-[30px] shadow-sm">
+                <p className="text-[#717073] font-medium mb-4">No booking details available.</p>
+                <button
+                    onClick={onBack}
+                    className="flex items-center gap-2 text-[#042C89] font-semibold hover:text-blue-800 transition-colors mx-auto"
+                >
+                    <ArrowLeft size={20} />
+                    Back to History
+                </button>
+            </div>
+        );
+    }
 
     const student = booking?.students?.[0];
     const parent = booking?.isParent ? booking?.parents?.find(p => p.id === booking.bookedByAdmin.id) : booking?.parents?.[0];

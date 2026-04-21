@@ -10,9 +10,8 @@ const ReferFriend = () => {
 
     useEffect(() => {
         fetchProfileData();
-    }, [fetchProfileData]);
-
-    const tabs = ['Refer a friend', 'Your referrals', 'Your Loyalty Points'];
+    }, []);
+    const tabs = ['Refer a friend', 'Your referrals', 'Loyalty Club'];
 
     return (
         <div className="2xl:p-8 p-4 space-y-8 min-h-screen xl:bg-[#F9F9F9] animate-fadeIn">
@@ -36,7 +35,7 @@ const ReferFriend = () => {
             <div>
                 {activeTab === 'Refer a friend' && <ReferFriendTab />}
                 {activeTab === 'Your referrals' && <YourReferralsTab />}
-                {activeTab === 'Your Loyalty Points' && <LoyaltyClubTab />}
+                {activeTab === 'Loyalty Club' && <LoyaltyClubTab />}
             </div>
         </div>
     );

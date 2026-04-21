@@ -51,7 +51,7 @@ const SurveyDetail = () => {
                                 {/* Content */}
                                 <div className="flex-1 bg-white shadow-[2px_5px_20px_0px_rgba(0,0,0,0.08)] rounded-[20px] p-4">
                                     <h3 className="text-[#34AE56] font-bold text-[16px] ">Question {idx + 1}</h3>
-                                    <h3 className="text-[#191919] font-bold md:text-[20px] text-[16px] mb-4">{q.text}</h3>
+                                    <h3 className="text-[#282829] font-bold md:text-[20px] text-[16px] mb-4">{q.text}</h3>
                                     <div className="space-y-3">
                                         {q.options.map((option, optIdx) => (
                                             <label key={optIdx} className="flex items-center gap-3 cursor-pointer group">
@@ -62,7 +62,7 @@ const SurveyDetail = () => {
                                                         className="peer appearance-none w-5 h-5 rounded-full border-2 border-gray-300 checked:border-[#00D285] checked:bg-[#00D285] transition-all"
                                                     />
                                                 </div>
-                                                <span className="md:text-[16px] text-[14px] text-gray-600 font-medium group-hover:text-gray-900">{option}</span>
+                                                <span className="md:text-[16px] text-[14px] text-[#282829] font-medium group-hover:text-gray-900">{option}</span>
                                             </label>
                                         ))}
                                     </div>
@@ -76,18 +76,18 @@ const SurveyDetail = () => {
                 </div>
 
                 {/* Google/Trustpilot Review Section */}
-                <div className="mt-8 lg:ml-16 bg-[#FFFCE6] border-[6px] border-[#FFDE14] rounded-xl p-6 relative">
+                <div className="mt-8  bg-[#FFFCE6] border-[6px] border-[#FFDE14] rounded-[20px] p-6 relative">
                     <div className="flex items-start gap-4">
                         <div className="flex-1">
                             <div className="flex items-center gap-2 mb-2">
-                                <span className="font-bold text-[20px] text-gray-800">Google</span>
+                                <span className="font-bold text-[20px] text-[#101014]">Google</span>
                                 <span className="text-gray-400"><img src="/assets/star1.png" className='w-6' alt="" /></span>
-                                <span className="font-bold text-[20px] text-green-600">Trustpilot</span>
+                                <span className="font-bold text-[20px] text-[#101014]">Trustpilot</span>
                             </div>
-                            <h4 className="font-bold text-[#191919] text-[20px] mb-1">
+                            <h4 className="font-bold text-[#282829] text-[20px] mb-1">
                                 Would you like to upload the review to Google / Trustpilot?
                             </h4>
-                            <p className="text-[16px] font-medium text-gray-500 mb-4">
+                            <p className="text-[16px] font-medium text-[#3E3E47] mb-4">
                                 We'll send you an email with a link for you to verify your review.
                             </p>
 
@@ -101,24 +101,22 @@ const SurveyDetail = () => {
 
                                 <div
                                     className="
-        relative w-10 h-6 rounded-full
-        bg-gray-300
-        peer-checked:bg-[#34AE56]
-        transition-colors
-        overflow-hidden
-        peer-checked:[&>span]:translate-x-4
-      "
+      relative w-13 h-6 rounded-full
+      bg-gray-300
+      peer-checked:bg-[#34AE56]
+      transition-colors overflow-hidden
+      peer-checked:[&>span]:translate-x-4
+    "
                                 >
                                     {/* WHITE CIRCLE */}
                                     <span
                                         className="
-          absolute top-[2px] left-[0px]
-          w-5 h-5 bg-white rounded-full
-          transition-transform
-        "
+        absolute top-[4px] left-[2px]
+        w-4 h-4 bg-white rounded-full
+        transition-transform shadow-sm
+      "
                                     ></span>
                                 </div>
-
 
                                 <span className="text-[16px] font-semibold text-gray-700 whitespace-nowrap">
                                     Yes, Upload
@@ -133,12 +131,12 @@ const SurveyDetail = () => {
                 <div className="flex justify-end gap-4 mt-8 lg:ml-16">
                     <button
                         onClick={() => navigate('/surveys')}
-                        className="sm:px-8 px-4 py-3 rounded-xl text-gray-500 font-bold border border-[#E2E1E5] text-[18px] hover:bg-gray-50 transition-colors"
+                        className="sm:px-8 px-4 py-3 md:min-w-[200px] rounded-xl text-gray-500 font-bold border border-[#E2E1E5] text-[18px] hover:bg-gray-50 transition-colors"
                     >
                         Cancel
                     </button>
                     <button
-                        className="bg-[#042C89] text-white sm:px-10  px-4 py-3 rounded-xl font-bold text-[18px]hover:bg-[#032066] transition-colors shadow-lg"
+                        className="bg-[#042C89] text-white sm:px-10  px-4 py-3 md:min-w-[200px] rounded-xl font-bold text-[18px]hover:bg-[#032066] transition-colors shadow-lg"
                     >
                         Complete
                     </button>

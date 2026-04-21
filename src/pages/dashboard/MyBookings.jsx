@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { showError } from '../../../utils/swalHelper';
 import Loader from '../../components/Loader';
+import EmptyState from '../../components/profile/EmptyState';
 
 const MyBookings = () => {
     const [activeTab, setActiveTab] = useState('Upcoming');
@@ -26,7 +27,7 @@ const MyBookings = () => {
             }
 
             const response = await fetch(
-                `${API_URL}/api/parent/account-profile/my-bookings/${parentId}`,
+                `${API_URL}api/parent/account-profile/my-bookings/${parentId}`,
                 {
                     method: "GET",
                     headers: {
@@ -47,7 +48,6 @@ const MyBookings = () => {
                 throw new Error(data?.message || "Failed to fetch bookings");
             }
 
-            console.log("API DATA:", data);
             const finalData = data?.data;
 
             setBookings({
@@ -82,8 +82,7 @@ const MyBookings = () => {
         filteredBookings = bookings.cancelled;
     }
 
-    console.log('filteredBookings', filteredBookings)
-    console.log('bookings', bookings)
+
     const formatBooking = (booking) => {
         const sType = booking?.serviceType?.toLowerCase();
 
@@ -99,7 +98,6 @@ const MyBookings = () => {
         }
 
         const student = booking?.students?.[0];
-        console.log('student', student)
 
         if (sType === "holiday camp") {
             venue = booking?.holidayVenue?.name ?? "-";
@@ -146,6 +144,12 @@ const MyBookings = () => {
             classType = "Birthday Party";
             venue = booking?.location ?? "-";
             address = booking?.address ?? "-";
+        } else {
+            venue = booking?.venue?.name;
+            address = booking?.venue?.address;
+            classType = booking?.serviceType;
+            time = booking?.time;
+            dateObj = new Date(booking?.createdAt);
         }
 
         return {
@@ -264,9 +268,7 @@ const MyBookings = () => {
                         )
                     });
                 })() : (
-                    <div className="text-center py-10 text-gray-500">
-                        No bookings found.
-                    </div>
+                    <EmptyState />
                 )}
             </div>
         </div>

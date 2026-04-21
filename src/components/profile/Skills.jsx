@@ -75,7 +75,7 @@ const Skills = () => {
                 : "bg-[#F9F9F9] text-[#191919] hover:bg-gray-100"
                 }`}
             >
-              {tab.id}
+              {tab.label}
             </button>
           ))}
         </div>

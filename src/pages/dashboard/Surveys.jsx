@@ -26,7 +26,7 @@ const Surveys = () => {
     return (
         <div className="lg:p-8 p-5 animate-fadeIn">
             <div className="mb-6">
-                <h2 className="text-[#191919] font-bold text-[32px] font-semibold">Surveys</h2>
+                <h2 className="text-[#282829] font-bold text-[32px] font-semibold">Surveys</h2>
             </div>
 
             {/* Desktop View */}

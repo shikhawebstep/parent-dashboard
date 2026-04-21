@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import BookingCard from "./BookingCard";
 import Calendar from "./Calender";
 import ServiceDetails from "./ServiceDetails";
+import EmptyState from "./EmptyState";
 import { useProfile } from "../../context/ProfileContext";
 
 export default function ServiceHistory() {
@@ -12,7 +13,7 @@ export default function ServiceHistory() {
   const [open, setOpen] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState(null);
   const ref = useRef(null);
-  const { profile } = useProfile();
+  const { profile, loading } = useProfile();
 
   const [filterOptions, setFilterOptions] = useState(["All time"]);
   const [startDate, setStartDate] = useState(null);
@@ -32,7 +33,7 @@ export default function ServiceHistory() {
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  const allBookings = profile?.combinedBookings || [];
+  const allBookings = profile?.combinedBookings || (Array.isArray(profile) ? profile : []);
 
   const handleApplyFilter = () => {
     setAppliedOptions(filterOptions);
@@ -71,8 +72,7 @@ export default function ServiceHistory() {
     return false;
   });
 
-
-
+  const visibleBookings = filteredBookings.filter(b => b?.serviceType !== "weekly class trial");
 
 
   if (selectedBooking) {
@@ -86,7 +86,7 @@ export default function ServiceHistory() {
         <div className="flex gap-3 flex-wrap items-center p-3 md:p-0 items-center">
           <div className="bg-white shadow-[rgba(0,0,0,0.1)_0px_5px_7px_-5px,_rgba(0,0,0,0.04)_0px_3px_10px_-5px]  sm:w-max justify-between flex  gap-1 md:gap-3 items-center p-2 rounded-[15px]">
             <img src="/assets/points.png" className="w-9" alt="" />
-            <h3 className="text-[#042C89] font-bold recline text-[14px] md:text-[16px">you collected 600 points</h3>
+            <h3 className="text-[#042C89] font-bold recline text-[14px] md:text-[16px]">you collected 600 points</h3>
             <button
               className=" font-semibold lg:text-[16px] text-[14px] md:px-4 px-2 py-2 bg-[#0DD180] text-white rounded-[12px] hover:bg-green-700"
             >
@@ -131,14 +131,19 @@ export default function ServiceHistory() {
         </div>
       </div>
       <div className="py-6 md:pt-0 bg-gray-100 min-h-screen">
-        {!filteredBookings || filteredBookings.length === 0 ? (
-          <div className="text-center py-12 text-gray-500 font-medium bg-white rounded-xl shadow-sm mx-4 md:mx-0">
-            No service history found.
-          </div>
+        {allBookings.length > 0 ? (
+          visibleBookings.length > 0 ? (
+            visibleBookings.map((b, idx) => (
+              <BookingCard key={b.id || idx} booking={b} onSeeDetails={setSelectedBooking} />
+            ))
+          ) : (
+            <EmptyState 
+              message="No matching services found" 
+              subMessage="Try adjusting your filters or selecting a different date range." 
+            />
+          )
         ) : (
-          filteredBookings.map((b, idx) => (
-            <BookingCard key={b.id || idx} booking={b} onSeeDetails={setSelectedBooking} />
-          ))
+          <EmptyState />
         )}
       </div>
 

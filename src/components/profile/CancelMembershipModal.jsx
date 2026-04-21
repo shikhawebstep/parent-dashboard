@@ -20,7 +20,7 @@ export default function CancelMembershipModal({ isOpen, onClose, booking }) {
         }
 
         const response = await fetch(
-            `${API_URL}/api/parent/account-profile/cancel-booking`,
+            `${API_URL}api/parent/account-profile/cancel-booking`,
             {
                 method: "POST",
                 headers: {

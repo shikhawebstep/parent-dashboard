@@ -50,7 +50,7 @@ const Header = ({ onMenuClick }) => {
 
       const API_URL = import.meta.env.VITE_API_BASE_URL;
 
-      fetch(`${API_URL}/api/parent/notification`, requestOptions)
+      fetch(`${API_URL}api/parent/notification`, requestOptions)
         .then((response) => response.json())
         .then((result) => {
           // Ensure we handle arrays properly assuming data payload

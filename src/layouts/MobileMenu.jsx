@@ -111,7 +111,7 @@ const MobileMenu = ({ isOpen, onClose }) => {
                     <img
                         src="/assets/user.png"
                         alt="John Doe"
-                        className="w-12 h-12 rounded-full border-2 border-white object-cover"
+                        className="w-12 h-12 rounded-full border-2 border-green-500 object-cover"
                     />
                     <span className="text-[18px] font-bold">{parentData?.firstName && parentData?.lastName
                         ? `${parentData.firstName} ${parentData.lastName}`

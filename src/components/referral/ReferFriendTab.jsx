@@ -87,7 +87,7 @@ const ReferFriendTab = () => {
 
         setLoading(true);
 
-        fetch(`${API_URL}/api/parent/referral/create`, {
+        fetch(`${API_URL}api/parent/referral/create`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
@@ -157,7 +157,7 @@ const ReferFriendTab = () => {
                     {/* Right Column: Form & Share */}
                     <div className="flex flex-col justify-center py-4">
                         <div className="mb-8">
-                            <h3 className="text-[#191919] font-bold text-[24px] mb-4">Share</h3>
+                            <h3 className="text-[#282829] font-bold text-[24px] mb-4">Share</h3>
                             <div className="flex gap-4">
                                 <a href={`whatsapp://send?text=${encodeURIComponent("Join us using my referral link: " + referalCode)}`} target="_blank" rel="noreferrer" className="w-10 h-10 rounded-full bg-[#0DD180] text-white flex items-center justify-center hover:bg-[#0bb56e] transition-colors">
                                     <Smartphone size={20} />
@@ -178,15 +178,15 @@ const ReferFriendTab = () => {
                         </div>
 
                         <div>
-                            <h3 className="text-[#191919] font-bold text-[24px] mb-2">Or send us the referee details</h3>
-                            <p className="text-[#717073] text-[18px] mb-6">
+                            <h3 className="text-[#282829] font-bold text-[24px] mb-2">Or send us the referee details</h3>
+                            <p className="text-[#87838D] text-[18px] mb-6">
                                 Prefer to send us their details? Use the form below and we'll contact directly your friend for you and if <br className='hidden md:block' /> they sign up, we'll let you know.
                             </p>
 
                             <form className="space-y-6" onSubmit={handleSubmit}>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div className="space-y-1">
-                                        <label className="text-[16px] font-semibold text-[#191919]">First name</label>
+                                        <label className="text-[16px] font-semibold text-[#282829]">First name</label>
                                         <input
                                             type="text"
                                             name='firstName'
@@ -197,7 +197,7 @@ const ReferFriendTab = () => {
                                         />
                                     </div>
                                     <div className="space-y-1">
-                                        <label className="text-[16px] font-semibold text-[#191919]">Last name</label>
+                                        <label className="text-[16px] font-semibold text-[#282829]">Last name</label>
                                         <input
                                             type="text"
                                             name='lastName'
@@ -211,7 +211,7 @@ const ReferFriendTab = () => {
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
                                     <div className="space-y-1">
-                                        <label className="text-[16px] font-semibold text-[#191919]">Email</label>
+                                        <label className="text-[16px] font-semibold text-[#282829]">Email</label>
                                         <input
                                             type="email"
                                             name='email'
@@ -222,7 +222,7 @@ const ReferFriendTab = () => {
                                         />
                                     </div>
                                     <div className="space-y-1">
-                                        <label className="text-[16px] font-semibold text-[#191919]">Phone number</label>
+                                        <label className="text-[16px] font-semibold text-[#282829]">Phone number</label>
                                         <div className={`w-full flex bg-[#F0F5FF] items-center rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-[#0496FF] outline-none ${errors.phone ? "border-red-500 border" : " border-none"}`}>
                                             <div className="w-[13%]">
                                                 <PhoneInput
@@ -271,7 +271,7 @@ const ReferFriendTab = () => {
                     <img src="/assets/reward.png" alt="" className='md:w-[100px] w-[80px]' />
                 </div>
                 <h3 className="text-[#042C89] font-bold recline md:text-[36px] text-[25px] mb-2">What the reward is?</h3>
-                <p className="text-[#797A88] md:text-[24px] text-[16px]">
+                <p className="text-[#87838D] md:text-[24px] text-[16px]">
                     Get one free month for yourself and give your friend one free month as well.
                 </p>
             </div>

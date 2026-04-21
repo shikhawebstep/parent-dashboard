@@ -46,7 +46,7 @@ const ParentProfile = () => {
     const [parents, setParents] = useState([]);
     const [editingIndex, setEditingIndex] = useState(null);
     const [emergencyEditing, setEmergencyEditing] = useState(false);
-    const [dialCodes, setDialCodes] = useState("+1");
+    const [dialCodes, setDialCodes] = useState("+44");
     const [emergency, setEmergency] = useState(emptyEmergency);
     const [sameAsParent, setSameAsParent] = useState(false);
     const [parentErrors, setParentErrors] = useState([{}]); // one object per parent
@@ -320,7 +320,7 @@ const ParentProfile = () => {
                 {parents.length === 1 && (
                     <div className="flex justify-between items-center mb-4">
                         <div className="flex gap-2 items-center cursor-pointer">
-                            <h2 className="font-bold 2xl:text-[24px] lg:text-[20px] text-[18px]">Parent Information</h2>
+                            <h2 className="font-bold 2xl:text-[24px] text-[#282829] lg:text-[20px] text-[18px]">Parent information</h2>
                             {editingIndex !== 0 ? (
                                 <img
                                     src="/assets/edit.png"
@@ -362,7 +362,7 @@ const ParentProfile = () => {
                                         }}
                                         className="text-sm font-semibold cursor-pointer flex gap-2 items-center"
                                     >
-                                        <h2 className="font-bold 2xl:text-[24px] lg:text-[20px] text-[18px]">Parent Information {index + 1}</h2>
+                                        <h2 className="font-bold 2xl:text-[24px] text-[#282829] lg:text-[20px] text-[18px]">Parent Information {index + 1}</h2>
                                         {!editable && <img src="/assets/edit.png" className="w-5" alt="Edit" />}
                                     </div>
                                         {editable && (
@@ -488,7 +488,7 @@ const ParentProfile = () => {
                         // Don't toggle off edit by clicking again, force Save
                     }}
                 >
-                    <h2 className="font-bold 2xl:text-[24px] lg:text-[20px] text-[18px]">Emergency Contact Details</h2>
+                    <h2 className="font-bold 2xl:text-[24px] text-[#282829] lg:text-[20px] text-[18px]">Emergency contact details</h2>
                     {emergencyEditing ? (
                         <button onClick={() => handleSaveEmergency()} aria-label="Save Emergency Contact">
                             <Save size={20} />

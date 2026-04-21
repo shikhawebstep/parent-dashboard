@@ -49,7 +49,7 @@ const BookingCard = ({ booking, onSeeDetails }) => {
     const renderField = (label, value) => (
         <div>
             <p className="text-[#717073] font-medium 2xl:text-sm text-xs">{label}</p>
-            <p className="mt-1 font-semibold text-xs 2xl:text-[16px] truncate">
+            <p className="mt-1 text-[#282829] font-semibold text-xs 2xl:text-[16px] truncate">
                 {safeValue(value)}
             </p>
         </div>
@@ -110,7 +110,7 @@ const BookingCard = ({ booking, onSeeDetails }) => {
                                     )}
 
 
-                                    {renderField("Venue", safeValue(booking?.classSchedule?.venue?.name || booking?.venue?.name ))}
+                                    {renderField("Venue", safeValue(booking?.classSchedule?.venue?.name || booking?.venue?.name))}
                                     {renderField("KGo/Cardless ID", safeValue(booking?.id))}
                                     {renderField("Monthly Price", safePrice(booking?.paymentPlan?.price))}
                                     {renderField("Date Of Booking", safeDate(booking?.createdAt))}
@@ -171,7 +171,7 @@ const BookingCard = ({ booking, onSeeDetails }) => {
                                         "Date of Booking",
                                         formatDate(booking?.createdAt)
                                     )}
-                                    {renderField("Venue", booking?.classSchedule?.venue?.name || booking?.venue?.name || booking?.holidayVenue?.name || booking?.holidayVenue?.name )}
+                                    {renderField("Venue", booking?.classSchedule?.venue?.name || booking?.venue?.name || booking?.holidayVenue?.name || booking?.holidayVenue?.name)}
                                     {renderField("Discount", booking?.payment?.discount_amount)}
                                     {renderField("Booking Source", booking?.marketingChannel || booking?.bookedByAdmin?.firstName + ' ' + booking?.bookedByAdmin?.lastName)}
                                 </>

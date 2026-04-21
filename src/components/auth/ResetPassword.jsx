@@ -64,10 +64,11 @@ const ResetPassword = () => {
 
         try {
             await axios.post(
-                `${API_URL}api/parent/auth/reset-password`,
+                `${API_URL}api/parent/auth/password/reset`,
                 {
                     token,
-                    password: passwords.password
+                    newPassword: passwords.password,
+                    confirmPassword: passwords.confirmPassword
                 },
                 { headers: { "Content-Type": "application/json" } }
             );

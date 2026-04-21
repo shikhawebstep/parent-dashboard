@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from "react";
+import { createContext, useContext, useState, useCallback } from "react";
 import axios from "axios";
 import { showError } from "../../utils/swalHelper";
 
@@ -12,7 +12,7 @@ export const ProfileProvider = ({ children }) => {
     const [error, setError] = useState(null);
 
 
-    const fetchProfileData = async () => {
+    const fetchProfileData = useCallback(async () => {
         const token = localStorage.getItem("parentToken");
         const parentData = JSON.parse(localStorage.getItem("parentData"));
         const parentId = parentData?.id;
@@ -40,24 +40,19 @@ export const ProfileProvider = ({ children }) => {
         } catch (err) {
             console.error("Error fetching profile:", err);
 
-            // ✅ Extract API error message safely
             const errorMessage =
                 err?.response?.data?.message ||
                 err?.response?.data?.error ||
                 "Something went wrong while fetching profile.";
 
             setError(errorMessage);
-
-            // ✅ Show SweetAlert
             showError("Error", errorMessage);
-
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
 
-
-    const updateProfile = async (updatedData) => {
+    const updateProfile = useCallback(async (updatedData) => {
         const token = localStorage.getItem("parentToken");
         const parentData = JSON.parse(localStorage.getItem("parentData"));
         const parentId = parentData?.id;
@@ -95,7 +90,7 @@ export const ProfileProvider = ({ children }) => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [fetchProfileData]);
 
     return (
         <ProfileContext.Provider

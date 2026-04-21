@@ -11,8 +11,10 @@ const Layout = ({ children }) => {
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  // 🔒 Login & Forgot Password (No Middleware, No Sidebar/Header)
-  if (location.pathname === "/auth/login" || location.pathname === "/auth/forgot-password") {
+  // 🔒 Public Pages (No Middleware, No Sidebar/Header)
+  const publicPaths = ["/auth/login", "/auth/forgot-password", "/auth/reset-password"];
+  
+  if (publicPaths.includes(location.pathname)) {
     return (
       <div className="flex containerMain min-h-screen bg-gray-100">
         <main className="flex-1 w-full bg-white xl:bg-transparent">

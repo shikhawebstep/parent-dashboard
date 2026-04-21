@@ -8,7 +8,7 @@ import ServiceHistory from "../../components/profile/ServiceHistory";
 import { useProfile } from "../../context/ProfileContext";
 const tabs = [
   { name: "Parent Profile", component: <ParentProfile /> },
-  { name: "Childs Profile", component: <StudentProfile /> },
+  { name: "Child's Profile", component: <StudentProfile /> },
   { name: "Service History", component: <ServiceHistory /> },
   { name: "Feedback", component: <Feedback /> },
   { name: "Skills tracker", component: <Skills /> },

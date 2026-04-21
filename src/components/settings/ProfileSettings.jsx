@@ -2,12 +2,12 @@ import React, { useState } from "react";
 import { User, Camera, Mail, Phone } from "lucide-react";
 
 const ProfileSettings = () => {
-    const parentData = JSON.parse(localStorage.getItem("parentData")) || {};
+    const parentData = JSON.parse(localStorage.getItem("parentData")) || {}; console.log(parentData);
     const [formData, setFormData] = useState({
         firstName: parentData.firstName || "",
         lastName: parentData.lastName || "",
         email: parentData.email || "",
-        phone: parentData.phone || "",
+        phone: parentData.phone || parentData?.phoneNumber || "",
     });
 
     const handleChange = (e) => {

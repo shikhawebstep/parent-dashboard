@@ -24,7 +24,6 @@ export default function StepRenderer() {
       (b) => b?.serviceType === "holiday camp"
     ) || [];
   }, [booking]);
-  console.log('holidayBooking', holidayBooking)
 
   useEffect(() => {
     let isMounted = true;

@@ -196,7 +196,7 @@ const StudentProfile = () => {
             className="bg-white lg:rounded-[30px] p-6 md:mb-6"
           >
             <div className="flex gap-2 items-center mb-4">
-              <h2 className="font-bold text-[24px]">
+              <h2 className="font-bold text-[24px] text-[#282829]">
                 Student {index + 1} information
               </h2>
               <button
@@ -214,7 +214,7 @@ const StudentProfile = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {/* First Name */}
               <div>
-                <label className="text-[16px] lg:text-[18px] font-medium text-[#282829] mb-1 block capitalize">
+                <label className="text-[16px] lg:text-[18px] font-medium text-[#282829] mb-1 block ">
                   First name
                 </label>
                 <input
@@ -232,7 +232,7 @@ const StudentProfile = () => {
 
               {/* Last Name */}
               <div>
-                <label className="text-[16px] lg:text-[18px] font-medium text-[#282829] mb-1 block capitalize">
+                <label className="text-[16px] lg:text-[18px] font-medium text-[#282829] mb-1 block ">
                   Last name
                 </label>
                 <input
@@ -250,7 +250,7 @@ const StudentProfile = () => {
 
               {/* dateOfBirth */}
               <div>
-                <label className="text-[16px] lg:text-[18px] font-medium text-[#282829] mb-1 block capitalize">
+                <label className="text-[16px] lg:text-[18px] font-medium text-[#282829] mb-1 block ">
                   Date of birth
                 </label>
                 <input
@@ -268,7 +268,7 @@ const StudentProfile = () => {
 
               {/* Age */}
               <div>
-                <label className="text-[16px] lg:text-[18px] font-medium text-[#282829] mb-1 block capitalize">
+                <label className="text-[16px] lg:text-[18px] font-medium text-[#282829] mb-1 block ">
                   Age
                 </label>
                 <input
@@ -281,7 +281,7 @@ const StudentProfile = () => {
 
               {/* Gender */}
               <div>
-                <label className="text-[16px] lg:text-[18px] font-medium text-[#282829] mb-1 block capitalize">
+                <label className="text-[16px] lg:text-[18px] font-medium text-[#282829] mb-1 block ">
                   Gender
                 </label>
                 <Select
@@ -323,7 +323,7 @@ const StudentProfile = () => {
 
               {/* Medical Info */}
               <div>
-                <label className="text-[16px] lg:text-[18px] font-medium text-[#282829] mb-1 block capitalize">
+                <label className="text-[16px] lg:text-[18px] font-medium text-[#282829] mb-1 block ">
                   Medical information
                 </label>
 
