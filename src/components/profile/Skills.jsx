@@ -1,21 +1,42 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import SkillDetail from "./SkillDetail";
 import { useSkill } from "../../context/SkillContext";
 import Loader from "../Loader";
 import { useProfile } from "../../context/ProfileContext";
 
-const Skills = () => {
+const Skills = ({ activeServiceType }) => {
   const [currentFilter, setCurrentFilter] = useState("Beginner");
   const { skill, fetchSkillData, loading } = useSkill();
   const navigate = useNavigate();
   const { profile } = useProfile();
-  const students = profile?.uniqueProfiles?.students || [];
+
+  const students = useMemo(() => {
+    const allBookingsList = profile?.combinedBookings 
+        || (profile?.groupedBookings ? Object.values(profile.groupedBookings).flat() : [])
+        || (Array.isArray(profile) ? profile : []);
+
+    const activeBookings = allBookingsList.filter((booking) => {
+        if (!activeServiceType) return true;
+        return booking?.serviceType === activeServiceType;
+    });
+
+    const allStudents = activeBookings.flatMap(b => b.students || []);
+    const uniqueMap = new Map();
+    allStudents.forEach(s => uniqueMap.set(s.id, s));
+    return Array.from(uniqueMap.values());
+  }, [profile, activeServiceType]);
 
   const defaultStudent = students.length > 0
     ? `${students[0]?.studentFirstName || ''} ${students[0]?.studentLastName || ''}`.trim()
     : '';
   const [selectedStudent, setSelectedStudent] = useState(defaultStudent);
+
+  useEffect(() => {
+    if (!selectedStudent && students.length > 0) {
+      setSelectedStudent(`${students[0]?.studentFirstName || ''} ${students[0]?.studentLastName || ''}`.trim());
+    }
+  }, [students, selectedStudent]);
 
   const filterTabs = [
     { id: "Beginner", label: "Beginners" },

@@ -28,7 +28,7 @@ export const FeedbackProvider = ({ children }) => {
 
         try {
             const response = await axios.get(
-                `${API_URL}api/parent/holiday/feedback/list`,
+                `${API_URL}api/parent/holiday/feedback/list/${parentId}`,
                 {
                     headers: {
                         Authorization: `Bearer ${token}`,

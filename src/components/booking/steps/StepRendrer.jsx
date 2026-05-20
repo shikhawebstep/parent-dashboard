@@ -11,27 +11,36 @@ import { useEffect, useMemo } from "react";
 import { useProfile } from "../../../context/ProfileContext";
 import Loader from "../../Loader";
 
-// import VenueStep, PlanStep, ...
-
 export default function StepRenderer() {
   const { currentStep, fetchData, loading, setLoading, setFormData } = useStep();
   const { fetchProfileData, profile } = useProfile();
 
-  const booking = profile?.combinedBookings;
+  // Flatten all bookings from groupedBookings (weeklyClass, holidayCamp, oneToOne, birthdayParty, etc.)
+  // or fall back to combinedBookings if present
+  const booking = useMemo(() => {
+    if (Array.isArray(profile?.combinedBookings)) {
+      return profile.combinedBookings;
+    }
+    if (profile?.groupedBookings && typeof profile.groupedBookings === "object") {
+      return Object.values(profile.groupedBookings)
+        .filter(Array.isArray)
+        .flat();
+    }
+    return [];
+  }, [profile]);
+
 
   const holidayBooking = useMemo(() => {
-    return booking?.filter(
-      (b) => b?.serviceType === "holiday camp"
-    ) || [];
+    return booking.filter((b) => b?.serviceType === "holiday camp");
   }, [booking]);
 
+  console.log('holidayBooking', holidayBooking)
   useEffect(() => {
     let isMounted = true;
 
     const loadData = async () => {
       try {
         if (isMounted) setLoading(true);
-
         await Promise.all([
           fetchData?.(),
           fetchProfileData?.(),
@@ -50,44 +59,54 @@ export default function StepRenderer() {
     };
   }, []);
 
-
   useEffect(() => {
     if (!profile?.uniqueProfiles) return;
 
+    const parents = Array.isArray(profile.uniqueProfiles.parents)
+      ? profile.uniqueProfiles.parents
+      : null;
+
+    const emergency = Array.isArray(profile.uniqueProfiles.emergencyContacts)
+      ? (profile.uniqueProfiles.emergencyContacts[0] ?? null)
+      : null;
+
     setFormData((prev) => ({
       ...prev,
-      parents: Array.isArray(profile.uniqueProfiles.parents)
-        ? profile.uniqueProfiles.parents ?? null
-        : null,
-      emergency: Array.isArray(profile.uniqueProfiles.emergencyContacts)
-        ? profile.uniqueProfiles.emergencyContacts[0] ?? null
-        : null,
+      parents,
+      emergency,
     }));
 
     if (!holidayBooking.length) return;
 
     const allStudents = holidayBooking.flatMap(
-      (booking) => booking.students || []
+      (b) => (Array.isArray(b?.students) ? b.students : [])
     );
 
+    // Deduplicate students by id
     const uniqueStudents = Array.from(
-      new Map(allStudents.map((s) => [s.id, s])).values()
+      new Map(
+        allStudents
+          .filter((s) => s?.id !== undefined && s?.id !== null)
+          .map((s) => [s.id, s])
+      ).values()
     );
 
     setFormData((prev) => {
-      // 🔥 Prevent unnecessary re-render
-      if (JSON.stringify(prev.availableStudents) === JSON.stringify(uniqueStudents)) {
+      if (
+        JSON.stringify(prev.availableStudents) ===
+        JSON.stringify(uniqueStudents)
+      ) {
         return prev;
       }
-
       return {
         ...prev,
         availableStudents: uniqueStudents,
       };
     });
   }, [profile]);
+
   if (loading) {
-    return <Loader />
+    return <Loader />;
   }
 
   switch (currentStep) {

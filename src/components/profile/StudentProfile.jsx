@@ -33,20 +33,85 @@ function calculateAge(dateOfBirth) {
   return age < 0 ? "" : age;
 }
 
-const StudentProfile = () => {
+const getBookingLabel = (booking) => {
+  if (!booking) return "Booking";
+  const dateStr = booking.createdAt ? new Date(booking.createdAt).toLocaleDateString() : "";
+  
+  let title = "";
+  if (booking.serviceType === "weekly class membership") {
+    title = booking?.paymentPlan?.title || "Weekly Class Membership";
+  } else if (booking.serviceType === "holiday camp") {
+    title = booking?.holidayCamp?.name || "Holiday Camp";
+  } else if (booking.serviceType === "birthday party") {
+    title = booking?.leads?.packageInterest || "Birthday Party";
+  } else if (booking.serviceType === "one to one") {
+    title = booking?.leads?.packageInterest || "One to One";
+  } else {
+    title = booking?.serviceType || "Booking";
+  }
+  
+  const venue = booking?.classSchedule?.venue?.name || booking?.venue?.name || booking?.holidayVenue?.name || booking?.location || "";
+  
+  return [title, venue, dateStr].filter(Boolean).join(" - ");
+};
+
+const StudentProfile = ({ activeServiceType }) => {
   const [students, setStudents] = useState([{ ...emptyStudent }]);
   const [editingIndex, setEditingIndex] = useState(null);
   const { profile, updateProfile } = useProfile();
 
   // Validation errors: array of objects per student
   const [errors, setErrors] = useState([{}]);
+
+  const [selectedBookingId, setSelectedBookingId] = useState(() => {
+    return localStorage.getItem(`selectedBookingId_${activeServiceType}`) || "";
+  });
+
+  const getBookingId = (booking, index) => {
+    return booking?.id ? String(booking.id) : String(index);
+  };
+
+  const allBookingsList = profile?.combinedBookings 
+      || (profile?.groupedBookings ? Object.values(profile.groupedBookings).flat() : [])
+      || (Array.isArray(profile) ? profile : []);
+
+  const activeBookings = allBookingsList.filter((booking) => {
+      if (!activeServiceType) return true;
+      return booking?.serviceType === activeServiceType;
+  });
+
   useEffect(() => {
-    if (Array.isArray(profile?.uniqueProfiles?.students) && profile.uniqueProfiles.students.length > 0) {
-      setStudents(profile.uniqueProfiles.students);
+    if (activeBookings.length > 0) {
+      const hasSelected = activeBookings.some((b, idx) => getBookingId(b, idx) === selectedBookingId);
+      if (!hasSelected) {
+        const initialId = getBookingId(activeBookings[0], 0);
+        setSelectedBookingId(initialId);
+        localStorage.setItem(`selectedBookingId_${activeServiceType}`, initialId);
+      }
     } else {
-      setStudents([]); // fallback empty
+      setSelectedBookingId("");
     }
-  }, [profile]);
+  }, [activeBookings, activeServiceType, selectedBookingId]);
+
+  const selectedBooking = activeBookings.find((b, idx) => getBookingId(b, idx) === selectedBookingId) || activeBookings[0];
+
+  const handleBookingChange = (bookingId) => {
+    setSelectedBookingId(bookingId);
+    localStorage.setItem(`selectedBookingId_${activeServiceType}`, bookingId);
+    setEditingIndex(null);
+  };
+
+  useEffect(() => {
+    if (!selectedBooking) {
+      setStudents([]);
+      setErrors([]);
+      return;
+    }
+    const bookingStudents = selectedBooking.students || [];
+    setStudents(bookingStudents);
+    setErrors(bookingStudents.map(() => ({})));
+  }, [selectedBooking]);
+
   const addStudent = () => {
     setStudents((prev) => [...prev, { ...emptyStudent }]);
     setErrors((prev) => [...prev, {}]);
@@ -122,7 +187,16 @@ const StudentProfile = () => {
     })
   );
 
-  const emergency = profile?.uniqueProfiles.emergencyContacts[0];
+  const bookingParents = selectedBooking?.parents || [];
+  const cleanedParents = bookingParents.map(
+    ({ relationChild, howDidHear, ...rest }) => ({
+      ...rest,
+      relationToChild: relationChild ?? "",
+      howDidYouHear: howDidHear ?? "",
+    })
+  );
+
+  const emergency = selectedBooking?.emergency || {};
   const cleanedEmergency = {
     id: emergency?.id,
     studentId: emergency?.studentId,
@@ -130,17 +204,7 @@ const StudentProfile = () => {
     emergencyLastName: emergency?.emergencyLastName,
     emergencyPhoneNumber: emergency?.emergencyPhoneNumber,
     emergencyRelation: emergency?.emergencyRelation,
-  }
-
-  const parents = profile?.uniqueProfiles.parents;
-  const cleanedParents = parents?.map(
-    ({ relationChild, howDidHear, ...rest }) => ({
-      ...rest,
-      relationToChild: relationChild,
-      howDidYouHear: howDidHear,
-    })
-  );
-
+  };
 
 
   const handleSave = (index) => {
@@ -168,17 +232,57 @@ const StudentProfile = () => {
 
   return (
     <div className="md:py-4 ">
+      {/* ================= Booking Selector ================= */}
+      {activeBookings.length > 0 && (
+        <div className="bg-white lg:rounded-[30px] p-6 mb-6 flex flex-col gap-2 shadow-sm">
+          <label className="text-[15px] font-semibold text-[#111827]">
+            Select Booking
+          </label>
+          <div className="relative w-full">
+            <select
+              value={selectedBookingId}
+              onChange={(e) => handleBookingChange(e.target.value)}
+              className="w-full appearance-none rounded-2xl border border-[#E5EAF2] bg-[#F9FAFB] hover:bg-white px-5 py-4 pr-12 text-[15px] font-medium text-[#111827] shadow-sm outline-none transition-all duration-300 focus:border-[#042C89] focus:ring-4 focus:ring-[#042C89]/10"
+            >
+              {activeBookings.map((b, idx) => (
+                <option key={getBookingId(b, idx)} value={getBookingId(b, idx)}>
+                  {getBookingLabel(b)}
+                </option>
+              ))}
+            </select>
+            <div className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2">
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M6 9L12 15L18 9"
+                  stroke="#6B7280"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Add Student Button */}
-      <div className="md:text-right px-6 lg:p-0 bg-white md:bg-transparent xl:absolute top-7 right-5 md:mb-6">
-        <button
-          onClick={addStudent}
-          className="inline-flex items-center gap-2 font-medium text-[18px] px-4 py-2 bg-[#0DD180] text-white rounded-lg hover:bg-green-700"
-        >
-          <Plus size={20} className="text-white font-bold" />
-          Add New Student
-        </button>
-      </div>
+      {activeServiceType === "holiday camp" && (
+        <div className="md:text-right px-6 lg:p-0 bg-white md:bg-transparent xl:absolute top-7 right-5 md:mb-6">
+          <button
+            onClick={addStudent}
+            className="inline-flex items-center gap-2 font-medium text-[18px] px-4 py-2 bg-[#0DD180] text-white rounded-lg hover:bg-green-700"
+          >
+            <Plus size={20} className="text-white font-bold" />
+            Add New Student
+          </button>
+        </div>
+      )}
 
       {students.length === 0 && (
         <div className="bg-white lg:rounded-[30px] p-6 py-16 md:mb-6 text-center text-gray-500 text-[18px] font-medium border border-gray-100 shadow-sm">
@@ -199,16 +303,18 @@ const StudentProfile = () => {
               <h2 className="font-bold text-[24px] text-[#282829]">
                 Student {index + 1} information
               </h2>
-              <button
-                className="text-gray-600 hover:text-[#042C89]"
-                onClick={() => {
-                  if (isEditing) handleSave(index);
-                  else setEditingIndex(index);
-                }}
-                title={isEditing ? " text-black Save" : "Edit"}
-              >
-                {isEditing ? <Save size={20} /> : <img src="/assets/edit.png" className="w-5" alt="Edit" />}
-              </button>
+              {activeServiceType === "weekly class membership" && (
+                <button
+                  className="text-gray-600 hover:text-[#042C89]"
+                  onClick={() => {
+                    if (isEditing) handleSave(index);
+                    else setEditingIndex(index);
+                  }}
+                  title={isEditing ? " text-black Save" : "Edit"}
+                >
+                  {isEditing ? <Save size={20} /> : <img src="/assets/edit.png" className="w-5" alt="Edit" />}
+                </button>
+              )}
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -286,7 +392,7 @@ const StudentProfile = () => {
                 </label>
                 <Select
                   isDisabled={!isEditing}
-                  value={genderOptions.find((o) => o.value === student.gender)}
+                  value={genderOptions.find((o) => o.value?.toLowerCase() === student.gender?.toLowerCase()) || null}
                   onChange={(selected) =>
                     updateStudentField(index, "gender", selected ? selected.value : "")
                   }

@@ -8,7 +8,7 @@ import ServiceDetails from "./ServiceDetails";
 import EmptyState from "./EmptyState";
 import { useProfile } from "../../context/ProfileContext";
 
-export default function ServiceHistory() {
+export default function ServiceHistory({ activeServiceType }) {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState(null);
@@ -33,7 +33,14 @@ export default function ServiceHistory() {
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  const allBookings = profile?.combinedBookings || (Array.isArray(profile) ? profile : []);
+  const allBookingsList = profile?.combinedBookings 
+    || (profile?.groupedBookings ? Object.values(profile.groupedBookings).flat() : [])
+    || (Array.isArray(profile) ? profile : []);
+
+  const allBookings = allBookingsList.filter((booking) => {
+    if (!activeServiceType) return true;
+    return booking?.serviceType === activeServiceType;
+  });
 
   const handleApplyFilter = () => {
     setAppliedOptions(filterOptions);
@@ -137,9 +144,9 @@ export default function ServiceHistory() {
               <BookingCard key={b.id || idx} booking={b} onSeeDetails={setSelectedBooking} />
             ))
           ) : (
-            <EmptyState 
-              message="No matching services found" 
-              subMessage="Try adjusting your filters or selecting a different date range." 
+            <EmptyState
+              message="No matching services found"
+              subMessage="Try adjusting your filters or selecting a different date range."
             />
           )
         ) : (

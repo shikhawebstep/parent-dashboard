@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { showConfirm, showSuccess } from "../../utils/swalHelper";
 import NotificationPopup from "../components/NotificationPopup";
+import { useProfile } from "../context/ProfileContext";
 const Header = ({ onMenuClick }) => {
   const [dateTime, setDateTime] = useState(new Date());
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -12,6 +13,7 @@ const Header = ({ onMenuClick }) => {
   const dropdownRef = useRef(null);
   const notificationRef = useRef(null);
   const navigate = useNavigate();
+  const { profile } = useProfile();
 
   const parentData = JSON.parse(localStorage.getItem("parentData"));
 
@@ -113,7 +115,7 @@ const Header = ({ onMenuClick }) => {
         <div className="flex items-center 2xl:gap-8 gap-3">
 
           {/* Back Button */}
-          <button className="bg-[#00A6E3] hidden lg:block  hover:bg-sky-600 text-white 2xl:px-6 px-3 glory py-3 rounded-full 2xl:text-[18px] text-[16px] font-semibold transition">
+          <button onClick={() => navigate('https://synco-website.netlify.app/')} className="bg-[#00A6E3] hidden lg:block  hover:bg-sky-600 text-white 2xl:px-6 px-3 glory py-3 rounded-full 2xl:text-[18px] text-[16px] font-semibold transition">
             Go back to the website
           </button>
 
@@ -158,14 +160,14 @@ const Header = ({ onMenuClick }) => {
             onClick={() => setIsDropdownOpen(!isDropdownOpen)}
           >
             <img
-              src="/assets/user.png"
+              src={profile?.accountInfo?.profile || ``}
               alt="User"
               className="w-[52px] lg:h-[52px] rounded-full object-cover"
             />
             <span className="2xl:text-[18px] text-[14px] hidden lg:block  font-semibold text-[#282829]">
-              {parentData?.firstName && parentData?.lastName
-                ? `${parentData.firstName} ${parentData.lastName}`
-                : parentData?.email || "N/A"}
+              {profile?.accountInfo?.firstName && profile?.accountInfo?.lastName
+                ? `${profile?.accountInfo?.firstName} ${profile?.accountInfo?.lastName}`
+                : profile?.accountInfo?.email || "N/A"}
             </span>
             <img
               src="/assets/Arrows-down.png"
