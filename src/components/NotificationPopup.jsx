@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Plus, X, Check } from "lucide-react";
 
-const NotificationPopup = ({ notifications = [] }) => {
+const NotificationPopup = ({ notifications = [], onMarkRead }) => {
     const [hideRead, setHideRead] = useState(false);
 
     const parentData = JSON.parse(localStorage.getItem("parentData"));
@@ -14,89 +14,184 @@ const NotificationPopup = ({ notifications = [] }) => {
         const yesterday = new Date();
         yesterday.setDate(today.getDate() - 1);
 
-        let group = d.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
+        let group = d.toLocaleDateString("en-US", {
+            month: "long",
+            day: "numeric",
+            year: "numeric",
+        });
         if (d.toDateString() === today.toDateString()) group = "Today";
         else if (d.toDateString() === yesterday.toDateString()) group = "Yesterday";
 
         if (!acc[group]) acc[group] = [];
 
-        const recipient = item.recipients?.find(r => r.recipientId === parentData?.id) || item.recipients?.[0];
+        const recipient =
+            item.recipients?.find((r) => r.recipientId === parentData?.id) ||
+            item.recipients?.[0];
 
         acc[group].push({
             ...item,
             unread: recipient ? recipient.isRead === false : false,
             image: item.createdBy?.profile || null,
         });
+
         return acc;
     }, {});
 
-    const displayData = Object.keys(groupedData).map(group => ({
+    const displayData = Object.keys(groupedData).map((group) => ({
         group,
-        items: groupedData[group] // already sorted implicitly based on backend arrival if they are DESC by createdAt
+        items: groupedData[group],
     }));
+
+    const totalUnread = notifications.filter((item) => {
+        if (!item?.recipients) return false;
+        const recipient =
+            item.recipients.find((r) => r.recipientId === parentData?.id) ||
+            item.recipients[0];
+        return recipient?.isRead === false;
+    }).length;
+
+    const isEmpty = displayData.every(
+        (g) => hideRead ? g.items.every((i) => !i.unread) : false
+    ) || displayData.length === 0;
 
     return (
         <div className="absolute top-full right-0 mt-4 w-[400px] bg-white rounded-[24px] shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-gray-100 overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-200 p-6 poppins">
-            <div className="flex items-center justify-between mb-6">
-                <h2 className="text-[24px] font-bold text-[#282829]">Notifications</h2>
-                <label className="flex items-center gap-2 cursor-pointer">
-                    <div className="relative">
-                        <input
-                            type="checkbox"
-                            className="sr-only peer"
-                            checked={hideRead}
-                            onChange={() => setHideRead(!hideRead)}
-                        />
-                        <div className="w-5 h-5 border-2 border-[#E2E1E5] rounded-md transition-all peer-checked:bg-[#00A6E3] peer-checked:border-[#00A6E3] flex items-center justify-center">
-                            {hideRead && <Check size={14} className="text-white" />}
-                        </div>
-                    </div>
-                    <span className="text-[14px] text-[#717073] font-medium">Hide read notifications</span>
-                </label>
+
+            {/* Header */}
+            <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                    <h2 className="text-[20px] font-bold text-[#282829]">Notifications</h2>
+                    {totalUnread > 0 && (
+                        <span className="bg-red-500 text-white text-[11px] font-bold px-2 py-0.5 rounded-full">
+                            {totalUnread}
+                        </span>
+                    )}
+                </div>
+
+                {/* Mark all read button — only shows when there are unread */}
+                {totalUnread > 0 && onMarkRead && (
+                    <button
+                        onClick={onMarkRead}
+                        className="text-[12px] text-[#00A6E3] font-semibold hover:underline transition-all"
+                    >
+                        Mark all as read
+                    </button>
+                )}
             </div>
 
-            <div className="max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
-                {displayData.map((group, groupIdx) => (
-                    <div key={groupIdx} className="mb-6">
-                        <h3 className="text-[18px] font-bold text-[#282829] mb-4">{group.group}</h3>
-                        <div className="space-y-4">
-                            {group.items.map((item) => (
-                                (!hideRead || item.unread) && (
-                                    <div key={item.id} className="relative bg-[#FAFAFA] rounded-[20px] p-4 flex items-center gap-4 transition-all hover:shadow-md cursor-pointer">
-                                        {item.unread && (
-                                            <div className="absolute right-4 top-4 w-3.5 h-3.5 bg-[#FF6B6B] rounded-full border-2 border-white" />
-                                        )}
-
-                                        <div className="flex-shrink-0">
-                                            {item.image ? (
-                                                <div className="relative">
-                                                    <img src={item.image} alt="" className="w-16 h-16 rounded-full object-cover border-2 border-white shadow-sm" />
-                                                    <div className={`absolute -top-1 -left-1 w-5 h-5 rounded-full flex items-center justify-center text-white ${item.id === 3 ? 'bg-[#7C4DFF]' : 'bg-[#00D084]'}`}>
-                                                        <div className="w-2 h-2 rounded-full bg-white opacity-40 animate-ping" />
-                                                    </div>
-                                                </div>
-                                            ) : (
-                                                <div className={`w-16 h-16 rounded-full flex items-center justify-center relative ${item.color === 'blue' ? 'bg-[#EBF2FF]' : 'bg-[#FFF0F0]'}`}>
-                                                    <div className={`w-12 h-12 rounded-full flex items-center justify-center ${item.color === 'blue' ? 'bg-[#4B84FF]' : 'bg-[#FF6B6B]'}`}>
-                                                        {item.type === 'plus' ? <Plus size={20} className="text-white" /> : <X size={20} className="text-white" />}
-                                                    </div>
-                                                    {/* Small decorative dots */}
-                                                    <div className={`absolute top-2 right-2 w-1.5 h-1.5 rounded-full ${item.color === 'blue' ? 'bg-[#4B84FF]' : 'bg-[#FF6B6B]'} opacity-40`} />
-                                                    <div className={`absolute bottom-2 left-2 w-1.5 h-1.5 rounded-full ${item.color === 'blue' ? 'bg-[#4B84FF]' : 'bg-[#FF6B6B]'} opacity-40`} />
-                                                </div>
-                                            )}
-                                        </div>
-
-                                        <div className="flex-1">
-                                            <h4 className="text-[16px] font-bold text-[#282829] line-clamp-1">{item.title}</h4>
-                                            <p className="text-[14px] text-[#717073] line-clamp-2">{item.description}</p>
-                                        </div>
-                                    </div>
-                                )
-                            ))}
-                        </div>
+            {/* Hide read toggle */}
+            <label className="flex items-center gap-2 cursor-pointer mb-5">
+                <div className="relative">
+                    <input
+                        type="checkbox"
+                        className="sr-only peer"
+                        checked={hideRead}
+                        onChange={() => setHideRead(!hideRead)}
+                    />
+                    <div className="w-5 h-5 border-2 border-[#E2E1E5] rounded-md transition-all peer-checked:bg-[#00A6E3] peer-checked:border-[#00A6E3] flex items-center justify-center">
+                        {hideRead && <Check size={14} className="text-white" />}
                     </div>
-                ))}
+                </div>
+                <span className="text-[13px] text-[#717073] font-medium">
+                    Hide read notifications
+                </span>
+            </label>
+
+            {/* List */}
+            <div className="max-h-[460px] overflow-y-auto pr-1 custom-scrollbar space-y-6">
+
+                {isEmpty ? (
+                    <div className="flex flex-col items-center justify-center py-10 gap-2">
+                        <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center">
+                            <Check size={22} className="text-gray-400" />
+                        </div>
+                        <p className="text-[14px] text-[#717073] font-medium">
+                            {hideRead ? "No unread notifications" : "No notifications yet"}
+                        </p>
+                    </div>
+                ) : (
+                    displayData.map((group, groupIdx) => {
+                        const visibleItems = hideRead
+                            ? group.items.filter((i) => i.unread)
+                            : group.items;
+
+                        if (visibleItems.length === 0) return null;
+
+                        return (
+                            <div key={groupIdx}>
+                                <h3 className="text-[13px] font-semibold text-[#939395] uppercase tracking-wide mb-3">
+                                    {group.group}
+                                </h3>
+                                <div className="space-y-2">
+                                    {visibleItems.map((item) => (
+                                        <div
+                                            key={item.id}
+                                            className={`relative rounded-[16px] p-4 flex items-center gap-3 transition-all hover:shadow-sm cursor-pointer ${
+                                                item.unread
+                                                    ? "bg-[#F0F8FF] border border-[#D6EEFF]"
+                                                    : "bg-[#FAFAFA]"
+                                            }`}
+                                        >
+                                            {/* Unread dot */}
+                                            {item.unread && (
+                                                <div className="absolute right-4 top-4 w-2.5 h-2.5 bg-[#00A6E3] rounded-full" />
+                                            )}
+
+                                            {/* Avatar */}
+                                            <div className="flex-shrink-0">
+                                                {item.image ? (
+                                                    <img
+                                                        src={item.image}
+                                                        alt=""
+                                                        className="w-12 h-12 rounded-full object-cover border-2 border-white shadow-sm"
+                                                    />
+                                                ) : (
+                                                    <div
+                                                        className={`w-12 h-12 rounded-full flex items-center justify-center ${
+                                                            item.color === "blue"
+                                                                ? "bg-[#EBF2FF]"
+                                                                : "bg-[#FFF0F0]"
+                                                        }`}
+                                                    >
+                                                        <div
+                                                            className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                                                                item.color === "blue"
+                                                                    ? "bg-[#4B84FF]"
+                                                                    : "bg-[#FF6B6B]"
+                                                            }`}
+                                                        >
+                                                            {item.type === "plus" ? (
+                                                                <Plus size={16} className="text-white" />
+                                                            ) : (
+                                                                <X size={16} className="text-white" />
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            {/* Text */}
+                                            <div className="flex-1 min-w-0">
+                                                <h4 className="text-[14px] font-semibold text-[#282829] line-clamp-1">
+                                                    {item.title}
+                                                </h4>
+                                                <p className="text-[13px] text-[#717073] line-clamp-2 leading-snug mt-0.5">
+                                                    {item.description}
+                                                </p>
+                                                <p className="text-[11px] text-[#AEACB0] mt-1">
+                                                    {new Date(item.createdAt).toLocaleTimeString("en-US", {
+                                                        hour: "numeric",
+                                                        minute: "2-digit",
+                                                    })}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        );
+                    })
+                )}
             </div>
         </div>
     );

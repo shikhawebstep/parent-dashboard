@@ -2,6 +2,7 @@ import { Plus, Save } from "lucide-react";
 import React, { useState, useEffect } from "react";
 import Select from "react-select";
 import { useProfile } from "../../context/ProfileContext";
+import AddStudentModal from "./AddStudentModal";
 
 const genderOptions = [
   { value: "", label: "Select Gender" },
@@ -9,7 +10,6 @@ const genderOptions = [
   { value: "female", label: "Female" },
   { value: "Other", label: "Other" },
 ];
-
 
 const emptyStudent = {
   studentFirstName: "",
@@ -20,9 +20,89 @@ const emptyStudent = {
   medicalInformation: "",
 };
 
+const convertToDDMMYYYY = (dateStr) => {
+  if (!dateStr) return "";
+  if (/^\d{2}[/\-]\d{2}[/\-]\d{4}$/.test(dateStr)) {
+    return dateStr.replace(/-/g, "/");
+  }
+  const match = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (match) {
+    return `${match[3]}/${match[2]}/${match[1]}`;
+  }
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return dateStr;
+  const day = String(d.getDate()).padStart(2, "0");
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const year = d.getFullYear();
+  return `${day}/${month}/${year}`;
+};
+
+const convertToYYYYMMDD = (dateStr) => {
+  if (!dateStr) return "";
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+    return dateStr;
+  }
+  const match = dateStr.match(/^(\d{2})[/\-](\d{2})[/\-](\d{4})$/);
+  if (match) {
+    return `${match[3]}-${match[2]}-${match[1]}`;
+  }
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return dateStr;
+  const day = String(d.getDate()).padStart(2, "0");
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const year = d.getFullYear();
+  return `${year}-${month}-${day}`;
+};
+
+const isValidDate = (dateStr) => {
+  if (!dateStr) return false;
+  const match = dateStr.match(/^(\d{2})[/\-](\d{2})[/\-](\d{4})$/);
+  if (!match) return false;
+  const day = parseInt(match[1], 10);
+  const month = parseInt(match[2], 10);
+  const year = parseInt(match[3], 10);
+
+  if (month < 1 || month > 12) return false;
+  if (day < 1 || day > 31) return false;
+  if (year < 1900 || year > new Date().getFullYear()) return false;
+
+  const date = new Date(year, month - 1, day);
+  return (
+    date.getFullYear() === year &&
+    date.getMonth() === month - 1 &&
+    date.getDate() === day
+  );
+};
+
+const handleDobChange = (value, prevValue = "") => {
+  if (value.length < prevValue.length) {
+    return value;
+  }
+  const clean = value.replace(/\D/g, "");
+  const truncated = clean.substring(0, 8);
+  let formatted = "";
+  if (truncated.length > 0) {
+    formatted += truncated.substring(0, 2);
+    if (truncated.length === 2 && value.length >= prevValue.length) {
+      formatted += "/";
+    }
+  }
+  if (truncated.length > 2) {
+    formatted += "/" + truncated.substring(2, 4);
+    if (truncated.length === 4 && value.length >= prevValue.length) {
+      formatted += "/";
+    }
+  }
+  if (truncated.length > 4) {
+    formatted += "/" + truncated.substring(4, 8);
+  }
+  return formatted;
+};
+
 function calculateAge(dateOfBirth) {
   if (!dateOfBirth) return "";
-  const birthDate = new Date(dateOfBirth);
+  const yyyymmdd = convertToYYYYMMDD(dateOfBirth);
+  const birthDate = new Date(yyyymmdd);
   if (isNaN(birthDate.getTime())) return "";
   const today = new Date();
   let age = today.getFullYear() - birthDate.getFullYear();
@@ -36,7 +116,7 @@ function calculateAge(dateOfBirth) {
 const getBookingLabel = (booking) => {
   if (!booking) return "Booking";
   const dateStr = booking.createdAt ? new Date(booking.createdAt).toLocaleDateString() : "";
-  
+
   let title = "";
   if (booking.serviceType === "weekly class membership") {
     title = booking?.paymentPlan?.title || "Weekly Class Membership";
@@ -49,15 +129,16 @@ const getBookingLabel = (booking) => {
   } else {
     title = booking?.serviceType || "Booking";
   }
-  
+
   const venue = booking?.classSchedule?.venue?.name || booking?.venue?.name || booking?.holidayVenue?.name || booking?.location || "";
-  
+
   return [title, venue, dateStr].filter(Boolean).join(" - ");
 };
 
 const StudentProfile = ({ activeServiceType }) => {
   const [students, setStudents] = useState([{ ...emptyStudent }]);
   const [editingIndex, setEditingIndex] = useState(null);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const { profile, updateProfile } = useProfile();
 
   // Validation errors: array of objects per student
@@ -71,13 +152,13 @@ const StudentProfile = ({ activeServiceType }) => {
     return booking?.id ? String(booking.id) : String(index);
   };
 
-  const allBookingsList = profile?.combinedBookings 
-      || (profile?.groupedBookings ? Object.values(profile.groupedBookings).flat() : [])
-      || (Array.isArray(profile) ? profile : []);
+  const allBookingsList = profile?.combinedBookings
+    || (profile?.groupedBookings ? Object.values(profile.groupedBookings).flat() : [])
+    || (Array.isArray(profile) ? profile : []);
 
   const activeBookings = allBookingsList.filter((booking) => {
-      if (!activeServiceType) return true;
-      return booking?.serviceType === activeServiceType;
+    if (!activeServiceType) return true;
+    return booking?.serviceType === activeServiceType;
   });
 
   useEffect(() => {
@@ -108,7 +189,10 @@ const StudentProfile = ({ activeServiceType }) => {
       return;
     }
     const bookingStudents = selectedBooking.students || [];
-    setStudents(bookingStudents);
+    setStudents(bookingStudents.map(s => ({
+      ...s,
+      dateOfBirth: convertToDDMMYYYY(s.dateOfBirth)
+    })));
     setErrors(bookingStudents.map(() => ({})));
   }, [selectedBooking]);
 
@@ -150,8 +234,8 @@ const StudentProfile = ({ activeServiceType }) => {
 
     if (!student.dateOfBirth) {
       err.dateOfBirth = "Date of birth is required";
-    } else if (isNaN(new Date(student.dateOfBirth).getTime())) {
-      err.dateOfBirth = "Invalid date of birth";
+    } else if (!isValidDate(student.dateOfBirth)) {
+      err.dateOfBirth = "Invalid date of birth (use DD/MM/YYYY)";
     }
 
     if (!student.gender) err.gender = "Gender is required";
@@ -180,7 +264,7 @@ const StudentProfile = ({ activeServiceType }) => {
 
       studentFirstName,
       studentLastName,
-      dateOfBirth,
+      dateOfBirth: convertToYYYYMMDD(dateOfBirth),
       age,
       gender,
       medicalInformation,
@@ -246,9 +330,9 @@ const StudentProfile = ({ activeServiceType }) => {
           parents: mappedParents,
           emergency: mappedEmergency,
           ...(activeServiceType === "holiday camp" ? {
-              paymentPlanId: selectedBooking?.paymentPlan?.id,
-              holidayCampId: selectedBooking?.holidayCamp?.id,
-              payment: selectedBooking?.payment
+            paymentPlanId: selectedBooking?.paymentPlan?.id,
+            holidayCampId: selectedBooking?.holidayCamp?.id,
+            payment: selectedBooking?.payment
           } : {})
         };
       } else {
@@ -306,10 +390,10 @@ const StudentProfile = ({ activeServiceType }) => {
       )}
 
       {/* Add Student Button */}
-      {activeServiceType === "holiday camp" && (
+{activeServiceType === "holiday camp" && students.length <= 3 && (
         <div className="md:text-right px-6 lg:p-0 bg-white md:bg-transparent xl:absolute top-7 right-5 md:mb-6">
           <button
-            onClick={addStudent}
+            onClick={() => setIsAddModalOpen(true)}
             className="inline-flex items-center gap-2 font-medium text-[18px] px-4 py-2 bg-[#0DD180] text-white rounded-lg hover:bg-green-700"
           >
             <Plus size={20} className="text-white font-bold" />
@@ -394,10 +478,14 @@ const StudentProfile = ({ activeServiceType }) => {
                   Date of birth
                 </label>
                 <input
-                  type="date"
+                  type="text"
+                  placeholder="DD/MM/YYYY"
                   disabled={!isEditing}
                   value={student.dateOfBirth}
-                  onChange={(e) => updateStudentField(index, "dateOfBirth", e.target.value)}
+                  onChange={(e) => {
+                    const formatted = handleDobChange(e.target.value, student.dateOfBirth);
+                    updateStudentField(index, "dateOfBirth", formatted);
+                  }}
                   className={`w-full rounded-md px-3 py-3 border 
   ${isEditing ? (err.dateOfBirth ? " text-black placeholder:text-black  border-red-500 bg-white" : "border-gray-300 bg-white text-black") : "bg-[#F0F5FF] border-transparent text-[#9E9FAA] placeholder:text-[#9E9FAA]"} 
   `}
@@ -500,6 +588,13 @@ const StudentProfile = ({ activeServiceType }) => {
           </div>
         );
       })}
+
+      <AddStudentModal
+        isOpen={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
+        selectedBooking={selectedBooking}
+        activeServiceType={activeServiceType}
+      />
     </div>
   );
 };

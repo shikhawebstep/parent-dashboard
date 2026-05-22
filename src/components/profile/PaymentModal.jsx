@@ -49,7 +49,7 @@ const PaymentModal = ({ isOpen, onClose, payments, payment }) => {
                                                 ? 'bg-green-100 text-green-700'
                                                 : 'bg-yellow-100 text-yellow-700'
                                             }`}>
-                                            {p.paymentStatus || p.status || "Unknown"}
+                                            {p.payment_status || p.status || "Unknown"}
                                         </span>
                                     </div>
                                     <div className="grid grid-cols-2 gap-2 text-sm">
@@ -62,7 +62,7 @@ const PaymentModal = ({ isOpen, onClose, payments, payment }) => {
                                         <div>
                                             <p className="text-gray-500 text-xs">Transaction ID</p>
                                             <p className="font-semibold text-[#191919] break-all">
-                                                {p.gatewayResponse?.id || p.stripePaymentIntentId || p.merchantRef || "-"}
+                                                {p.gatewayResponse?.id || p.stripe_payment_intent_id || p.merchantRef || "-"}
                                             </p>
                                         </div>
                                     </div>

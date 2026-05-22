@@ -34,7 +34,7 @@ const ReferFriendTab = () => {
             [name]: "",
         });
     };
-    const referalCode = profile?.profile?.referralLink || 'N/A';
+    const referalCode = profile?.accountInfo?.referralLink || 'N/A';
 
     const handleCopy = () => {
         navigator.clipboard.writeText(`${referalCode}`);

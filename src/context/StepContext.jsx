@@ -1,7 +1,18 @@
 import { createContext, useContext, useState } from "react";
 import axios from "axios";
 import { showError } from "../../utils/swalHelper";
+
 const StepContext = createContext();
+
+// Simplified validations (no Luhn, no expiry range)
+const validateCardNumber = (value) => {
+  const clean = (value || "").replace(/\s+/g, "");
+  return /^\d{13,19}$/.test(clean);
+};
+
+const validateExpiryDate = (value) => {
+  return /^\d{2}\/\d{2}$/.test(value || "");
+};
 
 export const useStep = () => useContext(StepContext);
 
@@ -20,15 +31,13 @@ export function StepProvider({ children }) {
   const [currentStep, setCurrentStep] = useState(1);
   const [errors, setErrors] = useState({});
   const [data, setData] = useState({});
-
   const [loading, setLoading] = useState(false);
 
-  // form data for all steps
   const [formData, setFormData] = useState({
     service: "",
     venue: "",
     plan: "",
-    students: [],   // existing students list
+    students: [],
     student: {},
     parents: [],
     emergency: {},
@@ -37,111 +46,109 @@ export function StepProvider({ children }) {
 
   const validateStep = (step = currentStep) => {
     let newErrors = {};
-    let isValid = true;
 
     switch (step) {
       case 1:
         if (!formData.service) newErrors.service = "Required";
         break;
+
       case 2:
         if (!formData.venue) newErrors.venue = "Required";
         break;
+
       case 3:
         if (!formData.plan) newErrors.plan = "Required";
         break;
-      case 4: // Student
+
+      case 4:
         if (!Array.isArray(formData?.students) || formData.students.length === 0) {
           if (!formData?.student?.studentFirstName)
             newErrors.studentFirstName = "First name is required";
-
           if (!formData?.student?.studentLastName)
             newErrors.studentLastName = "Last name is required";
-
           if (!formData?.student?.dateOfBirth)
             newErrors.dateOfBirth = "Date of birth is required";
-
           if (!formData?.student?.gender)
             newErrors.gender = "Gender is required";
         }
         break;
 
-      case 5: // Parent
+      case 5:
         if (!Array.isArray(formData.parents) || formData.parents.length === 0) {
           newErrors.parents = "At least one parent is required";
           break;
         }
 
         formData.parents.forEach((parent, index) => {
-          if (!parent?.parentFirstName?.trim()) {
-            newErrors[`parents.${index}.parentFirstName`] = "First name is required";
-          }
+          // FIX: use `fieldName_index` keys to match StepParent component
+          if (!parent?.parentFirstName?.trim())
+            newErrors[`parentFirstName_${index}`] = "First name is required";
 
-          if (!parent?.parentLastName?.trim()) {
-            newErrors[`parents.${index}.parentLastName`] = "Last name is required";
-          }
+          if (!parent?.parentLastName?.trim())
+            newErrors[`parentLastName_${index}`] = "Last name is required";
 
           if (!parent?.parentEmail?.trim()) {
-            newErrors[`parents.${index}.parentEmail`] = "Email is required";
+            newErrors[`parentEmail_${index}`] = "Email is required";
+          } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(parent.parentEmail)) {
+            newErrors[`parentEmail_${index}`] = "Enter a valid email";
           }
 
-          if (!parent?.parentPhoneNumber?.trim()) {
-            newErrors[`parents.${index}.parentPhoneNumber`] = "Phone number is required";
-          }
+          if (!parent?.parentPhoneNumber?.trim())
+            newErrors[`parentPhoneNumber_${index}`] = "Phone number is required";
 
-          if (!parent?.relationChild) {
-            newErrors[`parents.${index}.relationChild`] = "Relation is required";
-          }
+          if (!parent?.relationChild)
+            newErrors[`relationChild_${index}`] = "Relation is required";
         });
-
         break;
 
-      case 6: // Emergency
-        if (!formData.emergency?.emergencyFirstName) newErrors.emergencyFirstName = "First name is required";
-        if (!formData.emergency?.emergencyLastName) newErrors.emergencyLastName = "Last name is required";
-        if (!formData.emergency?.emergencyPhoneNumber) newErrors.emergencyPhoneNumber = "Phone is required";
-        if (!formData.emergency?.emergencyRelation) newErrors.emergencyRelation = "Relation is required";
+      case 6:
+        if (!formData.emergency?.emergencyFirstName)
+          newErrors.emergencyFirstName = "First name is required";
+        if (!formData.emergency?.emergencyLastName)
+          newErrors.emergencyLastName = "Last name is required";
+        if (!formData.emergency?.emergencyPhoneNumber)
+          newErrors.emergencyPhoneNumber = "Phone is required";
+        if (!formData.emergency?.emergencyRelation)
+          newErrors.emergencyRelation = "Relation is required";
         break;
-      case 7: // Payment
-        if (!formData.payment?.firstName) newErrors.firstName = "First name is required";
-        if (!formData.payment?.lastName) newErrors.lastName = "Last name is required";
+
+      case 7:
+        if (!formData.payment?.firstName)
+          newErrors.firstName = "First name is required";
+        if (!formData.payment?.lastName)
+          newErrors.lastName = "Last name is required";
         if (!formData.payment?.email) {
           newErrors.email = "Email is required";
         } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.payment.email)) {
           newErrors.email = "Invalid email format";
         }
-        if (!formData.payment?.billingAddress) newErrors.billingAddress = "Billing address is required";
+        if (!formData.payment?.billingAddress)
+          newErrors.billingAddress = "Billing address is required";
         if (!formData.payment?.cardNumber) {
           newErrors.cardNumber = "Card number is required";
-        } else {
-          const cleanedCard = formData.payment.cardNumber.replace(/\s/g, "");
-          if (!/^\d{16}$/.test(cleanedCard)) {
-            newErrors.cardNumber = "Card number must be 16 digits";
-          }
+        } else if (!validateCardNumber(formData.payment.cardNumber)) {
+          newErrors.cardNumber = "Invalid card number";
         }
         if (!formData.payment?.expiryDate) {
           newErrors.expiryDate = "Expiry date is required";
-        } else if (!/^(0[1-9]|1[0-2])\/?([0-9]{2})$/.test(formData.payment.expiryDate)) {
-          newErrors.expiryDate = "Invalid expiry date (MM/YY)";
+        } else if (!validateExpiryDate(formData.payment.expiryDate)) {
+          newErrors.expiryDate = "Invalid expiry date";
         }
         if (!formData.payment?.securityCode) {
           newErrors.securityCode = "Security code is required";
         } else if (!/^\d{3,4}$/.test(formData.payment.securityCode)) {
           newErrors.securityCode = "Security code must be 3 or 4 digits";
         }
-        if (!formData.payment?.agreeTerms) newErrors.agreeTerms = "You must agree to the terms";
+        if (!formData.payment?.agreeTerms)
+          newErrors.agreeTerms = "You must agree to the terms";
         break;
+
       default:
         break;
     }
 
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors);
-      isValid = false;
-    } else {
-      setErrors({});
-      isValid = true;
-    }
-
+    const isValid = Object.keys(newErrors).length === 0;
+    setErrors(isValid ? {} : newErrors);
     return isValid;
   };
 
@@ -155,35 +162,25 @@ export function StepProvider({ children }) {
       setLoading(false);
       return;
     }
+
     setLoading(true);
     try {
       const response = await axios.get(
         `${API_URL}api/parent/holiday/find-a-camp`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
+        { headers: { Authorization: `Bearer ${token}` } }
       );
-
-      setData(response.data?.data ?? response.data)
+      setData(response.data?.data ?? response.data);
     } catch (err) {
       console.error("Error fetching profile:", err);
-
-      // ✅ Extract API error message safely
       const errorMessage =
         err?.response?.data?.message ||
         err?.response?.data?.error ||
         "Something went wrong while fetching profile.";
-
-      // ✅ Show SweetAlert
       showError("Error", errorMessage);
-
     } finally {
       setLoading(false);
     }
   };
-
 
   const nextStep = () => {
     if (validateStep() && currentStep < STEPS.length) {
@@ -199,7 +196,6 @@ export function StepProvider({ children }) {
     }
   };
 
-  // Clear specific error on change
   const clearError = (field) => {
     setErrors(prev => {
       const newErr = { ...prev };
@@ -223,7 +219,9 @@ export function StepProvider({ children }) {
         STEPS,
         fetchData,
         loading,
-        data, setData, setLoading
+        data,
+        setData,
+        setLoading,
       }}
     >
       {children}

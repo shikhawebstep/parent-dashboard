@@ -4,20 +4,21 @@ import { useStep } from "../../../context/StepContext";
 export default function StepStudent() {
   const { formData, setFormData, data, errors, clearError } = useStep();
   const [activeTab, setActiveTab] = useState("existing");
+  const [dobError, setDobError] = useState("");
 
   const availableStudents = formData.availableStudents || [];
   const selectedStudents = formData.students || [];
+  const MAX_STUDENTS = 4;
 
   const filteredData = Array.isArray(data)
     ? data.filter((item) => item?.venueId === formData?.venue)
     : [];
+
   const handleClassChange = (classId) => {
     const selectedClass = (filteredData?.[0]?.classes ?? []).find(
       (cls) => cls?.classId === Number(classId)
     );
-
     if (!selectedClass) return;
-    console.log('selectedClass', selectedClass)
 
     setFormData((prev) => ({
       ...prev,
@@ -30,26 +31,6 @@ export default function StepStudent() {
       },
     }));
   };
-  /* ===============================
-     Sync selected existing student
-  =============================== */
-  const handleExistingClassChange = (studentId, classId) => {
-    const selectedClass = (filteredData?.[0]?.classes ?? []).find(
-      (cls) => cls?.classId === Number(classId)
-    );
-    if (!selectedClass) return;
-
-    setFormData(prev => ({
-      ...prev,
-      students: (prev.students || []).map(s => s.id === studentId ? {
-        ...s,
-        classSchedule: selectedClass,
-        classScheduleId: selectedClass?.classId,
-        className: selectedClass?.className,
-        time: selectedClass?.time || selectedClass?.startTime || "",
-      } : s)
-    }));
-  };
 
   const handleToggleStudent = (student) => {
     const isSelected = selectedStudents.some((s) => s.id === student.id);
@@ -57,31 +38,52 @@ export default function StepStudent() {
     if (isSelected) {
       setFormData((prev) => ({
         ...prev,
-        students: (prev.students || []).filter((s) => s.id !== student.id)
+        students: (prev.students || []).filter((s) => s.id !== student.id),
       }));
     } else {
+      // Block if already 4 selected
+      if (selectedStudents.length >= MAX_STUDENTS) return;
+
       const classes = filteredData?.[0]?.classes ?? [];
       const autoClass = classes.length === 1 ? classes[0] : null;
 
       setFormData((prev) => ({
         ...prev,
-        students: [...(prev.students || []), {
-          ...student,
-          classSchedule: autoClass || student.classSchedule || student?.holidayClassSchedules,
-          classScheduleId: autoClass?.classId || student.classScheduleId || student.classSchedule?.classId || student.classSchedule?.id || "",
-          className: autoClass?.className || student.className || student?.classSchedule?.className || student?.holidayClassSchedules?.className || "",
-          time: autoClass?.time || autoClass?.startTime || student.time || student?.classSchedule?.time || student?.classSchedule?.startTime || "",
-          medicalInformation: student.medicalInformation || "",
-          type: "existing",
-        }]
+        students: [
+          ...(prev.students || []),
+          {
+            ...student,
+            classSchedule: autoClass || student.classSchedule || student?.holidayClassSchedules,
+            classScheduleId:
+              autoClass?.classId ||
+              student.classScheduleId ||
+              student.classSchedule?.classId ||
+              student.classSchedule?.id ||
+              "",
+            className:
+              autoClass?.className ||
+              student.className ||
+              student?.classSchedule?.className ||
+              student?.holidayClassSchedules?.className ||
+              "",
+            time:
+              autoClass?.time ||
+              autoClass?.startTime ||
+              student.time ||
+              student?.classSchedule?.time ||
+              student?.classSchedule?.startTime ||
+              "",
+            medicalInformation: student.medicalInformation || "",
+            type: "existing",
+          },
+        ],
       }));
     }
   };
 
   useEffect(() => {
-
     if (activeTab === "new") {
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
         student: {
           studentFirstName: "",
@@ -97,42 +99,89 @@ export default function StepStudent() {
           type: "new",
         },
       }));
+      setDobError("");
     }
   }, [activeTab]);
 
-  /* ===============================
-     Handle field change
-  =============================== */
-  const handleFieldChange = (field, value) => {
-    let updatedStudent = { ...formData.student, [field]: value, type: "new" };
+  // ── DOB helpers ──────────────────────────────────────────────
+  const parseDob = (raw) => {
+    // accepts DD-MM-YYYY
+    const parts = raw.split("-");
+    if (parts.length !== 3) return null;
+    const [dd, mm, yyyy] = parts.map(Number);
+    if (!dd || !mm || !yyyy) return null;
+    if (mm < 1 || mm > 12) return null;
+    if (dd < 1 || dd > 31) return null;
+    if (yyyy < 1900 || yyyy > new Date().getFullYear()) return null;
+    const date = new Date(yyyy, mm - 1, dd);
+    if (
+      date.getFullYear() !== yyyy ||
+      date.getMonth() !== mm - 1 ||
+      date.getDate() !== dd
+    )
+      return null;
+    return date;
+  };
 
-    if (field === "dateOfBirth") {
-      const birthYear = new Date(value).getFullYear();
-      if (!isNaN(birthYear)) {
-        const age = new Date().getFullYear() - birthYear;
-        updatedStudent.age = age;
-        updatedStudent.className = age <= 7 ? "4–7 years" : "10–12 years";
+  const handleDobInput = (raw) => {
+    // Strip everything except digits
+    let digits = raw.replace(/\D/g, "");
+    if (digits.length > 8) digits = digits.slice(0, 8);
+
+    // Auto-insert dashes: DD-MM-YYYY
+    let formatted = digits;
+    if (digits.length > 2) formatted = digits.slice(0, 2) + "-" + digits.slice(2);
+    if (digits.length > 4)
+      formatted = digits.slice(0, 2) + "-" + digits.slice(2, 4) + "-" + digits.slice(4);
+
+    let age = "";
+    let className = "";
+    let dobErr = "";
+
+    if (formatted.length === 10) {
+      const date = parseDob(formatted);
+      if (!date) {
+        dobErr = "Invalid date. Use DD-MM-YYYY.";
+      } else if (date > new Date()) {
+        dobErr = "Date of birth cannot be in the future.";
+      } else {
+        age = new Date().getFullYear() - date.getFullYear();
+        className = age <= 7 ? "4–7 years" : "10–12 years";
       }
     }
 
-    setFormData(prev => ({ ...prev, student: updatedStudent }));
+    setDobError(dobErr);
+    setFormData((prev) => ({
+      ...prev,
+      student: {
+        ...prev.student,
+        dateOfBirth: formatted,
+        age: dobErr ? "" : age,
+        className: dobErr ? "" : className,
+        type: "new",
+      },
+    }));
+
+    clearError("studentDob");
+  };
+
+  const handleFieldChange = (field, value) => {
+    const updatedStudent = { ...formData.student, [field]: value, type: "new" };
+    setFormData((prev) => ({ ...prev, student: updatedStudent }));
 
     const errorMap = {
       studentFirstName: "studentstudentFirstName",
       studentLastName: "studentLastName",
-      dateOfBirth: "studentDob",
       gender: "studentGender",
       medicalInformation: "studentmedicalInformation",
     };
     if (errorMap[field]) clearError(errorMap[field]);
   };
 
-  /* ===============================
-     Save new student into formData.students
-  =============================== */
   const saveNewStudent = () => {
     const s = formData.student;
     if (!s?.studentFirstName || !s?.dateOfBirth || !s?.gender) return;
+    if (dobError || s.dateOfBirth.length < 10) return;
 
     const newStudent = {
       id: Date.now(),
@@ -148,55 +197,74 @@ export default function StepStudent() {
       medicalInformation: s.medicalInformation || "",
     };
 
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       availableStudents: [...(prev.availableStudents || []), newStudent],
       students: [...(prev.students || []), { ...newStudent, type: "existing" }],
       student: {},
     }));
-
+    setDobError("");
     setActiveTab("existing");
   };
 
   const inputClass = (hasError) =>
-    `mt-1 w-full placeholder:text-[#9C9C9C] bg-white poppins font-normal mainShadow  ${hasError ? "border border-red-500" : ""
+    `mt-1 w-full placeholder:text-[#9C9C9C] bg-white poppins font-normal mainShadow ${
+      hasError ? "border border-red-500" : ""
     } p-3 rounded-[6px] text-sm focus:ring-2 focus:ring-[#0496FF] outline-none`;
 
   const student = formData.student || {};
+  const atLimit = selectedStudents.length >= MAX_STUDENTS;
 
   return (
     <div className="max-w-4xl mx-auto bg-white py-4 px-0 md:px-6">
-      <h2 className="text-center md:text-[24px] text-[18px] font-semibold poppins mb-8">
+      <h2 className="text-center md:text-[24px] text-[18px] font-semibold poppins mb-2">
         Student information
       </h2>
 
-      {/* Tabs */}
+      {/* Selection counter */}
+      <p className="text-center text-sm poppins text-[#939395] mb-6">
+        {selectedStudents.length} / {MAX_STUDENTS} children selected
+      </p>
+
+      {/* Limit banner */}
+      {atLimit && (
+        <div className="max-w-[670px] mx-auto mb-4 flex items-center gap-2 bg-amber-50 border border-amber-300 text-amber-700 text-sm poppins px-4 py-2.5 rounded-lg">
+          <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+              d="M12 9v2m0 4h.01M12 3a9 9 0 100 18A9 9 0 0012 3z" />
+          </svg>
+          Maximum of {MAX_STUDENTS} children reached. Deselect one to change your selection.
+        </div>
+      )}
+
       {/* Tabs */}
       <div className="flex justify-center items-center gap-6 mb-8">
         <button
           onClick={() => setActiveTab("existing")}
-          className={`poppins font-semibold transition-all ${activeTab === "existing"
-            ? "bg-[#E8F1FF] text-[#0496FF] md:px-6 px-3 py-2 rounded-lg"
-            : "text-[#282829] md:text-[16px] text-[14px]"
-            }`}
+          className={`poppins font-semibold transition-all ${
+            activeTab === "existing"
+              ? "bg-[#E8F1FF] text-[#0496FF] md:px-6 px-3 py-2 rounded-lg"
+              : "text-[#282829] md:text-[16px] text-[14px]"
+          }`}
         >
           Select an existing child
         </button>
 
         <button
           onClick={() => setActiveTab("new")}
-          className={`poppins font-semibold transition-all ${activeTab === "new"
-            ? "bg-[#E8F1FF] text-[#0496FF] md:px-6 px-3 py-2 rounded-lg"
-            : "text-[#282829] md:text-[16px] text-[14px]"
-            }`}
+          className={`poppins font-semibold transition-all ${
+            activeTab === "new"
+              ? "bg-[#E8F1FF] text-[#0496FF] md:px-6 px-3 py-2 rounded-lg"
+              : "text-[#282829] md:text-[16px] text-[14px]"
+          }`}
         >
           Add a new child
         </button>
       </div>
 
-      {/* Existing Students */}
+      {/* ── Existing Students ── */}
       {activeTab === "existing" && (
-        <div className="grid sm:grid-cols-2 max-w-[670px] mx-auto gap-6">
+        <div className="grid max-h-[600px] overflow-auto sm:grid-cols-2 max-w-[670px] mx-auto gap-6">
           {availableStudents.length === 0 && (
             <div className="col-span-2 text-center py-8">
               <p className="text-[#939395] text-sm poppins">
@@ -205,64 +273,63 @@ export default function StepStudent() {
             </div>
           )}
 
-          {availableStudents.map(student => {
-            const isSelected = selectedStudents.some(s => s.id === student.id);
+          {availableStudents.map((s) => {
+            const isSelected = selectedStudents.some((sel) => sel.id === s.id);
+            const isDisabled = !isSelected && atLimit;
+
             return (
               <div
-                key={student.id}
-                onClick={() => handleToggleStudent(student)}
-                className={`border rounded-xl p-6 cursor-pointer relative transition-all ${isSelected
-                  ? "border-[#0496FF] bg-blue-50/30 shadow-sm"
-                  : "border-gray-200 bg-white hover:border-gray-300"
-                  }`}
+                key={s.id}
+                onClick={() => !isDisabled && handleToggleStudent(s)}
+                className={`border rounded-xl p-6 relative transition-all ${
+                  isDisabled
+                    ? "border-gray-200 bg-gray-50 opacity-50 cursor-not-allowed"
+                    : isSelected
+                    ? "border-[#0496FF] bg-blue-50/30 shadow-sm cursor-pointer"
+                    : "border-gray-200 bg-white hover:border-gray-300 cursor-pointer"
+                }`}
               >
                 {isSelected && (
                   <div className="absolute top-4 right-4 text-[#0496FF]">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none"
+                      viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                        d="M5 13l4 4L19 7" />
                     </svg>
                   </div>
                 )}
-                <h3 className={`font-semibold text-[18px] mb-4 poppins ${isSelected ? "text-[#0496FF]" : "text-[#282829]"}`}>
-                  {student.studentFirstName} {student.studentLastName}
+
+                <h3 className={`font-semibold text-[18px] mb-4 poppins ${
+                  isSelected ? "text-[#0496FF]" : "text-[#282829]"
+                }`}>
+                  {s.studentFirstName} {s.studentLastName}
                 </h3>
 
                 <div className="grid grid-cols-2 gap-y-4 gap-x-2">
                   <div>
-                    <label className="text-[12px] text-[#939395] block font-normal mb-1 poppins">Date of birth</label>
-                    <p className="text-[14px] text-[#282829] poppins font-medium">{student.dateOfBirth}</p>
+                    <label className="text-[12px] text-[#939395] block font-normal mb-1 poppins">
+                      Date of birth
+                    </label>
+                    <p className="text-[14px] text-[#282829] poppins font-medium">{s.dateOfBirth}</p>
                   </div>
-
                   <div>
                     <label className="text-[12px] text-[#939395] block font-normal mb-1 poppins">Age</label>
-                    <p className="text-[14px] text-[#282829] poppins font-medium">{student.age}</p>
+                    <p className="text-[14px] text-[#282829] poppins font-medium">{s.age}</p>
                   </div>
-
                   <div>
                     <label className="text-[12px] text-[#939395] block font-normal mb-1 poppins">Gender</label>
                     <p className="text-[14px] text-[#282829] poppins font-medium">
-                      {student.gender === "Male" ? "M" : student.gender === "Female" ? "F" : student.gender}
+                      {s.gender === "Male" ? "M" : s.gender === "Female" ? "F" : s.gender}
                     </p>
                   </div>
-
-                  <div onClick={(e) => e.stopPropagation()}>
-                    <label className="text-[12px] text-[#939395] block font-normal mb-1 poppins">Class</label>
-                    {isSelected ? (
-                      <select
-                        value={selectedStudents.find(s => s.id === student.id)?.classScheduleId || ""}
-                        onChange={(e) => handleExistingClassChange(student.id, e.target.value)}
-                        className="bg-white border rounded text-[#282829] text-[14px] poppins p-1 w-[90%] outline-none focus:ring-1 focus:ring-[#0496FF] transition-all"
-                      >
-                        <option value="">Select Class</option>
-                        {(filteredData?.[0]?.classes ?? []).map(cls => (
-                          <option key={cls?.classId} value={cls?.classId}>{cls?.className}</option>
-                        ))}
-                      </select>
-                    ) : (
-                      <p className="text-[14px] text-[#282829] poppins font-medium">
-                        {student?.classSchedule?.className || student?.className || student?.holidayClassSchedules?.className || "-"}
-                      </p>
-                    )}
+                  <div>
+                    <label className="text-[12px] text-[#939395] block font-normal mb-1 poppins">
+                      Class / Level
+                    </label>
+                    <p className="text-[14px] text-[#282829] poppins font-medium">
+                      {s?.classSchedule?.className || s?.className || s?.holidayClassSchedules?.className || "-"}{" "}
+                      {s?.classSchedule?.level || s?.level || s?.holidayClassSchedules?.level || ""}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -271,10 +338,9 @@ export default function StepStudent() {
         </div>
       )}
 
-      {/* New Student */}
+      {/* ── New Student ── */}
       {activeTab === "new" && (
         <div className="grid max-w-[670px] m-auto md:grid-cols-2 gap-4">
-
           <div>
             <label className="block text-[14px] text-[#282829] poppins font-normal mb-1 capitalize">
               First name
@@ -282,7 +348,7 @@ export default function StepStudent() {
             <input
               placeholder="Enter first name"
               value={student.studentFirstName || ""}
-              onChange={e => handleFieldChange("studentFirstName", e.target.value)}
+              onChange={(e) => handleFieldChange("studentFirstName", e.target.value)}
               className={inputClass(errors.studentstudentFirstName)}
             />
           </div>
@@ -294,27 +360,33 @@ export default function StepStudent() {
             <input
               placeholder="Enter last name"
               value={student.studentLastName || ""}
-              onChange={e => handleFieldChange("studentLastName", e.target.value)}
+              onChange={(e) => handleFieldChange("studentLastName", e.target.value)}
               className={inputClass(errors.studentLastName)}
             />
           </div>
 
+          {/* DOB — plain text, auto-dash */}
           <div>
             <label className="block text-[14px] text-[#282829] poppins font-normal mb-1 capitalize">
               Date of birth
             </label>
             <input
-              type="date"
-              placeholder="Enter date of birth"
+              type="text"
+              inputMode="numeric"
+              placeholder="DD-MM-YYYY"
+              maxLength={10}
               value={student.dateOfBirth || ""}
-              onChange={e => handleFieldChange("dateOfBirth", e.target.value)}
-              className={inputClass(errors.studentDob)}
+              onChange={(e) => handleDobInput(e.target.value)}
+              className={inputClass(errors.studentDob || dobError)}
             />
+            {dobError && (
+              <p className="text-red-500 text-xs poppins mt-1">{dobError}</p>
+            )}
           </div>
 
           <div>
             <label className="block text-[14px] text-[#282829] poppins font-normal mb-1 capitalize">
-              Age:
+              Age
             </label>
             <input
               readOnly
@@ -326,11 +398,11 @@ export default function StepStudent() {
 
           <div>
             <label className="block text-[14px] text-[#282829] poppins font-normal mb-1 capitalize">
-              Gender:
+              Gender
             </label>
             <select
               value={student.gender || ""}
-              onChange={e => handleFieldChange("gender", e.target.value)}
+              onChange={(e) => handleFieldChange("gender", e.target.value)}
               className={inputClass(errors.studentGender)}
             >
               <option value="">Enter gender</option>
@@ -341,23 +413,20 @@ export default function StepStudent() {
 
           <div>
             <label className="block text-[14px] text-[#282829] poppins font-normal mb-1 capitalize">
-              medical information
+              Medical information
             </label>
-            <div className="relative">
-              <input
-                placeholder="Enter medical information"
-                value={student.medicalInformation || ""}
-                onChange={e => handleFieldChange("medicalInformation", e.target.value)}
-                className={inputClass(errors.studentmedicalInformation)}
-              />
-            </div>
+            <input
+              placeholder="Enter medical information"
+              value={student.medicalInformation || ""}
+              onChange={(e) => handleFieldChange("medicalInformation", e.target.value)}
+              className={inputClass(errors.studentmedicalInformation)}
+            />
           </div>
 
           <div>
             <label className="block text-[14px] text-[#282829] poppins font-normal mb-1 capitalize">
-              Class:
+              Class
             </label>
-
             <div className="relative">
               <select
                 value={student?.classScheduleId ?? student?.classSchedule?.classId ?? ""}
@@ -365,28 +434,15 @@ export default function StepStudent() {
                 className={`${inputClass()} bg-white text-gray-700 appearance-none`}
               >
                 <option value="">Select Class</option>
-
                 {(filteredData?.[0]?.classes ?? []).map((cls) => (
                   <option key={cls?.classId} value={cls?.classId}>
-                    {cls?.className ?? "Unnamed Class"}
+                    {cls?.className}{cls?.level ? ` (${cls.level})` : ""}
                   </option>
                 ))}
               </select>
-
-              {/* Dropdown Icon */}
               <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
-                <svg
-                  className="w-4 h-4 text-[#939395]"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M19 9l-7 7-7-7"
-                  />
+                <svg className="w-4 h-4 text-[#939395]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
                 </svg>
               </div>
             </div>
@@ -394,18 +450,18 @@ export default function StepStudent() {
 
           <div>
             <label className="block text-[14px] text-[#282829] poppins font-normal mb-1 capitalize">
-              Time:
+              Time
             </label>
             <div className="relative">
               <input
                 readOnly
-                value={student?.time}
+                value={student?.time || ""}
                 placeholder="Automatic entry"
                 className={`${inputClass()} bg-white text-gray-500`}
               />
               <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
                 <svg className="w-4 h-4 text-[#939395]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinectrokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
                 </svg>
               </div>
             </div>
@@ -419,10 +475,8 @@ export default function StepStudent() {
               Save Student
             </button>
           </div>
-
         </div>
       )}
-
     </div>
   );
 }

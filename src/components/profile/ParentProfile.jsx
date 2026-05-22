@@ -267,6 +267,8 @@ const ParentProfile = ({ activeServiceType }) => {
         return Object.values(errors).every((e) => e === "");
     };
 
+    console.log('parentErrors',parentErrors)
+
     /* ===== VALIDATE EMERGENCY FIELD (single) ===== */
     const validateEmergencyField = (field, value) => {
         let errorMsg = "";

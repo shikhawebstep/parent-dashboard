@@ -8,9 +8,34 @@ export default function StepPayment() {
         : [];
 
     // ── card number: groups of 4 digits separated by spaces ──────────────
+    // ── validate card number using Luhn algorithm ─────────────────────────
+    const validateCardNumber = (value) => {
+        const clean = value.replace(/\s+/g, "");
+        if (!/^\d{13,19}$/.test(clean)) {
+            return false;
+        }
+        let sum = 0;
+        let shouldDouble = false;
+        for (let i = clean.length - 1; i >= 0; i--) {
+            let digit = parseInt(clean.charAt(i), 10);
+            if (shouldDouble) {
+                if ((digit *= 2) > 9) digit -= 9;
+            }
+            sum += digit;
+            shouldDouble = !shouldDouble;
+        }
+        return sum % 10 === 0;
+    };
+
+    // ── card number: groups of 4 digits separated by spaces ──────────────
     const formatCardNumber = (value = "") => {
-        const digits = value.replace(/\D/g, "").slice(0, 16);
-        return digits.replace(/(.{4})/g, "$1 ").trim();
+        const clean = value.replace(/\D/g, "");
+        const truncated = clean.substring(0, 19);
+        const parts = [];
+        for (let i = 0; i < truncated.length; i += 4) {
+            parts.push(truncated.substring(i, i + 4));
+        }
+        return parts.join(" ");
     };
 
     // ── expiry: auto-inserts "/" after MM ─────────────────────────────────
@@ -66,10 +91,15 @@ export default function StepPayment() {
         if (name === "cardNumber") {
             const raw = (value || "").replace(/\s/g, "");
             if (!raw) return;
-            if (raw.length < 13 || raw.length > 19) {
+            if (!/^\d{13,19}$/.test(raw)) {
                 setFormData((prev) => ({
                     ...prev,
                     _errors: { ...prev._errors, cardNumber: "Card number must be 13–19 digits." },
+                }));
+            } else if (!validateCardNumber(raw)) {
+                setFormData((prev) => ({
+                    ...prev,
+                    _errors: { ...prev._errors, cardNumber: "Invalid card number." },
                 }));
             } else {
                 setFormData((prev) => {
@@ -313,7 +343,7 @@ export default function StepPayment() {
                                     onBlur={handleBlur}
                                     className={`${inputClass(allErrors.cardNumber)} pr-16`}
                                     placeholder="1234 5678 9012 3456"
-                                    maxLength={19}
+                                    maxLength={23}
                                     inputMode="numeric"
                                     autoComplete="cc-number"
                                 />

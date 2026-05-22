@@ -232,10 +232,10 @@ const BookingCard = ({ booking, onSeeDetails }) => {
                                             ? booking.students.length
                                             : null
                                     )}
-                                    {renderField("Price Paid", safeAmount(booking?.payment?.amount))}
+                                    {renderField("Price Paid", safeAmount(booking?.payments[0]?.amount))}
                                     {renderField(
                                         "Stripe Transaction ID",
-                                        booking?.payment?.gatewayResponse?.id
+                                        booking?.payments[0]?.stripe_payment_intent_id
                                     )}
                                     {renderField("Date of Booking", formatDate(booking?.createdAt))}
                                     {renderField(
@@ -244,7 +244,7 @@ const BookingCard = ({ booking, onSeeDetails }) => {
                                         booking?.venue?.name ||
                                         booking?.holidayVenue?.name
                                     )}
-                                    {renderField("Discount", booking?.payment?.discount_amount)}
+                                    {renderField("Discount", booking?.payments[0]?.discount_amount)}
                                     {renderField("Booking Source", getBookingSource(booking))}
                                 </>
                             )}
@@ -318,7 +318,7 @@ const BookingCard = ({ booking, onSeeDetails }) => {
                             className={`px-3 py-2 mt-3 sm:hidden w-full text-center block rounded-lg capitalize text-sm ${statusColors[booking?.status] || "bg-gray-400 text-white"
                                 }`}
                         >
-                            {safeValue(booking?.status)}
+                            {safeValue(booking?.payment_status)}
                         </span>
                     </div>
                 </div>
