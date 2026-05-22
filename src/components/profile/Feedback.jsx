@@ -42,14 +42,19 @@ const formatDate = (dateString, withTime = false) => {
   return date.toLocaleDateString("en-US", options);
 };
 
-// Safely build "ClassName (startTime - endTime)" or "-"
+// Safely build "ClassName (level) (startTime - endTime)" or "-"
 const safeClassDetails = (item) => {
-  const schedule = item?.holidayClassSchedule || item?.classSchedule;
+  const schedule = item?.holidayClassSchedule || item?.holidayClassSchedules || item?.classSchedule;
   if (!schedule) return "-";
-  const name = renderValue(schedule.className, "");
+  
+  const rawName = renderValue(schedule.className, "");
+  const levelName = schedule?.level?.name || schedule?.level || "";
+  const name = levelName ? (rawName ? `${rawName} (${levelName})` : `(${levelName})`) : rawName;
+
   const start = renderValue(schedule.startTime, "");
   const end = renderValue(schedule.endTime, "");
   if (!name && !start && !end) return "-";
+  
   const timeRange = start && end ? ` (${start} - ${end})` : "";
   return `${name}${timeRange}`.trim() || "-";
 };

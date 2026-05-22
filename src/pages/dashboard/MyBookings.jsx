@@ -100,16 +100,19 @@ const MyBookings = () => {
         const student = booking?.students?.[0];
 
         if (sType === "holiday camp") {
-            venue = booking?.holidayVenue?.name ?? "-";
-            address = booking?.holidayVenue?.address ?? "-";
-            classType = student?.holidayClassSchedules?.className;
+            venue = booking?.holidayVenue?.name || "-";
+            address = booking?.holidayVenue?.address || "-";
+
+            const schedule = student?.holidayClassSchedules;
+            const levelName = schedule?.level?.name || schedule?.level || "";
+            const cName = schedule?.className || "Holiday Camp";
+            classType = levelName ? `${cName} (${levelName})` : cName;
 
             const startDate = booking?.holidayCamp?.holidayCampDates?.[0]?.startDate;
             if (startDate) {
                 dateObj = new Date(startDate);
             }
 
-            const schedule = student?.holidayClassSchedules;
             if (schedule?.startTime && schedule?.endTime) {
                 time = `${schedule.startTime} - ${schedule.endTime}`;
             } else if (startDate && booking?.holidayCamp?.holidayCampDates?.[0]?.endDate) {
@@ -117,19 +120,22 @@ const MyBookings = () => {
             }
 
         } else if (sType === "weekly class membership") {
-            venue = booking?.venue?.name ?? "-";
-            address = booking?.venue?.address ?? "-";
+            venue = booking?.venue?.name || "-";
+            address = booking?.venue?.address || "-";
 
-            const schedule = student?.classSchedule || student?.holidayClassSchedule;
+            const schedule = student?.classSchedule || student?.holidayClassSchedules;
             if (schedule) {
-                classType = schedule.className ?? "Weekly Class";
+                const levelName = schedule?.level?.name || schedule?.level || "";
+                const cName = schedule?.className || "Weekly Class";
+                classType = levelName ? `${cName} (${levelName})` : cName;
+                
                 if (schedule.startTime && schedule.endTime) {
                     time = `${schedule.startTime} - ${schedule.endTime}`;
                 }
             }
         } else if (sType === "one to one") {
-            venue = booking?.location ?? "-";
-            address = booking?.address ?? "-";
+            venue = booking?.location || "-";
+            address = booking?.address || "-";
             if (booking?.date) {
                 dateObj = new Date(booking.date);
             }
@@ -142,14 +148,16 @@ const MyBookings = () => {
                 dateObj = new Date(booking.leads.partyDate);
             }
             classType = "Birthday Party";
-            venue = booking?.location ?? "-";
-            address = booking?.address ?? "-";
+            venue = booking?.location || "-";
+            address = booking?.address || "-";
         } else {
-            venue = booking?.venue?.name;
-            address = booking?.venue?.address;
-            classType = booking?.serviceType;
-            time = booking?.time;
-            dateObj = new Date(booking?.createdAt);
+            venue = booking?.venue?.name || "-";
+            address = booking?.venue?.address || "-";
+            classType = booking?.serviceType || "-";
+            time = booking?.time || "-";
+            if (booking?.createdAt) {
+                dateObj = new Date(booking.createdAt);
+            }
         }
 
         return {

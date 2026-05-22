@@ -96,6 +96,7 @@ const BookingCard = ({ booking, onSeeDetails }) => {
     // Derive booking source label safely
     const getBookingSource = (booking) => {
         if (booking?.source) return booking.source;
+        if (booking?.marketingChannel) return booking.marketingChannel;
         if (booking?.leads?.source) return booking.leads.source;
         const adminName = safeName(
             booking?.bookedByAdmin?.firstName,

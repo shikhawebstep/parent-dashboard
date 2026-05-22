@@ -219,12 +219,46 @@ const StudentProfile = ({ activeServiceType }) => {
     if (Object.keys(validationErrors).length === 0) {
       setEditingIndex(null);
 
-      const finalDataToSend = {
-        parentAdminId: parentId,
-        students: cleanedStudents,
-        parents: cleanedParents,
-        emergencyContacts: [cleanedEmergency]
-      };
+      let finalDataToSend;
+      if (activeServiceType === "weekly class membership" || activeServiceType === "holiday camp") {
+        const mappedParents = bookingParents.map((p) => ({
+          id: p.id,
+          parentFirstName: p.parentFirstName,
+          parentLastName: p.parentLastName,
+          parentEmail: p.parentEmail,
+          parentPhoneNumber: p.parentPhoneNumber,
+          relationChild: p.relationChild || p.relationToChild || "",
+          howDidHear: p.howDidHear || p.howDidYouHear || "",
+        }));
+
+        const mappedEmergency = {
+          id: emergency?.id,
+          emergencyFirstName: emergency?.emergencyFirstName,
+          emergencyLastName: emergency?.emergencyLastName,
+          emergencyPhoneNumber: emergency?.emergencyPhoneNumber,
+          emergencyRelation: emergency?.emergencyRelation,
+        };
+
+        finalDataToSend = {
+          serviceType: activeServiceType === "weekly class membership" ? "weekly class" : "holiday camp",
+          bookingId: selectedBooking?.id,
+          students: cleanedStudents,
+          parents: mappedParents,
+          emergency: mappedEmergency,
+          ...(activeServiceType === "holiday camp" ? {
+              paymentPlanId: selectedBooking?.paymentPlan?.id,
+              holidayCampId: selectedBooking?.holidayCamp?.id,
+              payment: selectedBooking?.payment
+          } : {})
+        };
+      } else {
+        finalDataToSend = {
+          parentAdminId: parentId,
+          students: cleanedStudents,
+          parents: cleanedParents,
+          emergencyContacts: [cleanedEmergency]
+        };
+      }
 
       updateProfile(finalDataToSend);
     }
@@ -303,7 +337,7 @@ const StudentProfile = ({ activeServiceType }) => {
               <h2 className="font-bold text-[24px] text-[#282829]">
                 Student {index + 1} information
               </h2>
-              {activeServiceType === "weekly class membership" && (
+              {(activeServiceType === "weekly class membership" || activeServiceType === "holiday camp") && (
                 <button
                   className="text-gray-600 hover:text-[#042C89]"
                   onClick={() => {

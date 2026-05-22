@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useCallback } from "react";
 import axios from "axios";
-import { showError } from "../../utils/swalHelper";
+import { showError, showSuccess } from "../../utils/swalHelper";
 
 const ProfileContext = createContext();
 
@@ -64,8 +64,13 @@ export const ProfileProvider = ({ children }) => {
         setError(null);
 
         try {
+            const useAccountProfileEndpoint = updatedData?.serviceType === "weekly class" || updatedData?.serviceType === "holiday camp";
+            const url = useAccountProfileEndpoint
+                ? `${API_URL}api/parent/account-profile/booking/update`
+                : `${API_URL}api/parent/holiday/booking/update/${parentId}`;
+
             const response = await axios.put(
-                `${API_URL}api/parent/holiday/booking/update/${parentId}`,
+                url,
                 updatedData, // ✅ data goes here
                 {
                     headers: {
@@ -75,7 +80,8 @@ export const ProfileProvider = ({ children }) => {
                 }
             );
 
-            fetchProfileData();
+            await fetchProfileData();
+            showSuccess("Profile updated successfully!");
         } catch (err) {
             console.error("Error updating profile:", err);
 

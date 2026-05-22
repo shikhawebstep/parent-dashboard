@@ -26,10 +26,11 @@ const howDidHearOptions = [
 const emptyParent = {
     parentFirstName: "",
     parentLastName: "",
-    parentEmail: "",
+    parentEmail:parent[0]?.parentEmail||  "",
     parentPhoneNumber: "",
     relationChild: "",
     howDidHear: "",
+    studentId: parent[0]?.studentId ||  "",
 };
 
 const emptyEmergency = {
@@ -43,7 +44,7 @@ const emptyEmergency = {
 const getBookingLabel = (booking) => {
     if (!booking) return "Booking";
     const dateStr = booking.createdAt ? new Date(booking.createdAt).toLocaleDateString() : "";
-    
+
     let title = "";
     if (booking.serviceType === "weekly class membership") {
         title = booking?.paymentPlan?.title || "Weekly Class Membership";
@@ -56,9 +57,9 @@ const getBookingLabel = (booking) => {
     } else {
         title = booking?.serviceType || "Booking";
     }
-    
+
     const venue = booking?.classSchedule?.venue?.name || booking?.venue?.name || booking?.holidayVenue?.name || booking?.location || "";
-    
+
     return [title, venue, dateStr].filter(Boolean).join(" - ");
 };
 
@@ -83,7 +84,7 @@ const ParentProfile = ({ activeServiceType }) => {
         return booking?.id ? String(booking.id) : String(index);
     };
 
-    const allBookingsList = profile?.combinedBookings 
+    const allBookingsList = profile?.combinedBookings
         || (profile?.groupedBookings ? Object.values(profile.groupedBookings).flat() : [])
         || (Array.isArray(profile) ? profile : []);
 
@@ -126,6 +127,7 @@ const ParentProfile = ({ activeServiceType }) => {
             const parent = parents[0];
 
             setEmergency({
+                id: emergency?.id,
                 emergencyFirstName: parent?.parentFirstName || "",
                 emergencyLastName: parent?.parentLastName || "",
                 emergencyPhoneNumber: parent?.parentPhoneNumber || "",
@@ -155,7 +157,7 @@ const ParentProfile = ({ activeServiceType }) => {
         if (emergencyContact) {
             setEmergency(emergencyContact);
             setHasEmergencyContact(true);
-            
+
             const activeParent = bookingParents[0];
             const activeEmergency = emergencyContact;
             const isSame = activeParent && activeEmergency &&
@@ -182,7 +184,9 @@ const ParentProfile = ({ activeServiceType }) => {
 
     /* ===== ADD PARENT ===== */
     const handleAddParent = () => {
-        setParents((prev) => [...prev, emptyParent]);
+        const firstParentEmail = parents.length > 0 ? parents[0].parentEmail : "";
+        const firststudentId = parents.length > 0 ? parents[0].studentId : "";
+        setParents((prev) => [...prev, { ...emptyParent,studentId:firststudentId, parentEmail: firstParentEmail }]);
         setParentErrors((prev) => [...prev, {}]);
         setEditingIndex(parents.length);
         setSameAsParent(false); // reset emergency toggle on add parent
@@ -200,7 +204,7 @@ const ParentProfile = ({ activeServiceType }) => {
 
     /* ===== VALIDATION HELPERS ===== */
     const validateEmail = (email) => {
-        if (!email) return "Email is required";
+        if (!email) return "";
         // simple email regex
         const re = /\S+@\S+\.\S+/;
         return re.test(email) ? "" : "Invalid email address";
@@ -335,7 +339,7 @@ const ParentProfile = ({ activeServiceType }) => {
         studentId: emergency?.studentId,
         emergencyFirstName: emergency?.emergencyFirstName,
         emergencyLastName: emergency?.emergencyLastName,
-        emergencyPhoneNumber: emergency?.emergencyPhoneNumber,
+        emergencyPhoneNumber: emergency?.emergencyPhoneNumber?.startsWith("+") ? emergency?.emergencyPhoneNumber : emergency?.emergencyPhoneNumber ? `${dialCodes}${emergency?.emergencyPhoneNumber}` : emergency?.emergencyPhoneNumber,
         emergencyRelation: emergency?.emergencyRelation,
     }
 
@@ -343,24 +347,63 @@ const ParentProfile = ({ activeServiceType }) => {
     const cleanedParents = parents?.map(
         ({ relationChild, howDidHear, ...rest }) => ({
             ...rest,
+            parentPhoneNumber: rest.parentPhoneNumber?.startsWith("+") ? rest.parentPhoneNumber : rest.parentPhoneNumber ? `${dialCodes}${rest.parentPhoneNumber}` : rest.parentPhoneNumber,
             relationToChild: relationChild,
             howDidYouHear: howDidHear,
         })
     );
-
+    console.log('emergency', emergency)
 
     /* ===== HANDLE SAVE PARENT ===== */
+
+    console.log('parents',parents)
     const handleSaveParent = (index) => {
         const isValid = validateParent(index);
         if (isValid) {
             setEditingIndex(null);
 
-            const finalDataToSend = {
-                parentAdminId: parentId,
-                students: cleanedStudents,
-                parents: cleanedParents,
-                emergencyContacts: [cleanedEmergency]
-            };
+            let finalDataToSend;
+            if (activeServiceType === "weekly class membership" || activeServiceType === "holiday camp") {
+                const mappedParents = parents.map((p) => ({
+                    id: p.id,
+                    studentId: p.studentId || (selectedBookingStudents?.length > 0 ? selectedBookingStudents[0].id : null),
+                    parentFirstName: p.parentFirstName,
+                    parentLastName: p.parentLastName,
+                    parentEmail: p.parentEmail,
+                    parentPhoneNumber: p.parentPhoneNumber?.startsWith("+") ? p.parentPhoneNumber : p.parentPhoneNumber ? `${dialCodes}${p.parentPhoneNumber}` : p.parentPhoneNumber,
+                    relationChild: p.relationChild || p.relationToChild || "",
+                    howDidHear: p.howDidHear || p.howDidYouHear || "",
+                }));
+
+                const mappedEmergency = {
+                    id: emergency?.id,
+                    studentId: emergency?.studentId || (selectedBookingStudents?.length > 0 ? selectedBookingStudents[0].id : null),
+                    emergencyFirstName: emergency?.emergencyFirstName,
+                    emergencyLastName: emergency?.emergencyLastName,
+                    emergencyPhoneNumber: emergency?.emergencyPhoneNumber?.startsWith("+") ? emergency?.emergencyPhoneNumber : emergency?.emergencyPhoneNumber ? `${dialCodes}${emergency?.emergencyPhoneNumber}` : emergency?.emergencyPhoneNumber,
+                    emergencyRelation: emergency?.emergencyRelation,
+                };
+
+                finalDataToSend = {
+                    serviceType: activeServiceType === "weekly class membership" ? "weekly class" : "holiday camp",
+                    bookingId: selectedBooking?.id,
+                    students: cleanedStudents,
+                    parents: mappedParents,
+                    emergency: mappedEmergency,
+                    ...(activeServiceType === "holiday camp" ? {
+                        paymentPlanId: selectedBooking?.paymentPlan?.id,
+                        holidayCampId: selectedBooking?.holidayCamp?.id,
+                        payment: selectedBooking?.payment
+                    } : {})
+                };
+            } else {
+                finalDataToSend = {
+                    parentAdminId: parentId,
+                    students: cleanedStudents,
+                    parents: cleanedParents,
+                    emergencyContacts: [cleanedEmergency]
+                };
+            }
 
             updateProfile(finalDataToSend);
         } else {
@@ -371,12 +414,49 @@ const ParentProfile = ({ activeServiceType }) => {
     const handleSaveEmergency = () => {
         if (validateEmergency()) {
             setEmergencyEditing(false);
-            const finalDataToSend = {
-                parentAdminId: parentId,
-                students: cleanedStudents,
-                parents: cleanedParents,
-                emergencyContacts: [cleanedEmergency]
-            };
+
+            let finalDataToSend;
+            if (activeServiceType === "weekly class membership" || activeServiceType === "holiday camp") {
+                const mappedParents = parents.map((p) => ({
+                    id: p.id,
+                    studentId: p.studentId || (selectedBookingStudents?.length > 0 ? selectedBookingStudents[0].id : null),
+                    parentFirstName: p.parentFirstName,
+                    parentLastName: p.parentLastName,
+                    parentEmail: p.parentEmail,
+                    parentPhoneNumber: p.parentPhoneNumber?.startsWith("+") ? p.parentPhoneNumber : p.parentPhoneNumber ? `${dialCodes}${p.parentPhoneNumber}` : p.parentPhoneNumber,
+                    relationChild: p.relationChild || p.relationToChild || "",
+                    howDidHear: p.howDidHear || p.howDidYouHear || "",
+                }));
+
+                const mappedEmergency = {
+                    id: emergency?.id,
+                    studentId: emergency?.studentId || (selectedBookingStudents?.length > 0 ? selectedBookingStudents[0].id : null),
+                    emergencyFirstName: emergency?.emergencyFirstName,
+                    emergencyLastName: emergency?.emergencyLastName,
+                    emergencyPhoneNumber: emergency?.emergencyPhoneNumber?.startsWith("+") ? emergency?.emergencyPhoneNumber : emergency?.emergencyPhoneNumber ? `${dialCodes}${emergency?.emergencyPhoneNumber}` : emergency?.emergencyPhoneNumber,
+                    emergencyRelation: emergency?.emergencyRelation,
+                };
+
+                finalDataToSend = {
+                    serviceType: activeServiceType === "weekly class membership" ? "weekly class" : "holiday camp",
+                    bookingId: selectedBooking?.id,
+                    students: cleanedStudents,
+                    parents: mappedParents,
+                    emergency: mappedEmergency,
+                    ...(activeServiceType === "holiday camp" ? {
+                        paymentPlanId: selectedBooking?.paymentPlan?.id,
+                        holidayCampId: selectedBooking?.holidayCamp?.id,
+                        payment: selectedBooking?.payment
+                    } : {})
+                };
+            } else {
+                finalDataToSend = {
+                    parentAdminId: parentId,
+                    students: cleanedStudents,
+                    parents: cleanedParents,
+                    emergencyContacts: [cleanedEmergency]
+                };
+            }
 
             updateProfile(finalDataToSend);
         } else {
@@ -443,7 +523,7 @@ const ParentProfile = ({ activeServiceType }) => {
                     <div className="flex justify-between items-center mb-4">
                         <div className="flex gap-2 items-center cursor-pointer">
                             <h2 className="font-bold 2xl:text-[24px] text-[#282829] lg:text-[20px] text-[18px]">Parent information</h2>
-                            {activeServiceType === "weekly class membership" && (
+                            {(activeServiceType === "weekly class membership" || activeServiceType === "holiday camp") && (
                                 editingIndex !== 0 ? (
                                     <img
                                         src="/assets/edit.png"
@@ -482,7 +562,7 @@ const ParentProfile = ({ activeServiceType }) => {
                                 <div className="flex mb-2 justify-between">
                                     <div className="flex gap-2"> <div
                                         onClick={(e) => {
-                                            if (activeServiceType !== "weekly class membership") return;
+                                            if (activeServiceType !== "weekly class membership" && activeServiceType !== "holiday camp") return;
                                             e.stopPropagation();
                                             if (editingIndex === null) setEditingIndex(index);
                                             // Don't toggle off if editing, force Save button
@@ -490,9 +570,9 @@ const ParentProfile = ({ activeServiceType }) => {
                                         className="text-sm font-semibold cursor-pointer flex gap-2 items-center"
                                     >
                                         <h2 className="font-bold 2xl:text-[24px] text-[#282829] lg:text-[20px] text-[18px]">Parent Information {index + 1}</h2>
-                                        {activeServiceType === "weekly class membership" && !editable && <img src="/assets/edit.png" className="w-5" alt="Edit" />}
+                                        {(activeServiceType === "weekly class membership" || activeServiceType === "holiday camp") && !editable && <img src="/assets/edit.png" className="w-5" alt="Edit" />}
                                     </div>
-                                        {activeServiceType === "weekly class membership" && editable && (
+                                        {(activeServiceType === "weekly class membership" || activeServiceType === "holiday camp") && editable && (
                                             <button
                                                 onClick={() => handleSaveParent(index)}
                                                 aria-label={`Save Parent ${index + 1}`}
@@ -519,7 +599,9 @@ const ParentProfile = ({ activeServiceType }) => {
 
 
                             <div
-                                className={`grid grid-cols-1 md:grid-cols-2 my-3 gap-5 ${parents.length > 1 ? "border-b border-gray-200 pb-5" : ""
+                                className={`grid grid-cols-1 md:grid-cols-2 my-3 gap-5 ${parents.length > 1 && index !== parents.length - 1
+                                        ? "border-b border-gray-200 pb-5"
+                                        : ""
                                     }`}
                             >
                                 <Input
@@ -612,13 +694,13 @@ const ParentProfile = ({ activeServiceType }) => {
                     <div
                         className="flex gap-2 items-center mb-2"
                         onClick={() => {
-                            if (activeServiceType !== "weekly class membership") return;
+                            if (activeServiceType !== "weekly class membership" && activeServiceType !== "holiday camp") return;
                             if (!sameAsParent && !emergencyEditing) setEmergencyEditing(true);
                             // Don't toggle off edit by clicking again, force Save
                         }}
                     >
                         <h2 className="font-bold 2xl:text-[24px] text-[#282829] lg:text-[20px] text-[18px]">Emergency contact details</h2>
-                        {activeServiceType === "weekly class membership" && (
+                        {(activeServiceType === "weekly class membership" || activeServiceType === "holiday camp") && (
                             emergencyEditing ? (
                                 <button onClick={() => handleSaveEmergency()} aria-label="Save Emergency Contact">
                                     <Save size={20} />
@@ -631,7 +713,7 @@ const ParentProfile = ({ activeServiceType }) => {
 
 
                     <label className="flex items-center gap-2 text-[16px] text-[#717073] font-semibold mb-4 cursor-pointer">
-                        <input type="checkbox" checked={sameAsParent} disabled={activeServiceType !== "weekly class membership"} onChange={(e) => setSameAsParent(e.target.checked)} />
+                        <input type="checkbox" checked={sameAsParent} disabled={activeServiceType !== "weekly class membership" && activeServiceType !== "holiday camp"} onChange={(e) => setSameAsParent(e.target.checked)} />
                         Fill same as above
                     </label>
 

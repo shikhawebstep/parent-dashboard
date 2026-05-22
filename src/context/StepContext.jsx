@@ -112,8 +112,11 @@ export function StepProvider({ children }) {
         if (!formData.payment?.billingAddress) newErrors.billingAddress = "Billing address is required";
         if (!formData.payment?.cardNumber) {
           newErrors.cardNumber = "Card number is required";
-        } else if (!/^\d{16}$/.test(formData.payment.cardNumber)) {
-          newErrors.cardNumber = "Card number must be 16 digits";
+        } else {
+          const cleanedCard = formData.payment.cardNumber.replace(/\s/g, "");
+          if (!/^\d{16}$/.test(cleanedCard)) {
+            newErrors.cardNumber = "Card number must be 16 digits";
+          }
         }
         if (!formData.payment?.expiryDate) {
           newErrors.expiryDate = "Expiry date is required";

@@ -15,8 +15,7 @@ export default function StepRenderer() {
   const { currentStep, fetchData, loading, setLoading, setFormData } = useStep();
   const { fetchProfileData, profile } = useProfile();
 
-  // Flatten all bookings from groupedBookings (weeklyClass, holidayCamp, oneToOne, birthdayParty, etc.)
-  // or fall back to combinedBookings if present
+  // Flatten all bookings from groupedBookings or fall back to combinedBookings
   const booking = useMemo(() => {
     if (Array.isArray(profile?.combinedBookings)) {
       return profile.combinedBookings;
@@ -29,12 +28,10 @@ export default function StepRenderer() {
     return [];
   }, [profile]);
 
-
   const holidayBooking = useMemo(() => {
     return booking.filter((b) => b?.serviceType === "holiday camp");
   }, [booking]);
 
-  console.log('holidayBooking', holidayBooking)
   useEffect(() => {
     let isMounted = true;
 
@@ -60,29 +57,29 @@ export default function StepRenderer() {
   }, []);
 
   useEffect(() => {
-    if (!profile?.uniqueProfiles) return;
-
-    const parents = Array.isArray(profile.uniqueProfiles.parents)
-      ? profile.uniqueProfiles.parents
-      : null;
-
-    const emergency = Array.isArray(profile.uniqueProfiles.emergencyContacts)
-      ? (profile.uniqueProfiles.emergencyContacts[0] ?? null)
-      : null;
-
-    setFormData((prev) => ({
-      ...prev,
-      parents,
-      emergency,
-    }));
-
     if (!holidayBooking.length) return;
 
+    // Parents: collect unique parents across all holiday bookings by parent id
+    const allParents = holidayBooking.flatMap(
+      (b) => (Array.isArray(b?.parents) ? b.parents : [])
+    );
+    const uniqueParents = Array.from(
+      new Map(
+        allParents
+          .filter((p) => p?.id !== undefined && p?.id !== null)
+          .map((p) => [p.id, p])
+      ).values()
+    );
+
+    // Emergency: take the first available emergency contact across holiday bookings
+    const emergency = holidayBooking
+      .map((b) => b?.emergency)
+      .find((e) => e !== undefined && e !== null) ?? null;
+
+    // Students: collect unique students across all holiday bookings by student id
     const allStudents = holidayBooking.flatMap(
       (b) => (Array.isArray(b?.students) ? b.students : [])
     );
-
-    // Deduplicate students by id
     const uniqueStudents = Array.from(
       new Map(
         allStudents
@@ -92,18 +89,24 @@ export default function StepRenderer() {
     );
 
     setFormData((prev) => {
-      if (
-        JSON.stringify(prev.availableStudents) ===
-        JSON.stringify(uniqueStudents)
-      ) {
-        return prev;
-      }
+      const parentsChanged =
+        JSON.stringify(prev.parents) !== JSON.stringify(uniqueParents);
+      const emergencyChanged =
+        JSON.stringify(prev.emergency) !== JSON.stringify(emergency);
+      const studentsChanged =
+        JSON.stringify(prev.availableStudents) !== JSON.stringify(uniqueStudents);
+
+      // Only update if something actually changed
+      if (!parentsChanged && !emergencyChanged && !studentsChanged) return prev;
+
       return {
         ...prev,
-        availableStudents: uniqueStudents,
+        ...(parentsChanged && { parents: uniqueParents }),
+        ...(emergencyChanged && { emergency }),
+        ...(studentsChanged && { availableStudents: uniqueStudents }),
       };
     });
-  }, [profile]);
+  }, [holidayBooking]);
 
   if (loading) {
     return <Loader />;

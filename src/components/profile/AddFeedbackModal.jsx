@@ -19,10 +19,12 @@ const AddFeedbackModal = ({ isOpen, onClose, serviceType }) => {
     const [errors, setErrors] = useState({});
     
     // Attempt to extract classes from students inside bookings if holidayClasses from context is empty/missing
-    let classes = holidayClasses?.map((booking) => {
+    let classes = holidayClasses?.map((cls) => {
+        const levelName = cls?.level?.name || cls?.level || "";
+        const cName = cls?.className || "Class";
         return {
-            id: booking?.id,
-            name: booking?.className
+            id: cls?.id,
+            name: levelName ? `${cName} (${levelName})` : cName
         }
     });
 
@@ -30,8 +32,16 @@ const AddFeedbackModal = ({ isOpen, onClose, serviceType }) => {
         const extracted = [];
         holidayBooking?.forEach(b => {
             b.students?.forEach(s => {
-                if (s.classSchedule) extracted.push({ id: s.classSchedule.id, name: s.classSchedule.className });
-                if (s.holidayClassSchedules) extracted.push({ id: s.holidayClassSchedules.id, name: s.holidayClassSchedules.className });
+                if (s.classSchedule) {
+                    const levelName = s.classSchedule?.level?.name || s.classSchedule?.level || "";
+                    const cName = s.classSchedule?.className || "Class";
+                    extracted.push({ id: s.classSchedule.id, name: levelName ? `${cName} (${levelName})` : cName });
+                }
+                if (s.holidayClassSchedules) {
+                    const levelName = s.holidayClassSchedules?.level?.name || s.holidayClassSchedules?.level || "";
+                    const cName = s.holidayClassSchedules?.className || "Class";
+                    extracted.push({ id: s.holidayClassSchedules.id, name: levelName ? `${cName} (${levelName})` : cName });
+                }
             });
         });
         classes = extracted;
