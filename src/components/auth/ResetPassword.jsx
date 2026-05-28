@@ -27,7 +27,14 @@ const ResetPassword = () => {
                     navigate("/auth/login");
                 });
         }
-    }, [token, navigate]);
+    }, [token]); // navigate ko dependency se hatao
+    const safeNavigate = (path) => {
+        try {
+            navigate(path);
+        } catch (e) {
+            window.location.href = path;
+        }
+    };
 
     const handleChange = (e) => {
         setPasswords({
@@ -73,13 +80,11 @@ const ResetPassword = () => {
                 { headers: { "Content-Type": "application/json" } }
             );
 
-            showSuccess("Password Reset Successful", "You can now login with your new password.")
-                .then(() => {
-                    navigate("/auth/login");
-                });
+            await showSuccess("Password Reset Successful", "You can now login with your new password.");
+            safeNavigate("/auth/login");
 
         } catch (error) {
-            setLoading(false);
+
             console.error("RESET PASS ERROR:", error);
 
             let message = "Something went wrong. Please try again.";
