@@ -26,11 +26,11 @@ const howDidHearOptions = [
 const emptyParent = {
     parentFirstName: "",
     parentLastName: "",
-    parentEmail:parent[0]?.parentEmail||  "",
+    parentEmail: "",
     parentPhoneNumber: "",
     relationChild: "",
     howDidHear: "",
-    studentId: parent[0]?.studentId ||  "",
+    studentId: "",
 };
 
 const emptyEmergency = {
