@@ -8,7 +8,7 @@ import ServiceHistory from "../../components/profile/ServiceHistory";
 import { useProfile } from "../../context/ProfileContext";
 
 const serviceTabs = [
-  { name: "Weekly Classes", serviceType: "weekly class membership" },
+  { name: "Weekly Classes", serviceType: "Weekly Classes" },
   { name: "Holiday Camps", serviceType: "holiday camp" },
   { name: "One-to-One", serviceType: "one to one" },
   { name: "Birthday Party", serviceType: "birthday party" },
@@ -49,9 +49,10 @@ const AccountInformation = () => {
     return <Loader />;
   }
 
-  const currentServiceType = serviceTabs.find(
-    (t) => t.name === activeServiceTab
-  )?.serviceType;
+const currentServiceType =
+  activeServiceTab === "Weekly Classes"
+    ? ["weekly class membership", "weekly class trial"]
+    : serviceTabs.find((t) => t.name === activeServiceTab)?.serviceType;
 
   const renderSubComponent = () => {
     switch (activeSubTab) {

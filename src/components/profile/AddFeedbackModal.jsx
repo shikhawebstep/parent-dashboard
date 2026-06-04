@@ -9,15 +9,20 @@ const AddFeedbackModal = ({ isOpen, onClose, serviceType }) => {
     const { profile } = useProfile();
     const { feedback, fetchFeedbackData } = useFeedback();
 
-    const booking = profile?.combinedBookings 
+    const booking = profile?.combinedBookings
         || (profile?.groupedBookings ? Object.values(profile.groupedBookings).flat() : [])
         || [];
+
     const holidayClasses = feedback?.holidayClasses;
     const currentServiceType = serviceType || "holiday camp";
-    const holidayBooking = booking?.filter((booking) => booking?.serviceType == currentServiceType);
-    const [loading, setLoading] = useState(false);
+
+    const holidayBooking = booking?.filter((b) =>
+        Array.isArray(currentServiceType)
+            ? currentServiceType.includes(b?.serviceType)
+            : b?.serviceType === currentServiceType
+    ); const [loading, setLoading] = useState(false);
     const [errors, setErrors] = useState({});
-    
+
     // Attempt to extract classes from students inside bookings if holidayClasses from context is empty/missing
     let classes = holidayClasses?.map((cls) => {
         const levelName = cls?.level?.name || cls?.level || "";
@@ -128,8 +133,8 @@ const AddFeedbackModal = ({ isOpen, onClose, serviceType }) => {
         const parentData = JSON.parse(localStorage.getItem("parentData"));
         const parentAdminId = parentData?.id || null;
 
+        const bookingServiceType = selectedBooking?.serviceType || (Array.isArray(currentServiceType) ? currentServiceType[0] : currentServiceType);
         setLoading(true);
-
         const isHoliday = currentServiceType === "holiday camp";
 
         try {
@@ -140,7 +145,7 @@ const AddFeedbackModal = ({ isOpen, onClose, serviceType }) => {
                     [isHoliday ? "holidayClassScheduleId" : "classScheduleId"]: form.holidayClassScheduleId ? Number(form.holidayClassScheduleId) : null,
                     [isHoliday ? "holidayVenueId" : "venueId"]: venueId ? Number(venueId) : null,
                     parentAdminId: parentAdminId ? Number(parentAdminId) : null,
-                    serviceType: currentServiceType,
+                    serviceType: bookingServiceType,
                     feedbackType: form.feedbackType,
                     category: form.category,
                     notes: form.notes,

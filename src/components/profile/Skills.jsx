@@ -16,10 +16,13 @@ const Skills = ({ activeServiceType }) => {
         || (profile?.groupedBookings ? Object.values(profile.groupedBookings).flat() : [])
         || (Array.isArray(profile) ? profile : []);
 
-    const activeBookings = allBookingsList.filter((booking) => {
-        if (!activeServiceType) return true;
-        return booking?.serviceType === activeServiceType;
-    });
+   const activeBookings = allBookingsList.filter((booking) => {
+    if (!activeServiceType) return true;
+
+    return Array.isArray(activeServiceType)
+        ? activeServiceType.includes(booking?.serviceType)
+        : booking?.serviceType === activeServiceType;
+});
 
     const allStudents = activeBookings.flatMap(b => b.students || []);
     const uniqueMap = new Map();

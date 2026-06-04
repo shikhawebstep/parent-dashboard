@@ -143,13 +143,17 @@ const StudentProfile = ({ activeServiceType }) => {
   // Validation errors: array of objects per student
   const [errors, setErrors] = useState([{}]);
 
+  const serviceKey = Array.isArray(activeServiceType)
+    ? "weekly-classes"
+    : activeServiceType;
   const [selectedBookingId, setSelectedBookingId] = useState(() => {
-    return localStorage.getItem(`selectedBookingId_${activeServiceType}`) || "";
+    return localStorage.getItem(`selectedBookingId_${serviceKey}`) || "";
   });
 
   const getBookingId = (booking, index) => {
     return booking?.id ? String(booking.id) : String(index);
   };
+
 
   const allBookingsList = profile?.combinedBookings
     || (profile?.groupedBookings ? Object.values(profile.groupedBookings).flat() : [])
@@ -157,16 +161,18 @@ const StudentProfile = ({ activeServiceType }) => {
 
   const activeBookings = allBookingsList.filter((booking) => {
     if (!activeServiceType) return true;
-    return booking?.serviceType === activeServiceType;
-  });
 
+    return Array.isArray(activeServiceType)
+      ? activeServiceType.includes(booking?.serviceType)
+      : booking?.serviceType === activeServiceType;
+  });
   useEffect(() => {
     if (activeBookings.length > 0) {
       const hasSelected = activeBookings.some((b, idx) => getBookingId(b, idx) === selectedBookingId);
       if (!hasSelected) {
         const initialId = getBookingId(activeBookings[0], 0);
         setSelectedBookingId(initialId);
-        localStorage.setItem(`selectedBookingId_${activeServiceType}`, initialId);
+        localStorage.setItem(`selectedBookingId_${serviceKey}`, initialId);
       }
     } else {
       setSelectedBookingId("");
@@ -389,7 +395,7 @@ const StudentProfile = ({ activeServiceType }) => {
       )}
 
       {/* Add Student Button */}
-{activeServiceType === "holiday camp" && students.length <= 3 && (
+      {activeServiceType === "holiday camp" && students.length <= 3 && (
         <div className="md:text-right px-6 lg:p-0 bg-white md:bg-transparent xl:absolute top-7 right-5 md:mb-6">
           <button
             onClick={() => setIsAddModalOpen(true)}
@@ -422,13 +428,12 @@ const StudentProfile = ({ activeServiceType }) => {
               </h2>
               {(activeServiceType === "weekly class membership" || activeServiceType === "holiday camp") && (
                 <button
-                  className="text-gray-600 hover:text-[#042C89]"
                   onClick={() => {
                     if (isEditing) handleSave(index);
                     else setEditingIndex(index);
                   }}
-                  title={isEditing ? " text-black Save" : "Edit"}
-                >
+                  title={isEditing ? "Save" : "Edit"}
+                  className={`... ${isEditing ? "bg-white border border-gray-300 text-black" : "bg-[#F0F5FF] border-transparent text-[#9E9FAA] placeholder:text-[#9E9FAA]"}`}                >
                   {isEditing ? <Save size={20} /> : <img src="/assets/edit.png" className="w-5" alt="Edit" />}
                 </button>
               )}
@@ -520,8 +525,9 @@ const StudentProfile = ({ activeServiceType }) => {
                   styles={{
                     control: (provided, state) => ({
                       ...provided,
-                      backgroundColor: isEditing ? " text-black #fff" : "#F0F5FF",
-                      borderColor: err.gender ? "#ef4444" : isEditing ? " text-black #ccc" : "#fff",
+                      backgroundColor: isEditing ? "#fff" : "#F0F5FF",
+                      borderColor: err.gender ? "#ef4444" : isEditing ? "#ccc" : "#fff",
+                      color: isEditing ? "#000" : "#999",
                       borderRadius: "0.5rem",
                       minHeight: "48px",
                       fontWeight: "600",

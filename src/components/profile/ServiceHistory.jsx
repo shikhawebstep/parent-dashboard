@@ -37,11 +37,14 @@ export default function ServiceHistory({ activeServiceType }) {
     || (profile?.groupedBookings ? Object.values(profile.groupedBookings).flat() : [])
     || (Array.isArray(profile) ? profile : []);
 
-  const allBookings = allBookingsList.filter((booking) => {
+const allBookings = allBookingsList.filter((booking) => {
     if (!activeServiceType) return true;
-    return booking?.serviceType === activeServiceType;
-  });
+    return Array.isArray(activeServiceType)
+        ? activeServiceType.includes(booking?.serviceType)
+        : booking?.serviceType === activeServiceType;
+});
 
+console.log('allBookings',allBookings)
   const handleApplyFilter = () => {
     setAppliedOptions(filterOptions);
     setAppliedStartDate(startDate);
@@ -73,13 +76,16 @@ export default function ServiceHistory({ activeServiceType }) {
     if (mappedTypes.includes(type)) return true;
 
     // Support edge case string variations
-    if (mappedTypes.includes("weekly classes") && type === "weekly class membership") return true;
+    if (mappedTypes.includes("weekly classes") &&( type === "weekly class membership" ||  type === "weekly class trial")) return true;
     if (mappedTypes.includes("birthday") && type.includes("birthday")) return true;
 
     return false;
   });
 
-  const visibleBookings = filteredBookings.filter(b => b?.serviceType !== "weekly class trial");
+
+  console.log('filteredBookings',filteredBookings)
+  const visibleBookings = filteredBookings;
+  console.log('visibleBookings',visibleBookings)
 
 
   if (selectedBooking) {
@@ -137,7 +143,7 @@ export default function ServiceHistory({ activeServiceType }) {
           </button>
         </div>
       </div>
-      <div className="py-6 md:pt-0 bg-gray-100 min-h-screen">
+      <div className="py-6 md:p-4 xl:px-0 bg-gray-100 min-h-screen">
         {allBookings.length > 0 ? (
           visibleBookings.length > 0 ? (
             visibleBookings.map((b, idx) => (

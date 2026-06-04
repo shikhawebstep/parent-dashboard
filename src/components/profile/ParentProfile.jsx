@@ -76,9 +76,7 @@ const ParentProfile = ({ activeServiceType }) => {
     const [emergencyErrors, setEmergencyErrors] = useState({});
     const [hasEmergencyContact, setHasEmergencyContact] = useState(false);
 
-    const [selectedBookingId, setSelectedBookingId] = useState(() => {
-        return localStorage.getItem(`selectedBookingId_${activeServiceType}`) || "";
-    });
+
 
     const getBookingId = (booking, index) => {
         return booking?.id ? String(booking.id) : String(index);
@@ -90,16 +88,26 @@ const ParentProfile = ({ activeServiceType }) => {
 
     const activeBookings = allBookingsList.filter((booking) => {
         if (!activeServiceType) return true;
-        return booking?.serviceType === activeServiceType;
-    });
 
+        return Array.isArray(activeServiceType)
+            ? activeServiceType.includes(booking?.serviceType)
+            : booking?.serviceType === activeServiceType;
+    });
+    const storageKey = `selectedBookingId_${Array.isArray(activeServiceType)
+        ? activeServiceType.join("_")
+        : activeServiceType
+        }`;
+
+    const [selectedBookingId, setSelectedBookingId] = useState(() => {
+        return localStorage.getItem(storageKey) || "";
+    });
     useEffect(() => {
         if (activeBookings.length > 0) {
             const hasSelected = activeBookings.some((b, idx) => getBookingId(b, idx) === selectedBookingId);
             if (!hasSelected) {
                 const initialId = getBookingId(activeBookings[0], 0);
                 setSelectedBookingId(initialId);
-                localStorage.setItem(`selectedBookingId_${activeServiceType}`, initialId);
+                localStorage.setItem(storageKey, initialId);
             }
         } else {
             setSelectedBookingId("");
@@ -108,9 +116,9 @@ const ParentProfile = ({ activeServiceType }) => {
 
     const selectedBooking = activeBookings.find((b, idx) => getBookingId(b, idx) === selectedBookingId) || activeBookings[0];
 
-    const handleBookingChange = (bookingId) => {
-        setSelectedBookingId(bookingId);
-        localStorage.setItem(`selectedBookingId_${activeServiceType}`, bookingId);
+ const handleBookingChange = (bookingId) => {
+    setSelectedBookingId(bookingId);
+    localStorage.setItem(storageKey, bookingId);
         setEditingIndex(null);
         setEmergencyEditing(false);
     };
@@ -186,7 +194,7 @@ const ParentProfile = ({ activeServiceType }) => {
     const handleAddParent = () => {
         const firstParentEmail = parents.length > 0 ? parents[0].parentEmail : "";
         const firststudentId = parents.length > 0 ? parents[0].studentId : "";
-        setParents((prev) => [...prev, { ...emptyParent,studentId:firststudentId, parentEmail: firstParentEmail }]);
+        setParents((prev) => [...prev, { ...emptyParent, studentId: firststudentId, parentEmail: firstParentEmail }]);
         setParentErrors((prev) => [...prev, {}]);
         setEditingIndex(parents.length);
         setSameAsParent(false); // reset emergency toggle on add parent
@@ -225,8 +233,8 @@ const ParentProfile = ({ activeServiceType }) => {
     /* ===== VALIDATE PARENT FIELD (single) ===== */
     const validateParentField = (index, field, value) => {
         let errorMsg = "";
-        if (["parentLastName", "parentLastName"].includes(field)) {
-            errorMsg = validateText(value, field === "parentLastName" ? "First name" : "Last name");
+      if (["parentFirstName", "parentLastName"].includes(field)) {
+    errorMsg = validateText(value, field === "parentFirstName" ? "First name" : "Last name");
         } else if (field === "parentEmail") {
             errorMsg = validateEmail(value);
         } else if (field === "parentPhoneNumber") {
@@ -267,7 +275,7 @@ const ParentProfile = ({ activeServiceType }) => {
         return Object.values(errors).every((e) => e === "");
     };
 
-    console.log('parentErrors',parentErrors)
+    console.log('parentErrors', parentErrors)
 
     /* ===== VALIDATE EMERGENCY FIELD (single) ===== */
     const validateEmergencyField = (field, value) => {
@@ -358,7 +366,7 @@ const ParentProfile = ({ activeServiceType }) => {
 
     /* ===== HANDLE SAVE PARENT ===== */
 
-    console.log('parents',parents)
+    console.log('parents', parents)
     const handleSaveParent = (index) => {
         const isValid = validateParent(index);
         if (isValid) {
@@ -602,8 +610,8 @@ const ParentProfile = ({ activeServiceType }) => {
 
                             <div
                                 className={`grid grid-cols-1 md:grid-cols-2 my-3 gap-5 ${parents.length > 1 && index !== parents.length - 1
-                                        ? "border-b border-gray-200 pb-5"
-                                        : ""
+                                    ? "border-b border-gray-200 pb-5"
+                                    : ""
                                     }`}
                             >
                                 <Input

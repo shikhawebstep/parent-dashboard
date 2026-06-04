@@ -75,9 +75,15 @@ const Feedback = ({ activeServiceType }) => {
     fetchFeedbackData();
   }, []);
 
-  const feedbackList = Array.isArray(feedback?.[activeServiceType])
-    ? feedback[activeServiceType]
-    : [];
+ const feedbackList = (() => {
+    if (!feedback) return [];
+    if (Array.isArray(activeServiceType)) {
+        return activeServiceType.flatMap(type => 
+            Array.isArray(feedback[type]) ? feedback[type] : []
+        );
+    }
+    return Array.isArray(feedback[activeServiceType]) ? feedback[activeServiceType] : [];
+})();
   const totalPages = Math.ceil(feedbackList.length / itemsPerPage);
   const currentItems = feedbackList.slice(
     (currentPage - 1) * itemsPerPage,
