@@ -73,7 +73,7 @@ const Login = () => {
 
     const API_URL = import.meta.env.VITE_API_BASE_URL;
     const params = new URLSearchParams(window.location.search);
-    const redirectTo = params.get("redirect") || "/";
+    const redirectTo = params.get("redirect") || "/bookings";
 
     setLoading(true);
     try {

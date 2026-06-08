@@ -61,14 +61,14 @@ const ForgotPassword = () => {
     };
 
     return (
-        <div className="w-full h-full bg-white flex items-center p-5 lg:p-10 xl:p-0">
-            <div className="w-full flex flex-col max-w-lg border border-gray-200 rounded-[15px] p-5 m-auto items-center justify-center m-auto ">
+        <div className="w-full h-full  flex items-center p-5 lg:p-10 xl:p-0">
+            <div className="w-full flex flex-col bg-white shadow-md max-w-[33%] 2xl:max-w-[25%] border border-gray-200 rounded-[20px] p-10 m-auto items-center justify-center m-auto ">
                 <div className="text-center w-full mb-8">
-                    <div className="text-5xl font-bold text-blue-700 2xl:max-w-[70px] lg:max-w-[50px] max-w-[60px] m-auto">
+                    <div className="text-5xl font-bold text-blue-700 2xl:max-w-[60px] lg:max-w-[50px] max-w-[50px] m-auto">
                         <img src="/assets/sambaLogoBlue.png" alt="" className="w-full" />
                     </div>
-                    <h2 className="2xl:text-[38px] text-[38px] lg:text-[40px] font-semibold mt-3">Forgot Password?</h2>
-                    <p className="text-black text-[20px] font-semibold">Enter your email to receive a reset link.</p>
+                    <h2 className="2xl:text-[32px] text-[28px]  font-semibold mt-3">Forgot Password?</h2>
+                    <p className="text-black text-[18px] font-semibold">Enter your email to receive a reset link.</p>
                 </div>
 
                 <form onSubmit={handleSubmit} className="w-full">

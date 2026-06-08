@@ -31,7 +31,7 @@ const NotificationSettings = () => {
                 type="checkbox"
                 checked={settings[stateKey]}
                 onChange={() => toggle(stateKey)}
-                className="mt-1 h-5 w-5 appearance-none rounded-full border-2 border-[#CBD5E1] bg-white checked:border-[#00D084] checked:bg-[#00D084] focus:ring-4 focus:ring-[#00A6E3]/15 cursor-pointer"
+                className="mt-1 h-5 w-5 appearance-none rounded-full border-2 border-[#CBD5E1] bg-red-500 checked:border-[#00D084] checked:bg-[#00D084] focus:ring-4 focus:ring-[#00A6E3]/15 cursor-pointer"
             />
         </label>
     );

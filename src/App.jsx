@@ -18,6 +18,7 @@ import NotFound from "./pages/NotFound";
 import { FeedbackProvider } from "./context/FeedbackContext";
 import { SkillProvider } from "./context/SkillContext";
 import SkillDetail from "./components/profile/SkillDetail";
+import SetPassword from "./components/auth/SetPassword";
 function App() {
   return (
     <StepProvider>
@@ -32,6 +33,7 @@ function App() {
                   <Route path="/auth/login" element={<LoginPage />} />
                   <Route path="/auth/forgot-password" element={<ForgotPasswordPage />} />
                   <Route path="/auth/reset-password" element={<ResetPasswordPage />} />
+                  <Route path="/auth/set-password" element={<SetPassword />} />
                   <Route path="/bookings" element={<MyBookings />} />
                   <Route path="/refer" element={<ReferFriend />} />
                   <Route path="/surveys" element={<Surveys />} />

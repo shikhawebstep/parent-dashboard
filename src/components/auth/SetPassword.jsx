@@ -5,7 +5,7 @@ import Swal from "sweetalert2";
 import { showError, showSuccess } from "../../../utils/swalHelper";
 import axios from "axios";
 
-const ResetPassword = () => {
+const SetPassword = () => {
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
     const token = searchParams.get("token");
@@ -111,8 +111,8 @@ const ResetPassword = () => {
                     <div className="text-5xl font-bold text-blue-700 2xl:max-w-[80px] lg:w-[50px]  m-auto">
                         <img src="/assets/sambaLogoBlue.png" alt="" className="w-full" />
                     </div>
-                    <h2 className="2xl:text-[36px] text-[26px] lg:text-[32px] font-semibold mt-3">Reset Password</h2>
-                    <p className="text-black xl:text-[20px] md:text-[16px] font-semibold">Enter your new password below.</p>
+                    <h2 className="2xl:text-[36px] text-[26px] lg:text-[32px] font-semibold mt-3">Set Password</h2>
+                    <p className="text-black xl:text-[20px] md:text-[16px] font-semibold">Enter your password below.</p>
                 </div>
 
                 <form onSubmit={handleSubmit} className="w-full">
@@ -180,7 +180,7 @@ const ResetPassword = () => {
                         className="w-full bg-[#237FEA] text-white 2xl:text-[18px] lg:text-[16px] font-bold py-2.5 rounded-[14px] hover:bg-blue-700 transition disabled:opacity-70 disabled:cursor-not-allowed flex justify-center items-center gap-2"
                     >
                         {loading && <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>}
-                        {loading ? "Resetting..." : "Reset Password"}
+                        {loading ? "Setting your password..." : "Set Password"}
                     </button>
 
                     <div className="text-center mt-5">
@@ -198,4 +198,4 @@ const ResetPassword = () => {
     );
 };
 
-export default ResetPassword;
+export default SetPassword;

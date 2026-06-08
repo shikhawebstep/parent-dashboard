@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 const OnboardingTour = () => {
     const [isOpen, setIsOpen] = useState(false);
     const [currentStep, setCurrentStep] = useState(0);
+    const navigate= useNavigate();
+  const parentData = JSON.parse(localStorage.getItem("parentData"));
 
     // Persist tour state roughly (simulate trigger on first load)
     useEffect(() => {
@@ -15,6 +18,7 @@ const OnboardingTour = () => {
     const handleClose = () => {
         setIsOpen(false);
         localStorage.setItem('hasSeenOnboardingTour', 'true');
+        navigate('bookings')
     };
 
     const handleSkip = () => {
@@ -31,7 +35,9 @@ const OnboardingTour = () => {
 
     const steps = [
         {
-            title: "Welcome John!",
+            title: `Welcome ${parentData?.firstName && parentData?.lastName
+                ? `${parentData.firstName} ${parentData.lastName}`
+                : parentData?.email || "N/A"}`,
             description: "Take a quick tour of your parent connect account.",
             icon: '/assets/step1.png'
         },

@@ -12,7 +12,7 @@ const Layout = ({ children }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   // 🔒 Public Pages (No Middleware, No Sidebar/Header)
-  const publicPaths = ["/auth/login", "/auth/forgot-password", "/auth/reset-password"];
+  const publicPaths = ["/auth/login", "/auth/forgot-password", "/auth/reset-password","/auth/set-password"];
   
   if (publicPaths.includes(location.pathname)) {
     return (

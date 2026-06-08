@@ -220,14 +220,14 @@ const Header = ({ onMenuClick }) => {
             onClick={() => setIsDropdownOpen(!isDropdownOpen)}
           >
             <img
-              src={profile?.accountInfo?.profile || ""}
+              src={profile?.accountInfo?.profile || "/assets/dummy-avatar.png"}
               alt="User"
               className="w-[52px] lg:h-[52px] rounded-full object-cover"
             />
             <span className="2xl:text-[18px] text-[14px] hidden lg:block font-semibold text-[#282829]">
-              {profile?.accountInfo?.firstName && profile?.accountInfo?.lastName
-                ? `${profile.accountInfo.firstName} ${profile.accountInfo.lastName}`
-                : profile?.accountInfo?.email || "N/A"}
+              {parentData?.firstName && parentData?.lastName
+                ? `${parentData.firstName} ${parentData.lastName}`
+                : parentData?.email || "N/A"}
             </span>
             <img
               src="/assets/Arrows-down.png"
