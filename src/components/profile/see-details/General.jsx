@@ -74,7 +74,7 @@ export default function General({ booking: propBooking, details }) {
     const students = details?.students || booking?.students || [];
     const parents = details?.parents || booking?.parents || [];
     const emergency = details?.emergency || booking?.emergency;
-    
+
     const serviceType = booking?.serviceType || details?.serviceType || "weekly class membership";
 
     let bookingStartDate = booking?.createdAt;
@@ -100,7 +100,7 @@ export default function General({ booking: propBooking, details }) {
     } else {
         const classSchedule = booking?.classSchedule || students?.[0]?.classSchedule;
         const venue = booking?.classSchedule?.venue || booking?.venue || details?.venue;
-        
+
         bookingStartDate = booking?.startDate || booking?.createdAt;
         bookingVenueName = venue?.name || "N/A";
         bookingClassName = classSchedule?.className || "N/A";
@@ -369,7 +369,7 @@ export default function General({ booking: propBooking, details }) {
                             ) : (
                                 <div className="flex items-center gap-4">
                                     <img
-                                        src="/assets/dummy-avatar.png"
+                                        src={profilePhoto|| '/assets/dummy-avatar.png'}
                                         alt="Avatar"
                                         className="w-20 h-20 rounded-full object-cover"
                                     />
@@ -388,19 +388,19 @@ export default function General({ booking: propBooking, details }) {
                             <div className="space-y-4 lg:text-[16px] text-[14px]">
                                 {serviceType === "weekly class membership" && (
                                     <>
-                                        <DetailRow label="Membership Plan" value={paymentPlan?.title} />
-                                        <DetailRow label="Students" value={Array.isArray(booking?.students) ? booking.students.length : null} />
                                         <div className="border-b border-[#495362] pb-2">
                                             <p className="text-white 2xl:text-[20px] xl:text-[18px] lg:text-[16px] text-[14px] font-medium mb-1">Venue</p>
                                             <span className="bg-[#3B82F6] text-white px-3 py-1 rounded text-xs font-semibold inline-block">{bookingVenueName}</span>
                                         </div>
+                                        <DetailRow label="Membership Plan" value={paymentPlan?.title} />
+                                        <DetailRow label="Students" value={Array.isArray(booking?.students) ? booking.students.length : null} />
                                         <DetailRow
                                             label={booking?.payments?.some((payment) => payment?.paymentType === "accesspaysuite") ? "Contact" : "KGo/Cardless ID"}
                                             value={booking?.payments?.some((payment) => payment?.paymentType === "accesspaysuite") ? booking?.payments?.find((payment) => payment?.paymentType === "accesspaysuite")?.gatewayResponse?.Contract || "N/A" : booking?.payments?.find((payment) => payment?.goCardlessMandateId)?.goCardlessMandateId || "N/A"}
                                         />
                                         <DetailRow label="Monthly Price" value={safePrice(booking?.paymentPlan?.price, "N/A")} />
                                         <DetailRow label="Date Of Booking" value={safeDateLocaleString(booking?.createdAt)} />
-                                        
+
                                         {/* Progress */}
                                         <div className="border-b border-[#495362] pb-3">
                                             <div className="flex justify-between items-end mb-1">
@@ -421,12 +421,12 @@ export default function General({ booking: propBooking, details }) {
 
                                 {(serviceType === "weekly class trial" && booking?.bookingType === "free") && (
                                     <>
-                                        <DetailRow label="Date Of Trial" value={safeDateLocaleString(booking?.trialDate)} />
-                                        <DetailRow label="Students" value={Array.isArray(booking?.students) ? booking.students.length : null} />
                                         <div className="border-b border-[#495362] pb-2">
                                             <p className="text-white 2xl:text-[20px] xl:text-[18px] lg:text-[16px] text-[14px] font-medium mb-1">Venue</p>
                                             <span className="bg-[#3B82F6] text-white px-3 py-1 rounded text-xs font-semibold inline-block">{bookingVenueName}</span>
                                         </div>
+                                        <DetailRow label="Date Of Trial" value={safeDateLocaleString(booking?.trialDate)} />
+                                        <DetailRow label="Students" value={Array.isArray(booking?.students) ? booking.students.length : null} />
                                         <DetailRow label="ID" value={booking?.bookingId || "N/A"} />
                                         <DetailRow label="Trial Attempt" value={booking?.venue?.address} />
                                         <DetailRow label="Date Of Booking" value={safeDateLocaleString(booking?.createdAt)} />
@@ -436,11 +436,11 @@ export default function General({ booking: propBooking, details }) {
 
                                 {(serviceType === "weekly class trial" && booking?.bookingType === "waiting list") && (
                                     <>
-                                        <DetailRow label="Students" value={Array.isArray(booking?.students) ? booking.students.length : null} />
                                         <div className="border-b border-[#495362] pb-2">
                                             <p className="text-white 2xl:text-[20px] xl:text-[18px] lg:text-[16px] text-[14px] font-medium mb-1">Venue</p>
                                             <span className="bg-[#3B82F6] text-white px-3 py-1 rounded text-xs font-semibold inline-block">{bookingVenueName}</span>
                                         </div>
+                                        <DetailRow label="Students" value={Array.isArray(booking?.students) ? booking.students.length : null} />
                                         <DetailRow label="ID" value={booking?.bookingId || "N/A"} />
                                         <DetailRow label="Address" value={booking?.venue?.address} />
                                         <DetailRow label="Date Of Booking" value={safeDateLocaleString(booking?.createdAt)} />
@@ -462,15 +462,15 @@ export default function General({ booking: propBooking, details }) {
 
                                 {serviceType === "one to one" && (
                                     <>
+                                        <div className="border-b border-[#495362] pb-2">
+                                            <p className="text-white 2xl:text-[20px] xl:text-[18px] lg:text-[16px] text-[14px] font-medium mb-1">Venue</p>
+                                            <span className="bg-[#3B82F6] text-white px-3 py-1 rounded text-xs font-semibold inline-block">{bookingVenueName}</span>
+                                        </div>
                                         <DetailRow label="Package" value={booking?.package?.packageName} />
                                         <DetailRow label="Students" value={Array.isArray(booking?.students) ? booking.students.length : null} />
                                         <DetailRow label="Price Paid" value={safePrice(booking?.payment?.amount, "N/A")} />
                                         <DetailRow label="Stripe Transaction ID" value={booking?.payment?.stripePaymentIntentId} />
                                         <DetailRow label="Date of Party" value={safeDateLocaleString(booking?.leads?.partyDate || booking?.date)} />
-                                        <div className="border-b border-[#495362] pb-2">
-                                            <p className="text-white 2xl:text-[20px] xl:text-[18px] lg:text-[16px] text-[14px] font-medium mb-1">Venue</p>
-                                            <span className="bg-[#3B82F6] text-white px-3 py-1 rounded text-xs font-semibold inline-block">{bookingVenueName}</span>
-                                        </div>
                                         <DetailRow label="Coach" value={safeName(booking?.coach?.firstName, booking?.coach?.lastName, "N/A")} />
                                         <DetailRow label="Booking Source" value={getBookingSource(booking)} />
                                     </>
@@ -492,7 +492,7 @@ export default function General({ booking: propBooking, details }) {
                                     </>
                                 )}
 
-                                {serviceType?.toLowerCase() === "merchandise" && (
+                                {String(serviceType || "").toLowerCase() === "merchandise" && (
                                     <>
                                         <DetailRow label="Item" value={booking?.item} />
                                         <DetailRow label="Quantity" value={booking?.quantity} />

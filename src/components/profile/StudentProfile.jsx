@@ -187,21 +187,40 @@ const StudentProfile = () => {
     emergencyRelation: emergency?.emergencyRelation,
   };
 
-  const handleSave = (index) => {
+  const handleSave = async (index) => {
     const student = students[index];
     const validationErrors = validateStudent(student);
     const newErrors = [...errors];
     newErrors[index] = validationErrors;
     setErrors(newErrors);
+        const token = localStorage.getItem("parentToken");
 
-    if (Object.keys(validationErrors).length === 0) {
+    if (Object.keys(validationErrors).length > 0) return;
+
+    try {
+      const res = await fetch(
+        `${import.meta.env.VITE_API_BASE_URL}api/parent/booking-update/student/${student.id}`,
+        {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            studentFirstName: student.studentFirstName,
+            studentLastName: student.studentLastName,
+            dateOfBirth: convertToYYYYMMDD(student.dateOfBirth),
+            age: student.age,
+            gender: student.gender,
+            medicalInformation: student.medicalInfo,
+          }),
+        }
+      );
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.message || 'Update failed');
       setEditingIndex(null);
-      updateProfile({
-        parentAdminId: parentId,
-        students: cleanedStudents,
-        parents: cleanedParents,
-        emergencyContacts: [cleanedEmergency],
-      });
+    } catch (err) {
+      console.error(err);
     }
   };
 
@@ -215,7 +234,7 @@ const StudentProfile = () => {
   const profilePhoto = sidebarInfo?.parents?.[0]?.profile;
 
   return (
-    <div className="min-h-screen bg-[#F4F6FA] p-5 md:p-0">
+    <div className="min-h-screen p-5 md:p-0">
       <div className="lg:flex gap-5 mt-2 items-start">
 
         {/* LEFT — Student Cards */}

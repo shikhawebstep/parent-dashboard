@@ -35,8 +35,7 @@ export const FeedbackProvider = ({ children }) => {
                     },
                 }
             );
-
-            setFeedback(response.data?.data ?? response.data);
+            setFeedback(response.data?.data?.feedbacks ?? response.feedbacks);
         } catch (err) {
             console.error("Error fetching feedback:", err);
 

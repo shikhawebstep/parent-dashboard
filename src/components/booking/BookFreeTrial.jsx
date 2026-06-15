@@ -195,7 +195,7 @@ const BookFreeTrial = () => {
     const labelClass = "text-[16px] font-medium text-[#282829] mb-1 block";
 
     return (
-        <>
+        <div className='p-8'>
 
             <div className="bg-[#3D444F] rounded-[20px] p-3 flex items-center justify-between text-white">
                 <div className="flex items-center gap-1">
@@ -498,10 +498,10 @@ const BookFreeTrial = () => {
 
                     </div>
 
-                    <div className="flex items-center justify-between p-4 bg-white rounded-[24px]  mb-8 cursor-pointer hover:bg-gray-50">
+                    {/* <div className="flex items-center justify-between p-4 bg-white rounded-[24px]  mb-8 cursor-pointer hover:bg-gray-50">
                         <h3 className="text-[#282829] font-bold text-[24px]">Key information</h3>
                         <ChevronRight size={16} className="text-gray-400" />
-                    </div>
+                    </div> */}
 
                     {/* Footer Actions */}
                     <div className="flex justify-end gap-4">
@@ -517,7 +517,7 @@ const BookFreeTrial = () => {
                     </div>
 
                     {/* Comments Section */}
-                    <div className="bg-white rounded-[20px] p-8 shadow-sm">
+                    {/* <div className="bg-white rounded-[20px] p-8 shadow-sm">
                         <h3 className="text-[#282829] font-bold text-[24px] mb-4">Comment</h3>
                         <div className="flex gap-2 items-center mb-8">
                             <img src="/assets/Ellipse.png" className='w-13' alt="" />
@@ -549,10 +549,10 @@ const BookFreeTrial = () => {
                                 </div>
                             ))}
                         </div>
-                    </div>
+                    </div> */}
                 </div>
             </div>
-        </>
+        </div>
     );
 };
 

@@ -33,7 +33,7 @@ const Payment = () => {
     { label: 'Status', value: status ?? '-' },
     { label: 'ID', value: id ?? '-' },
     { label: 'Created', value: createdAt ? new Date(createdAt).toLocaleDateString('en-GB') : '-' },
-    { label: 'Address', value: venue ? `${venue.name}, ${venue.address}` : '-' },
+    { label: 'Address', value: venue ? `${venue.name}, ${venue.address}` : booking.address || booking?.location },
     { label: 'Email', value: booking?.parents?.[0]?.parentEmail ?? '-' },
   ]
 
@@ -85,7 +85,7 @@ const Payment = () => {
           <table className="w-full text-sm table-fixed">
             <thead>
               <tr className="bg-[#F5F5F5]">
-                {['Status', 'Source', 'Charge', 'Paid out', 'Amount', ' '].map((col) => (
+                {['Status', 'Source', 'Charge', 'Paid out', 'Amount'].map((col) => (
                   <th key={col} className="text-left text-[16px] font-semibold text-gray-500 px-5 py-3">
                     {col}
                   </th>
@@ -124,13 +124,7 @@ const Payment = () => {
                     <td className="px-5 py-3 text-[16px] font-semibold text-gray-800">
                       {amount} {p.currency}
                     </td>
-                    <td className="px-5 py-3">
-                      {failed && (
-                        <button className="text-blue-500 hover:text-blue-600 text-[16px] font-semibold">
-                          Retry Payment
-                        </button>
-                      )}
-                    </td>
+
                   </tr>
                 )
               })}
