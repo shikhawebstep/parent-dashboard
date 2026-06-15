@@ -80,23 +80,7 @@ const NotificationPopup = ({ notifications = [], onMarkRead }) => {
             </div>
 
             {/* Hide read toggle */}
-            <label className="flex items-center gap-2 cursor-pointer mb-5">
-                <div className="relative">
-                    <input
-                        type="checkbox"
-                        className="sr-only peer"
-                        checked={hideRead}
-                        onChange={() => setHideRead(!hideRead)}
-                    />
-                    <div className="w-5 h-5 border-2 border-[#E2E1E5] rounded-md transition-all peer-checked:bg-[#00A6E3] peer-checked:border-[#00A6E3] flex items-center justify-center">
-                        {hideRead && <Check size={14} className="text-white" />}
-                    </div>
-                </div>
-                <span className="text-[13px] text-[#717073] font-medium">
-                    Hide read notifications
-                </span>
-            </label>
-
+          
             {/* List */}
             <div className="max-h-[460px] overflow-y-auto pr-1 custom-scrollbar space-y-6">
 

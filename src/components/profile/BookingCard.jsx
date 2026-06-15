@@ -1,15 +1,11 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { MoreVertical } from "lucide-react";
-import PaymentModal from "./PaymentModal";
-import AttendanceModal from "./AttendanceModal";
-import CreditModal from "./CreditModal";
+
 
 const BookingCard = ({ booking, onSeeDetails }) => {
     const navigate = useNavigate();
-    const [showPaymentModal, setShowPaymentModal] = useState(false);
-    const [showAttendanceModal, setShowAttendanceModal] = useState(false);
-    const [showCreditModal, setShowCreditModal] = useState(false);
+
     console.log('booking', booking)
     const renderImage = (type = "") => {
         const images = {
@@ -138,12 +134,13 @@ const BookingCard = ({ booking, onSeeDetails }) => {
                     {/* Details */}
                     <div className="bg-[#FCF9F6] rounded-[22px] p-4 mt-4 relative">
                         <div
-                            className={`grid grid-cols-2 serviceHistory sm:grid-cols-4 md:grid-cols-4 gap-4 mb-4 ${booking?.serviceType === "birthday party"
+                            className={`grid grid-cols-2 serviceHistory sm:grid-cols-4 md:grid-cols-4 gap-4 mb-4 ${(booking?.serviceType === "birthday party" || booking?.bookingType == "free")
                                 ? "lg:grid-cols-7"
-                                : "lg:grid-cols-8"
+                                : (booking?.serviceType === "weekly class trial" && booking?.bookingType == "waiting list")
+                                    ? "lg:grid-cols-6"
+                                    : "lg:grid-cols-8"
                                 }`}
                         >
-
                             {/* ── Weekly Class Membership ── */}
                             {booking?.serviceType === "weekly class membership" && (
                                 <>
@@ -158,7 +155,23 @@ const BookingCard = ({ booking, onSeeDetails }) => {
                                         "Venue",
                                         booking?.classSchedule?.venue?.name || booking?.venue?.name
                                     )}
-                                    {renderField("KGo/Cardless ID", booking?.goCardlessSubscriptionId || '-')}
+                                    {renderField(
+                                        booking?.payments?.some(
+                                            (payment) => payment?.paymentType === "accesspaysuite"
+                                        )
+                                            ? "Contact"
+                                            : "KGo/Cardless ID",
+                                        booking?.payments?.some(
+                                            (payment) => payment?.paymentType === "accesspaysuite"
+                                        )
+                                            ? booking?.payments?.find(
+                                                (payment) => payment?.paymentType === "accesspaysuite"
+                                            )?.gatewayResponse?.Contract || "-"
+                                            : booking?.payments?.find(
+                                                (payment) => payment?.goCardlessMandateId
+                                            )?.goCardlessMandateId || "-"
+                                    )}
+
                                     {renderField("Monthly Price", safePrice(booking?.paymentPlan?.price))}
                                     {renderField("Date Of Booking", safeDate(booking?.createdAt))}
                                     {renderField(
@@ -175,7 +188,7 @@ const BookingCard = ({ booking, onSeeDetails }) => {
                             )}
                             {(booking?.serviceType === "weekly class trial" && booking?.bookingType == "free") && (
                                 <>
-                                    {renderField("ID", booking?.bookingId)}
+                                    {renderField("Date Of Trial", safeDate(booking?.trialDate))}
                                     {renderField(
                                         "Students",
                                         Array.isArray(booking?.students)
@@ -186,19 +199,15 @@ const BookingCard = ({ booking, onSeeDetails }) => {
                                         "Venue",
                                         booking?.classSchedule?.venue?.name || booking?.venue?.name
                                     )}
-                                    {renderField("Trial Date", safeDate(booking?.trialDate))}
-                                    {renderField("Address", safePrice(booking?.venue?.address))}
+                                    {renderField("ID", booking?.bookingId)}
+                                    {renderField("Trial Attempt", safePrice(booking?.venue?.address))}
                                     {renderField("Date Of Booking", safeDate(booking?.createdAt))}
-                                    {renderField(
-                                        "Postal Code",
-                                        safeValue(booking?.venue?.postal_code)
-                                    )}
+
                                     {renderField("Booking Source", getBookingSource(booking))}
                                 </>
                             )}
                             {(booking?.serviceType === "weekly class trial" && booking?.bookingType == "waiting list") && (
                                 <>
-                                    {renderField("Postal Code", booking?.venue?.postal_code)}
                                     {renderField(
                                         "Students",
                                         Array.isArray(booking?.students)
@@ -212,8 +221,6 @@ const BookingCard = ({ booking, onSeeDetails }) => {
                                     {renderField("ID", booking?.bookingId || '-')}
                                     {renderField("Address", safePrice(booking?.venue?.address))}
                                     {renderField("Date Of Booking", safeDate(booking?.createdAt))}
-                                    {renderField("Facility", safeValue(booking?.venue?.facility))}
-
                                     {renderField("Booking Source", getBookingSource(booking))}
                                 </>
                             )}
@@ -221,7 +228,7 @@ const BookingCard = ({ booking, onSeeDetails }) => {
                             {/* ── Birthday Party ── */}
                             {booking?.serviceType === "birthday party" && (
                                 <>
-                                    {renderField("Package", booking?.leads?.packageInterest)}
+                                    {renderField("Package", booking?.package?.packageName)}
                                     {renderField("Price Paid", safeAmount(booking?.payment?.amount))}
                                     {renderField(
                                         "Stripe Transaction ID",
@@ -243,7 +250,7 @@ const BookingCard = ({ booking, onSeeDetails }) => {
                             {/* ── One to One ── */}
                             {booking?.serviceType === "one to one" && (
                                 <>
-                                    {renderField("Package", booking?.leads?.packageInterest)}
+                                    {renderField("Package", booking?.package?.packageName)}
                                     {renderField(
                                         "Students",
                                         Array.isArray(booking?.students)
@@ -316,43 +323,63 @@ const BookingCard = ({ booking, onSeeDetails }) => {
 
                         {/* Action Buttons */}
                         <div className="flex flex-wrap mt-5 gap-3">
-                            {booking?.serviceType === "weekly class membership" && (
                                 <button
                                     onClick={() => {
                                         if (onSeeDetails) {
                                             onSeeDetails(booking);
-                                        } else {
-                                            navigate(
-                                                `/one-to-one/sales/account-information/see-details?id=${booking?.id}`
-                                            );
                                         }
+                                        navigate(`/account-information/see-details?id=${booking?.id}`, {
+                                            state: { booking, activeTab: 'general' }
+                                        })
                                     }}
                                     className="md:px-4 md:py-2 px-2 py-1.5 border border-[#042C89] text-[#042C89] rounded-xl lg:text-[16px] text-[14px] font-semibold"
                                 >
                                     See details
                                 </button>
-                            )}
+                          
                             {booking?.serviceType !== "weekly class trial" && (
                                 <button
-                                    onClick={() => setShowPaymentModal(true)}
+                                    onClick={() => {
+                                        if (onSeeDetails) {
+                                            onSeeDetails(booking);
+                                        }
+                                        navigate(`/account-information/see-details?id=${booking?.id}`, {
+                                            state: { booking, activeTab: 'payments' }
+                                        })
+                                    }}
                                     className="md:px-4 md:py-2 px-2 py-1.5 border border-[#042C89] text-[#042C89] rounded-xl lg:text-[16px] text-[14px] font-semibold"
                                 >
                                     See payments
                                 </button>
                             )}
-                            {(booking?.serviceType !== "one to one" ||
-                                booking?.serviceType === "birthday party") && (
-                                    <button
-                                        onClick={() => setShowAttendanceModal(true)}
-                                        className="md:px-4 md:py-2 px-2 py-1.5 border border-[#042C89] text-[#042C89] rounded-xl lg:text-[16px] text-[14px] font-semibold"
-                                    >
-                                        Attendance
-                                    </button>
-                                )}
+                   
+                            {booking?.serviceType !== "one to one" && booking?.serviceType !== "birthday party" && (
+                                <button
+                                    onClick={() => {
+                                        if (onSeeDetails) {
+                                            onSeeDetails(booking);
+                                        }
+                                        navigate(`/account-information/see-details?id=${booking?.id}`, {
+                                            state: { booking, activeTab: 'attendance' }
+                                        })
+                                    }}
+                                    className="md:px-4 md:py-2 px-2 py-1.5 border border-[#042C89] text-[#042C89] rounded-xl lg:text-[16px] text-[14px] font-semibold"
+                                >
+                                    Attendance
+                                </button>
+                            )}
+                           
 
                             {booking?.serviceType === "weekly class membership" && (
                                 <button
-                                    onClick={() => setShowCreditModal(true)}
+                                    onClick={() => {
+                                        if (onSeeDetails) {
+                                            onSeeDetails(booking);
+                                        }
+                                        navigate(`/account-information/see-details?id=${booking?.id}`, {
+                                            state: { booking, activeTab: 'credits' }
+                                        })
+                                    }}
                                     className="md:px-4 md:py-2 px-2 py-1.5 border border-[#042C89] text-[#042C89] rounded-xl lg:text-[16px] text-[14px] font-semibold"
                                 >
                                     Credits
@@ -370,22 +397,6 @@ const BookingCard = ({ booking, onSeeDetails }) => {
                 </div>
             )}
 
-            {/* Modals */}
-            <PaymentModal
-                isOpen={showPaymentModal}
-                onClose={() => setShowPaymentModal(false)}
-                payments={booking?.payments}
-                payment={booking?.payment}
-            />
-            <AttendanceModal
-                isOpen={showAttendanceModal}
-                onClose={() => setShowAttendanceModal(false)}
-                students={booking?.students}
-            />
-            <CreditModal
-                isOpen={showCreditModal}
-                onClose={() => setShowCreditModal(false)}
-            />
         </>
     );
 };

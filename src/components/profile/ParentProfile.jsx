@@ -1,19 +1,19 @@
+
 import { useState, useEffect } from "react";
-import { Plus, Save } from "lucide-react";
+import { Plus, Save, Trash2 } from "lucide-react";
 import ReactSelect from "react-select";
 import PhoneInput from "react-phone-input-2";
 import "react-phone-input-2/lib/style.css";
 import { useProfile } from "../../context/ProfileContext";
-/* ================= DEFAULT MODELS ================= */
 
 const options = [
     { value: "", label: "Select" },
     { value: "Father", label: "Father" },
     { value: "Mother", label: "Mother" },
     { value: "Guardian", label: "Guardian" },
-
 ];
-const howDidHearOptions = [
+
+const howDidYouHearOptions = [
     { value: "", label: "Select" },
     { value: "Google", label: "Google" },
     { value: "Facebook", label: "Facebook" },
@@ -22,15 +22,16 @@ const howDidHearOptions = [
     { value: "Flyer", label: "Flyer" },
 ];
 
-
 const emptyParent = {
     parentFirstName: "",
     parentLastName: "",
     parentEmail: "",
     parentPhoneNumber: "",
-    relationChild: "",
-    howDidHear: "",
+    relationToChild: "",
+    howDidYouHear: "",
     studentId: "",
+    interestReason: "",
+    interestReasonOther: "",
 };
 
 const emptyEmergency = {
@@ -38,151 +39,111 @@ const emptyEmergency = {
     emergencyLastName: "",
     emergencyPhoneNumber: "",
     emergencyRelation: "",
-
 };
 
-const getBookingLabel = (booking) => {
-    if (!booking) return "Booking";
-    const dateStr = booking.createdAt ? new Date(booking.createdAt).toLocaleDateString() : "";
+const TABS = ["Parent Profile", "Student Profile", "Service History", "Feedback", "Rewards", "Events"];
 
-    let title = "";
-    if (booking.serviceType === "weekly class membership") {
-        title = booking?.paymentPlan?.title || "Weekly Class Membership";
-    } else if (booking.serviceType === "holiday camp") {
-        title = booking?.holidayCamp?.name || "Holiday Camp";
-    } else if (booking.serviceType === "birthday party") {
-        title = booking?.leads?.packageInterest || "Birthday Party";
-    } else if (booking.serviceType === "one to one") {
-        title = booking?.leads?.packageInterest || "One to One";
-    } else {
-        title = booking?.serviceType || "Booking";
-    }
+/* ─── Phone field styles injected once ─── */
+const phoneInputStyles = `
+.phone-field .react-tel-input .form-control {
+    width: 100% !important;
+    height: 52px !important;
+    border-radius: 15px !important;
+    border: 1px solid #D1D5DB !important;
+    font-size: 14px !important;
+    font-weight: 600 !important;
+    color: #383A46 !important;
+    padding-left: 52px !important;
+    background: #fff !important;
+   
+}
+.phone-field.editable .react-tel-input .form-control {
+    background: #fff !important;
+}
+.phone-field.error .react-tel-input .form-control {
+    border-color: #ef4444 !important;
+}
+.phone-field .react-tel-input .flag-dropdown {
+    border: 1px solid #D1D5DB !important;
+    border-right: none !important;
+    border-radius: 15px 0 0 15px !important;
+    background: transparent !important;
+}
+.phone-field .react-tel-input .selected-flag {
+    border-radius: 15px 0 0 15px !important;
+    padding: 0 8px 0 10px !important;
+    background: transparent !important;
+}
+.phone-field .react-tel-input .selected-flag:hover,
+.phone-field .react-tel-input .selected-flag:focus,
+.phone-field .react-tel-input .flag-dropdown.open .selected-flag {
+    background: #fff !important;
+    border-radius: 15px 0 0 15px !important;
+}
+.phone-field .react-tel-input .country-list {
+    border-radius: 15px !important;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.12) !important;
+    font-size: 13px !important;
+    z-index: 9999 !important;
+}
+`;
 
-    const venue = booking?.classSchedule?.venue?.name || booking?.venue?.name || booking?.holidayVenue?.name || booking?.location || "";
-
-    return [title, venue, dateStr].filter(Boolean).join(" - ");
-};
-
-const ParentProfile = ({ activeServiceType }) => {
-    /* ===== 1 PARENT BY DEFAULT ===== */
+const ParentProfile = () => {
     const { profile, updateProfile } = useProfile();
+    const [activeTab, setActiveTab] = useState("Parent Profile");
     const [parents, setParents] = useState([]);
     const [editingIndex, setEditingIndex] = useState(null);
     const [emergencyEditing, setEmergencyEditing] = useState(false);
-    const [dialCodes, setDialCodes] = useState("+44");
     const [emergency, setEmergency] = useState(emptyEmergency);
     const [sameAsParent, setSameAsParent] = useState(false);
-    const [parentErrors, setParentErrors] = useState([{}]); // one object per parent
+    const [parentErrors, setParentErrors] = useState([{}]);
     const [emergencyErrors, setEmergencyErrors] = useState({});
     const [hasEmergencyContact, setHasEmergencyContact] = useState(false);
 
-
-
-    const getBookingId = (booking, index) => {
-        return booking?.id ? String(booking.id) : String(index);
-    };
-
-    const allBookingsList = profile?.combinedBookings
-        || (profile?.groupedBookings ? Object.values(profile.groupedBookings).flat() : [])
-        || (Array.isArray(profile) ? profile : []);
-
-    const activeBookings = allBookingsList.filter((booking) => {
-        if (!activeServiceType) return true;
-
-        return Array.isArray(activeServiceType)
-            ? activeServiceType.includes(booking?.serviceType)
-            : booking?.serviceType === activeServiceType;
-    });
-    const storageKey = `selectedBookingId_${Array.isArray(activeServiceType)
-        ? activeServiceType.join("_")
-        : activeServiceType
-        }`;
-
-    const [selectedBookingId, setSelectedBookingId] = useState(() => {
-        return localStorage.getItem(storageKey) || "";
-    });
     useEffect(() => {
-        if (activeBookings.length > 0) {
-            const hasSelected = activeBookings.some((b, idx) => getBookingId(b, idx) === selectedBookingId);
-            if (!hasSelected) {
-                const initialId = getBookingId(activeBookings[0], 0);
-                setSelectedBookingId(initialId);
-                localStorage.setItem(storageKey, initialId);
-            }
-        } else {
-            setSelectedBookingId("");
-        }
-    }, [activeBookings, activeServiceType, selectedBookingId]);
-
-    const selectedBooking = activeBookings.find((b, idx) => getBookingId(b, idx) === selectedBookingId) || activeBookings[0];
-
- const handleBookingChange = (bookingId) => {
-    setSelectedBookingId(bookingId);
-    localStorage.setItem(storageKey, bookingId);
-        setEditingIndex(null);
-        setEmergencyEditing(false);
-    };
-
-    /* ===== COPY ACTIVE PARENT → EMERGENCY ===== */
-
-    useEffect(() => {
-        if (
-            sameAsParent &&
-            Array.isArray(parents) &&
-            parents.length > 0 &&
-            parents[0]
-        ) {
-            const parent = parents[0];
-
-            setEmergency({
-                id: emergency?.id,
-                emergencyFirstName: parent?.parentFirstName || "",
-                emergencyLastName: parent?.parentLastName || "",
-                emergencyPhoneNumber: parent?.parentPhoneNumber || "",
-                emergencyRelation: parent?.relationChild || "",
-
-            });
-
-            setEmergencyErrors({}); // clear errors if copying from valid parent
-        }
-    }, [sameAsParent, parents]);
-
-
-    useEffect(() => {
-        if (!selectedBooking) {
+        if (!profile) {
             setParents([]);
             setEmergency(emptyEmergency);
             setSameAsParent(false);
             setHasEmergencyContact(false);
             return;
         }
-
-        const bookingParents = selectedBooking.parents || [];
+        const bookingParents = profile?.adminMeta?.parents || [];
         setParents(bookingParents);
         setParentErrors(bookingParents.map(() => ({})));
 
-        const emergencyContact = selectedBooking.emergency;
+        const emergencyContact = profile?.adminMeta?.emergency;
         if (emergencyContact) {
             setEmergency(emergencyContact);
             setHasEmergencyContact(true);
-
             const activeParent = bookingParents[0];
-            const activeEmergency = emergencyContact;
-            const isSame = activeParent && activeEmergency &&
-                activeParent.parentFirstName?.trim() === activeEmergency.emergencyFirstName?.trim() &&
-                activeParent.parentLastName?.trim() === activeEmergency.emergencyLastName?.trim() &&
-                activeParent.parentPhoneNumber?.trim() === activeEmergency.emergencyPhoneNumber?.trim();
+            const isSame =
+                activeParent &&
+                activeParent.parentFirstName?.trim() === emergencyContact.emergencyFirstName?.trim() &&
+                activeParent.parentLastName?.trim() === emergencyContact.emergencyLastName?.trim() &&
+                activeParent.parentPhoneNumber?.trim() === emergencyContact.emergencyPhoneNumber?.trim();
             setSameAsParent(!!isSame);
         } else {
             setEmergency(emptyEmergency);
             setSameAsParent(false);
             setHasEmergencyContact(false);
         }
-    }, [selectedBooking]);
+    }, [profile]);
 
+    useEffect(() => {
+        if (sameAsParent && Array.isArray(parents) && parents.length > 0 && parents[0]) {
+            const parent = parents[0];
+            setEmergency({
+                id: emergency?.id,
+                emergencyFirstName: parent?.parentFirstName || "",
+                emergencyLastName: parent?.parentLastName || "",
+                emergencyPhoneNumber: parent?.parentPhoneNumber || "",
+                emergencyRelation: parent?.relationToChild || "",
+            });
+            setEmergencyErrors({});
+        }
+    }, [sameAsParent, parents]);
 
-
-    /* ===== CLEAR EMERGENCY WHEN SAMEASPARENT OFF ===== */
     useEffect(() => {
         if (!sameAsParent && !emergency) {
             setEmergency({ ...emptyEmergency });
@@ -190,60 +151,44 @@ const ParentProfile = ({ activeServiceType }) => {
         }
     }, [sameAsParent]);
 
-    /* ===== ADD PARENT ===== */
     const handleAddParent = () => {
         const firstParentEmail = parents.length > 0 ? parents[0].parentEmail : "";
         const firststudentId = parents.length > 0 ? parents[0].studentId : "";
         setParents((prev) => [...prev, { ...emptyParent, studentId: firststudentId, parentEmail: firstParentEmail }]);
         setParentErrors((prev) => [...prev, {}]);
         setEditingIndex(parents.length);
-        setSameAsParent(false); // reset emergency toggle on add parent
+        setSameAsParent(false);
     };
 
-    /* ===== UPDATE PARENT ===== */
     const updateParent = (index, field, value) => {
         const updated = [...parents];
         updated[index] = { ...updated[index], [field]: value };
         setParents(updated);
-
-        // Validate on update (optional, for realtime feedback)
         validateParentField(index, field, value);
     };
 
-    /* ===== VALIDATION HELPERS ===== */
     const validateEmail = (email) => {
         if (!email) return "";
-        // simple email regex
-        const re = /\S+@\S+\.\S+/;
-        return re.test(email) ? "" : "Invalid email address";
+        return /\S+@\S+\.\S+/.test(email) ? "" : "Invalid email address";
     };
-
     const validatePhone = (phone) => {
         if (!phone) return "Phone number is required";
-        // simple numeric check + length 7-15 digits
-        const re = /^[0-9]{7,15}$/;
-        return re.test(phone) ? "" : "Invalid phone number";
+        return phone.length >= 7 ? "" : "Invalid phone number";
     };
-
     const validateText = (text, fieldName) => {
         if (!text || text.trim() === "") return `${fieldName} is required`;
         return "";
     };
 
-    /* ===== VALIDATE PARENT FIELD (single) ===== */
     const validateParentField = (index, field, value) => {
         let errorMsg = "";
-      if (["parentFirstName", "parentLastName"].includes(field)) {
-    errorMsg = validateText(value, field === "parentFirstName" ? "First name" : "Last name");
+        if (["parentFirstName", "parentLastName"].includes(field)) {
+            errorMsg = validateText(value, field === "parentFirstName" ? "First name" : "Last name");
         } else if (field === "parentEmail") {
             errorMsg = validateEmail(value);
         } else if (field === "parentPhoneNumber") {
             errorMsg = validatePhone(value);
-        } else if (field === "relationChild" || field === "howDidHear") {
-            // optional fields or you can require if you want
-            errorMsg = "";
         }
-
         setParentErrors((prev) => {
             const newErrors = [...prev];
             if (!newErrors[index]) newErrors[index] = {};
@@ -252,604 +197,443 @@ const ParentProfile = ({ activeServiceType }) => {
         });
     };
 
-    /* ===== VALIDATE ALL FIELDS FOR A PARENT ===== */
     const validateParent = (index) => {
         const parent = parents[index];
         const errors = {};
-
         errors.parentFirstName = validateText(parent.parentFirstName, "First name");
         errors.parentLastName = validateText(parent.parentLastName, "Last name");
         errors.parentEmail = validateEmail(parent.parentEmail);
         errors.parentPhoneNumber = validatePhone(parent.parentPhoneNumber);
-
-        // relation and howDidHear optional or validate if needed
-        errors.relation = "";
-        errors.howDidHear = "";
-
         setParentErrors((prev) => {
             const newErrors = [...prev];
             newErrors[index] = errors;
             return newErrors;
         });
-
         return Object.values(errors).every((e) => e === "");
     };
 
-    console.log('parentErrors', parentErrors)
-
-    /* ===== VALIDATE EMERGENCY FIELD (single) ===== */
     const validateEmergencyField = (field, value) => {
         let errorMsg = "";
         if (["emergencyFirstName", "emergencyLastName"].includes(field)) {
             errorMsg = validateText(value, field === "emergencyFirstName" ? "First name" : "Last name");
         } else if (field === "emergencyPhoneNumber") {
             errorMsg = validatePhone(value);
-        } else if (field === "emergencyRelation") {
-
-            errorMsg = ""; // optional, can add if needed
         }
-
-        setEmergencyErrors((prev) => ({
-            ...prev,
-            [field]: errorMsg,
-        }));
+        setEmergencyErrors((prev) => ({ ...prev, [field]: errorMsg }));
     };
 
-    /* ===== VALIDATE ALL EMERGENCY FIELDS ===== */
     const validateEmergency = () => {
         const errors = {};
-
         errors.emergencyFirstName = validateText(emergency.emergencyFirstName, "First name");
         errors.emergencyLastName = validateText(emergency.emergencyLastName, "Last name");
         errors.emergencyPhoneNumber = validatePhone(emergency.emergencyPhoneNumber);
         errors.emergencyRelation = "";
-
-
         setEmergencyErrors(errors);
-
         return Object.values(errors).every((e) => e === "");
     };
 
-    /* ===== HANDLE EMERGENCY CHANGE ===== */
     const handleEmergencyChange = (field, value) => {
-        setEmergency((prev) => ({
-            ...prev,
-            [field]: value,
-        }));
+        setEmergency((prev) => ({ ...prev, [field]: value }));
         validateEmergencyField(field, value);
     };
 
-    const parentData = JSON.parse(localStorage.getItem("parentData"));
+    const parentData = typeof window !== "undefined" ? JSON.parse(localStorage.getItem("parentData") || "null") : null;
     const parentId = parentData?.id;
 
-    const selectedBookingStudents = selectedBooking?.students || [];
-
-    const cleanedStudents = selectedBookingStudents.map(
-        ({
-            id = "",
-            studentFirstName = "",
-            studentLastName = "",
-            dateOfBirth = "",
-            age = "",
-            gender = "",
-            medicalInformation = "",
-        }) => ({
-            id: id ?? "",
-
-            studentFirstName: studentFirstName ?? "",
-            studentLastName: studentLastName ?? "",
-            dateOfBirth: dateOfBirth ?? "",
-            age: age ?? "",
-            gender: gender ?? "",
-            medicalInformation: medicalInformation ?? "",
+    const profileStudents = profile?.students || [];
+    const cleanedStudents = profileStudents.map(
+        ({ id = "", studentFirstName = "", studentLastName = "", dateOfBirth = "", age = "", gender = "", medicalInformation = "" }) => ({
+            id, studentFirstName, studentLastName, dateOfBirth, age, gender, medicalInformation,
         })
     );
+
     const cleanedEmergency = {
         id: emergency?.id,
         studentId: emergency?.studentId,
         emergencyFirstName: emergency?.emergencyFirstName,
         emergencyLastName: emergency?.emergencyLastName,
-        emergencyPhoneNumber: emergency?.emergencyPhoneNumber?.startsWith("+") ? emergency?.emergencyPhoneNumber : emergency?.emergencyPhoneNumber ? `${dialCodes}${emergency?.emergencyPhoneNumber}` : emergency?.emergencyPhoneNumber,
+        emergencyPhoneNumber: emergency?.emergencyPhoneNumber?.startsWith("+")
+            ? emergency?.emergencyPhoneNumber
+            : emergency?.emergencyPhoneNumber ? `+${emergency?.emergencyPhoneNumber}` : "",
         emergencyRelation: emergency?.emergencyRelation,
-    }
+    };
 
+    const cleanedParents = parents?.map(({ relationToChild, howDidYouHear, ...rest }) => ({
+        ...rest,
+        parentPhoneNumber: rest.parentPhoneNumber?.startsWith("+")
+            ? rest.parentPhoneNumber
+            : rest.parentPhoneNumber ? `+${rest.parentPhoneNumber}` : "",
+        relationToChild: relationToChild,
+        howDidYouHear: howDidYouHear,
+    }));
 
-    const cleanedParents = parents?.map(
-        ({ relationChild, howDidHear, ...rest }) => ({
-            ...rest,
-            parentPhoneNumber: rest.parentPhoneNumber?.startsWith("+") ? rest.parentPhoneNumber : rest.parentPhoneNumber ? `${dialCodes}${rest.parentPhoneNumber}` : rest.parentPhoneNumber,
-            relationToChild: relationChild,
-            howDidYouHear: howDidHear,
-        })
-    );
-    console.log('emergency', emergency)
-
-    /* ===== HANDLE SAVE PARENT ===== */
-
-    console.log('parents', parents)
     const handleSaveParent = (index) => {
-        const isValid = validateParent(index);
-        if (isValid) {
+        if (validateParent(index)) {
             setEditingIndex(null);
-
-            let finalDataToSend;
-            if (activeServiceType === "weekly class membership" || activeServiceType === "holiday camp") {
-                const mappedParents = parents.map((p) => ({
-                    id: p.id,
-                    studentId: p.studentId || (selectedBookingStudents?.length > 0 ? selectedBookingStudents[0].id : null),
-                    parentFirstName: p.parentFirstName,
-                    parentLastName: p.parentLastName,
-                    parentEmail: p.parentEmail,
-                    parentPhoneNumber: p.parentPhoneNumber?.startsWith("+") ? p.parentPhoneNumber : p.parentPhoneNumber ? `${dialCodes}${p.parentPhoneNumber}` : p.parentPhoneNumber,
-                    relationChild: p.relationChild || p.relationToChild || "",
-                    howDidHear: p.howDidHear || p.howDidYouHear || "",
-                }));
-
-                const mappedEmergency = {
-                    id: emergency?.id,
-                    studentId: emergency?.studentId || (selectedBookingStudents?.length > 0 ? selectedBookingStudents[0].id : null),
-                    emergencyFirstName: emergency?.emergencyFirstName,
-                    emergencyLastName: emergency?.emergencyLastName,
-                    emergencyPhoneNumber: emergency?.emergencyPhoneNumber?.startsWith("+") ? emergency?.emergencyPhoneNumber : emergency?.emergencyPhoneNumber ? `${dialCodes}${emergency?.emergencyPhoneNumber}` : emergency?.emergencyPhoneNumber,
-                    emergencyRelation: emergency?.emergencyRelation,
-                };
-
-                finalDataToSend = {
-                    serviceType: activeServiceType === "weekly class membership" ? "weekly class" : "holiday camp",
-                    bookingId: selectedBooking?.id,
-                    students: cleanedStudents,
-                    parents: mappedParents,
-                    emergency: mappedEmergency,
-                    ...(activeServiceType === "holiday camp" ? {
-                        paymentPlanId: selectedBooking?.paymentPlan?.id,
-                        holidayCampId: selectedBooking?.holidayCamp?.id,
-                        payment: selectedBooking?.payment
-                    } : {})
-                };
-            } else {
-                finalDataToSend = {
-                    parentAdminId: parentId,
-                    students: cleanedStudents,
-                    parents: cleanedParents,
-                    emergencyContacts: [cleanedEmergency]
-                };
-            }
-
-            updateProfile(finalDataToSend);
-        } else {
+            updateProfile({
+                parentAdminId: parentId,
+                students: cleanedStudents,
+                parents: cleanedParents,
+                emergencyContacts: [cleanedEmergency],
+            });
         }
     };
 
-    /* ===== HANDLE SAVE EMERGENCY ===== */
     const handleSaveEmergency = () => {
         if (validateEmergency()) {
             setEmergencyEditing(false);
-
-            let finalDataToSend;
-            if (activeServiceType === "weekly class membership" || activeServiceType === "holiday camp") {
-                const mappedParents = parents.map((p) => ({
-                    id: p.id,
-                    studentId: p.studentId || (selectedBookingStudents?.length > 0 ? selectedBookingStudents[0].id : null),
-                    parentFirstName: p.parentFirstName,
-                    parentLastName: p.parentLastName,
-                    parentEmail: p.parentEmail,
-                    parentPhoneNumber: p.parentPhoneNumber?.startsWith("+") ? p.parentPhoneNumber : p.parentPhoneNumber ? `${dialCodes}${p.parentPhoneNumber}` : p.parentPhoneNumber,
-                    relationChild: p.relationChild || p.relationToChild || "",
-                    howDidHear: p.howDidHear || p.howDidYouHear || "",
-                }));
-
-                const mappedEmergency = {
-                    id: emergency?.id,
-                    studentId: emergency?.studentId || (selectedBookingStudents?.length > 0 ? selectedBookingStudents[0].id : null),
-                    emergencyFirstName: emergency?.emergencyFirstName,
-                    emergencyLastName: emergency?.emergencyLastName,
-                    emergencyPhoneNumber: emergency?.emergencyPhoneNumber?.startsWith("+") ? emergency?.emergencyPhoneNumber : emergency?.emergencyPhoneNumber ? `${dialCodes}${emergency?.emergencyPhoneNumber}` : emergency?.emergencyPhoneNumber,
-                    emergencyRelation: emergency?.emergencyRelation,
-                };
-
-                finalDataToSend = {
-                    serviceType: activeServiceType === "weekly class membership" ? "weekly class" : "holiday camp",
-                    bookingId: selectedBooking?.id,
-                    students: cleanedStudents,
-                    parents: mappedParents,
-                    emergency: mappedEmergency,
-                    ...(activeServiceType === "holiday camp" ? {
-                        paymentPlanId: selectedBooking?.paymentPlan?.id,
-                        holidayCampId: selectedBooking?.holidayCamp?.id,
-                        payment: selectedBooking?.payment
-                    } : {})
-                };
-            } else {
-                finalDataToSend = {
-                    parentAdminId: parentId,
-                    students: cleanedStudents,
-                    parents: cleanedParents,
-                    emergencyContacts: [cleanedEmergency]
-                };
-            }
-
-            updateProfile(finalDataToSend);
-        } else {
+            updateProfile({
+                parentAdminId: parentId,
+                students: cleanedStudents,
+                parents: cleanedParents,
+                emergencyContacts: [cleanedEmergency],
+            });
         }
     };
 
-    return (
-        <div className="lg:space-y-6">
-            {/* ================= Booking Selector ================= */}
-            {activeBookings.length > 0 && (
-                <div className="bg-white lg:rounded-[30px] p-6 mb-6 flex flex-col gap-2 shadow-sm">
-                    <label className="text-[15px] font-semibold text-[#111827]">
-                        Select Booking
-                    </label>
-                    <div className="relative w-full">
-                        <select
-                            value={selectedBookingId}
-                            onChange={(e) => handleBookingChange(e.target.value)}
-                            className="w-full appearance-none rounded-2xl border border-[#E5EAF2] bg-[#F9FAFB] hover:bg-white px-5 py-4 pr-12 text-[15px] font-medium text-[#111827] shadow-sm outline-none transition-all duration-300 focus:border-[#042C89] focus:ring-4 focus:ring-[#042C89]/10"
-                        >
-                            {activeBookings.map((b, idx) => (
-                                <option key={getBookingId(b, idx)} value={getBookingId(b, idx)}>
-                                    {getBookingLabel(b)}
-                                </option>
-                            ))}
-                        </select>
-                        <div className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2">
-                            <svg
-                                width="18"
-                                height="18"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                xmlns="http://www.w3.org/2000/svg"
-                            >
-                                <path
-                                    d="M6 9L12 15L18 9"
-                                    stroke="#6B7280"
-                                    strokeWidth="2"
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                />
-                            </svg>
-                        </div>
-                    </div>
-                </div>
-            )}
+    const sidebarInfo = profile?.adminMeta || {};
+    const memberName = profile?.students?.[0]
+        ? `${profile.students[0].studentFirstName} ${profile.students[0].studentLastName}`
+        : "Member";
+    const initials = memberName.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
+    const parentFirstName = sidebarInfo?.parents?.[0]?.parentFirstName?.trim() || "";
+    const parentLastName = sidebarInfo?.parents?.[0]?.parentLastName?.trim() || "";
 
-            {/* ================= Parent Info ================= */}
-            <div className="bg-white lg:rounded-[30px] p-6">
-                {parents.length === 0 && (
-                    <div className="text-center py-12">
-                        <p className="text-gray-500 font-medium mb-4 text-[18px]">No parent information found.</p>
-                        {activeServiceType === "holiday camp" && (
-                            <button
-                                onClick={handleAddParent}
-                                className="inline-flex items-center gap-2 px-6 py-2.5 font-semibold rounded-[12px] text-[16px] bg-[#0DD180] text-white hover:bg-green-700 transition"
-                            >
-                                <Plus size={18} /> Add Parent
-                            </button>
+    const parentDisplayName = `${parentFirstName} ${parentLastName}`.trim();
+    const profilePhoto = sidebarInfo?.parents?.[0]?.profile;
+
+    const relationToChild = sidebarInfo?.parents?.[0]?.relationToChild?.trim();
+
+    const parentRelation = relationToChild ? ` / ${relationToChild}` : "";
+    return (
+        <div className="min-h-screen bg-[#F4F6FA] p-5 md:p-0">
+            <style>{phoneInputStyles}</style>
+
+            <div className="lg:flex gap-5 mt-2 items-start">
+                {/* LEFT */}
+                <div className="flex-1 lg:w-9/12 min-w-0 space-y-5">
+
+                    {/* Parent Info Card */}
+                    <div className="bg-white rounded-[16px] p-6 shadow-sm">
+                        {parents.length === 0 && (
+                            <div className="text-center py-12">
+                                <p className="text-gray-500 font-medium mb-4 text-[18px]">No parent information found.</p>
+                                <button onClick={handleAddParent}
+                                    className="inline-flex items-center gap-2 px-6 py-2.5 font-semibold rounded-[12px] text-[16px] bg-[#0DD180] text-white hover:bg-green-600 transition">
+                                    <Plus size={18} /> Add Parent
+                                </button>
+                            </div>
                         )}
-                    </div>
-                )}
-                {parents.length === 1 && (
-                    <div className="flex justify-between items-center mb-4">
-                        <div className="flex gap-2 items-center cursor-pointer">
-                            <h2 className="font-bold 2xl:text-[24px] text-[#282829] lg:text-[20px] text-[18px]">Parent information</h2>
-                            {(activeServiceType === "weekly class membership" || activeServiceType === "holiday camp") && (
-                                editingIndex !== 0 ? (
-                                    <img
-                                        src="/assets/edit.png"
-                                        className="w-5 cursor-pointer"
-                                        alt="Edit"
-                                        onClick={() => setEditingIndex(0)}
-                                    />
-                                ) : (
-                                    <button onClick={() => handleSaveParent(0)} aria-label="Save Parent">
-                                        <Save size={20} />
-                                    </button>
-                                )
-                            )}
-                        </div>
-                        {activeServiceType === "holiday camp" && (
-                            <button
-                                onClick={handleAddParent}
-                                className="md:flex hidden items-center gap-1 px-4 py-2 font-semibold rounded-[8px] text-sm bg-[#0DD180] text-white"
-                                disabled={editingIndex !== null}
-                            >
+
+                        {parents.map((parent, index) => {
+                            const editable = editingIndex === index;
+                            const errors = parentErrors[index] || {};
+
+                            return (
+                                <div key={index} className="mb-6">
+                                    <div className="flex justify-between items-center mb-5">
+                                        <h2 className="font-bold text-[18px] text-[#282829]">
+                                            {parents.length === 1 ? "Parent information" : `Parent Information ${index + 1}`}
+                                        </h2>
+                                        <div className="flex items-center gap-3">
+                                            {editable ? (
+                                                <button onClick={() => handleSaveParent(index)} className="text-gray-500 hover:text-black">
+                                                    <Save size={18} />
+                                                </button>
+                                            ) : (
+                                                <button onClick={() => { if (editingIndex === null) setEditingIndex(index); }}
+                                                    className="text-gray-400 hover:text-black">
+                                                    <img src="/assets/edit.png" className="w-5" alt="Edit" />
+                                                </button>
+                                            )}
+                                            {index === 0 && (
+                                                <button onClick={handleAddParent}
+                                                    disabled={editingIndex !== null || parents.length >= 3}
+                                                    className="hidden md:flex items-center gap-1 px-4 py-2 font-semibold rounded-[12px] text-sm bg-[#0DD180] text-white disabled:opacity-50 disabled:cursor-not-allowed">
+                                                    <Plus size={16} /> Add Parent
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
+                                        <Field label="First name" error={errors.parentFirstName}>
+                                            <input value={parent.parentFirstName} disabled={!editable}
+                                                onChange={(e) => updateParent(index, "parentFirstName", e.target.value)}
+                                                className={inputClass(editable, !!errors.parentFirstName)} />
+                                        </Field>
+                                        <Field label="Last name" error={errors.parentLastName}>
+                                            <input value={parent.parentLastName} disabled={!editable}
+                                                onChange={(e) => updateParent(index, "parentLastName", e.target.value)}
+                                                className={inputClass(editable, !!errors.parentLastName)} />
+                                        </Field>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
+                                        <Field label="Email" error={errors.parentEmail}>
+                                            <input value={parent.parentEmail} disabled={!editable}
+                                                onChange={(e) => updateParent(index, "parentEmail", e.target.value)}
+                                                className={inputClass(editable, !!errors.parentEmail)} />
+                                        </Field>
+                                        <Field label="Phone number" error={errors.parentPhoneNumber}>
+                                            <div className={`phone-field${editable ? " editable" : ""}${errors.parentPhoneNumber ? " error" : ""}`}>
+                                                <PhoneInput
+                                                    country="gb"
+                                                    value={parent.parentPhoneNumber}
+                                                    disabled={!editable}
+                                                    onChange={(phone) => updateParent(index, "parentPhoneNumber", phone)}
+                                                    enableSearch
+                                                    searchPlaceholder="Search country..."
+                                                />
+                                            </div>
+                                        </Field>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
+                                        <Field label="What's the main reason you're interested in Samba Soccer Schools?">
+                                            <input value={parent.interestReason || ""} disabled={!editable}
+                                                onChange={(e) => updateParent(index, "interestReason", e.target.value)}
+                                                className={inputClass(editable, false)} />
+                                        </Field>
+                                        <Field label="Tell us a bit more (optional)">
+                                            <input value={parent.interestReasonOther || ""} disabled={!editable}
+                                                onChange={(e) => updateParent(index, "interestReasonOther", e.target.value)}
+                                                className={inputClass(editable, false)} />
+                                        </Field>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                        <Field label="Relation to child" error={errors.relationToChild}>
+                                            <CustomSelect value={parent.relationToChild} editable={editable}
+                                                options={options} error={errors.relationToChild}
+                                                onChange={(e) => updateParent(index, "relationToChild", e.target.value)} />
+                                        </Field>
+                                        <Field label="How did you hear about us?" error={errors.howDidYouHear}>
+                                            <CustomSelect value={parent.howDidYouHear} editable={editable}
+                                                options={howDidYouHearOptions} error={errors.howDidYouHear}
+                                                onChange={(e) => updateParent(index, "howDidYouHear", e.target.value)} />
+                                        </Field>
+                                    </div>
+
+                                    {parents.length > 1 && index !== parents.length - 1 && (
+                                        <hr className="mt-6 border-gray-200" />
+                                    )}
+                                </div>
+                            );
+                        })}
+
+                        {parents.length > 0 && (
+                            <button onClick={handleAddParent} disabled={editingIndex !== null}
+                                className="md:hidden flex items-center gap-1 px-4 py-2 font-semibold rounded-[12px] text-sm bg-[#0DD180] text-white mt-2">
                                 <Plus size={17} /> Add Parent
                             </button>
                         )}
-
                     </div>
-                )}
 
+                    {/* Emergency Contact Card */}
+                    {hasEmergencyContact && (
+                        <div className="bg-white rounded-[16px] p-6 shadow-sm">
+                            <div className="flex justify-between items-center mb-4">
+                                <h2 className="font-bold text-[18px] text-[#282829]">Emergency contact details</h2>
+                                {emergencyEditing ? (
+                                    <button onClick={handleSaveEmergency} className="text-gray-500 hover:text-black">
+                                        <Save size={18} />
+                                    </button>
+                                ) : (
+                                    <button onClick={() => { if (!sameAsParent) setEmergencyEditing(true); }}
+                                        className="text-gray-400 hover:text-black">
+                                        <img src="/assets/edit.png" className="w-5" alt="Edit" />
+                                    </button>
+                                )}
+                            </div>
 
-                {parents.map((parent, index) => {
-                    const editable = editingIndex === index;
-                    const errors = parentErrors[index] || {};
+                            <label className="flex items-center gap-2 text-[14px] text-[#717073] font-medium mb-5 cursor-pointer select-none">
+                                <input type="checkbox" checked={sameAsParent}
+                                    onChange={(e) => setSameAsParent(e.target.checked)}
+                                    className="w-4 h-4 accent-[#042C89]" />
+                                Fill same as above
+                            </label>
 
-                    return (
-                        <div key={index} className="rounded-xl mb-6">
-                            {parents.length > 1 && (
-                                <div className="flex mb-2 justify-between">
-                                    <div className="flex gap-2"> <div
-                                        onClick={(e) => {
-                                            if (activeServiceType !== "weekly class membership" && activeServiceType !== "holiday camp") return;
-                                            e.stopPropagation();
-                                            if (editingIndex === null) setEditingIndex(index);
-                                            // Don't toggle off if editing, force Save button
-                                        }}
-                                        className="text-sm font-semibold cursor-pointer flex gap-2 items-center"
-                                    >
-                                        <h2 className="font-bold 2xl:text-[24px] text-[#282829] lg:text-[20px] text-[18px]">Parent Information {index + 1}</h2>
-                                        {(activeServiceType === "weekly class membership" || activeServiceType === "holiday camp") && !editable && <img src="/assets/edit.png" className="w-5" alt="Edit" />}
-                                    </div>
-                                        {(activeServiceType === "weekly class membership" || activeServiceType === "holiday camp") && editable && (
-                                            <button
-                                                onClick={() => handleSaveParent(index)}
-                                                aria-label={`Save Parent ${index + 1}`}
-                                                className="flex gap-2 items-center"
-                                            >
-                                                <Save size={20} />
-                                            </button>
-                                        )}</div>
-
-
-
-                                    {activeServiceType === "holiday camp" && index === 0 && (
-                                        <button
-                                            onClick={handleAddParent}
-                                            disabled={editingIndex !== null || parents.length >= 3}
-                                            className={`md:flex hidden items-center gap-1 px-4 py-2.5 font-semibold rounded-[8px] text-sm md:text-[18px] bg-[#0DD180] text-white ${editingIndex !== null || parents.length >= 3 ? "cursor-not-allowed" : "cursor-pointer"
-                                                }`}
-                                        >
-                                            <Plus className="text-xl md:text-[20px]" /> Add Parent
-                                        </button>
-                                    )}
-                                </div>
-                            )}
-
-
-                            <div
-                                className={`grid grid-cols-1 md:grid-cols-2 my-3 gap-5 ${parents.length > 1 && index !== parents.length - 1
-                                    ? "border-b border-gray-200 pb-5"
-                                    : ""
-                                    }`}
-                            >
-                                <Input
-                                    label="First name"
-                                    value={parent.parentFirstName}
-                                    editable={editable}
-                                    error={errors.parentFirstName}
-                                    onChange={(e) => updateParent(index, "parentFirstName", e.target.value)}
-                                />
-
-                                <Input
-                                    label="Last name"
-                                    value={parent.parentLastName}
-                                    editable={editable}
-                                    error={errors.parentLastName}
-                                    onChange={(e) => updateParent(index, "parentLastName", e.target.value)}
-                                />
-
-                                <Input
-                                    label="Email"
-                                    value={parent.parentEmail}
-                                    error={errors.parentEmail}
-                                    onChange={(e) => updateParent(index, "parentEmail", e.target.value)}
-                                />
-
-
-
-                                <div>
-                                    <Label>Phone number</Label>
-                                    <div className={`w-full flex items-center rounded-lg px-4 py-3 font-semibold outline-none ${editable ? "bg-white border" : "bg-[#F0F5FF]"
-                                        } ${errors.parentPhoneNumber ? "border-red-500" : "border-gray-300"}`}>
-                                        <div className="2xl:w-[6%] lg:w-[14%] w-[18%]">
-                                            <PhoneInput
-                                                country="us"
-                                                value={dialCodes}
-                                                disableDropdown={true}
-                                                disableCountryCode={true}
-                                                countryCodeEditable={false}
-                                                inputStyle={{
-                                                    display: "none",
-                                                }}
-                                            />
-                                        </div>
-                                        <input
-                                            value={parent.parentPhoneNumber}
-                                            onChange={(e) => updateParent(index, "parentPhoneNumber", e.target.value)}
-                                            disabled={!editable}
-                                            className={`poppins placeholder:text-[#9E9FAA] 2xl:ps-3 ps-4 text-[14px] border-l border-gray-300 outline-none w-full bg-transparent ${editable ? "text-[#282829]" : "text-[#9E9FAA]"}`}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                <Field label="First name" error={emergencyErrors.emergencyFirstName}>
+                                    <input value={emergency.emergencyFirstName}
+                                        disabled={!(!sameAsParent && emergencyEditing)}
+                                        onChange={(e) => handleEmergencyChange("emergencyFirstName", e.target.value)}
+                                        className={inputClass(!sameAsParent && emergencyEditing, !!emergencyErrors.emergencyFirstName)} />
+                                </Field>
+                                <Field label="Last name" error={emergencyErrors.emergencyLastName}>
+                                    <input value={emergency.emergencyLastName}
+                                        disabled={!(!sameAsParent && emergencyEditing)}
+                                        onChange={(e) => handleEmergencyChange("emergencyLastName", e.target.value)}
+                                        className={inputClass(!sameAsParent && emergencyEditing, !!emergencyErrors.emergencyLastName)} />
+                                </Field>
+                                <Field label="Phone number" error={emergencyErrors.emergencyPhoneNumber}>
+                                    <div className={`phone-field${(!sameAsParent && emergencyEditing) ? " editable" : ""}${emergencyErrors.emergencyPhoneNumber ? " error" : ""}`}>
+                                        <PhoneInput
+                                            country="gb"
+                                            value={emergency.emergencyPhoneNumber}
+                                            disabled={!(!sameAsParent && emergencyEditing)}
+                                            onChange={(phone) => handleEmergencyChange("emergencyPhoneNumber", phone)}
+                                            enableSearch
+                                            searchPlaceholder="Search country..."
                                         />
                                     </div>
-                                    {errors.parentPhoneNumber && <p className="text-red-500 text-sm mt-1">{errors.parentPhoneNumber}</p>}
-                                </div>
-
-                                <CustomSelect
-                                    label="Relation to child"
-                                    value={parent.relationChild}
-                                    editable={editable}
-                                    onChange={(e) => updateParent(index, "relationChild", e.target.value)}
-                                    error={errors.relationChild}
-                                />
-
-                                <CustomSelect
-                                    label="How did you hear about us?"
-                                    value={parent.howDidHear}
-                                    editable={editable}
-                                    onChange={(e) => updateParent(index, "howDidHear", e.target.value)}
-                                    error={errors.howDidHear}
-                                />
+                                </Field>
+                                <Field label="Relation to child" error={emergencyErrors.emergencyRelation}>
+                                    <CustomSelect value={emergency.emergencyRelation}
+                                        editable={!sameAsParent && emergencyEditing}
+                                        options={options} error={emergencyErrors.emergencyRelation}
+                                        onChange={(e) => handleEmergencyChange("emergencyRelation", e.target.value)} />
+                                </Field>
                             </div>
+                        </div>
+                    )}
+
+
+                </div>
+
+                {/* RIGHT SIDEBAR */}
+                <div className="xl:w-[30%] md:w-[40%]  m-auto mt-5 md:mt-0">
+                    <div className="bg-[#363E49] rounded-[30px] overflow-hidden text-white shadow-lg flex flex-col lg:p-4 p-3 h-fit">
+
+                        {/* Header */}
+                        <div
+                            style={{ backgroundImage: "url('/assets/Frame.png')" }}
+                            className="bg-cover bg-center px-6 rounded-[20px] md:py-4 py-2 flex justify-between items-center relative overflow-hidden"
+                        >
+                            <div className="flex flex-col">
+                                <h3 className="text-black font-bold 2xl:text-[20px] xl:text-[18px] lg:text-[16px] text-[14px] leading-tight">
+                                    Account Status
+                                </h3>
+                                <span className="text-black/80 lg:text-[16px] text-[14px] text-[#282829] font-semibold">
+                                    {sidebarInfo?.status || "Active"}
+                                </span>
+                            </div>
+                        </div>
+
+                        <div className="px-5 py-4 space-y-4">
+                            <div className="flex items-center gap-4">
+                                <img
+                                    src={profilePhoto || "/assets/dummy-avatar.png"}
+                                    alt="Avatar"
+                                    className="w-20 h-full object-cover"
+                                />
+                                <div>
+                                    <h4 className="md:text-[24px] 2xl:text-[20px] xl:text-[18px] lg:text-[16px] text-[14px] font-bold leading-tight">
+                                        Account Holder
+                                    </h4>
+                                    <p className="lg:text-[16px] text-[14px] text-[#BDC0C3] font-medium">
+                                        {parentDisplayName}
+                                        {parentRelation}
+                                    </p>
+                                </div>
+                            </div>
+
+                            <hr className="border-white/10" />
+
+                            <SidebarRow label="Venue">
+                                <span className="px-2.5 py-0.5 rounded-[6px] bg-[#042C89] text-white text-[12px] font-semibold">
+                                    {typeof sidebarInfo.venue === "object"
+                                        ? sidebarInfo.venue?.name || sidebarInfo.venue?.area || "London"
+                                        : sidebarInfo.venue || "London"}
+                                </span>
+                            </SidebarRow>
+
+                            <SidebarRow label="Membership Plan" value={sidebarInfo.membershipPlan || "—"} />
+                            <SidebarRow label="Membership Start Date" value={sidebarInfo.startDate || "—"} />
+                            <SidebarRow label="Membership Tenure" value={sidebarInfo.tenure || "0 days"} />
+
+
+                            <SidebarRow label="ID" value={sidebarInfo.id || "—"} mono />
+
+                            <div>
+                                <div className="flex justify-between mb-1.5">
+                                    <span className="text-white 2xl:text-[20px] xl:text-[18px] lg:text-[16px] text-[14px] font-medium mb-1">Progress</span>
+                                    <span className="font-semibold text-[#BDC0C3] lg:text-[16px] text-[14px]">{sidebarInfo.progress || 0}%</span>
+                                </div>
+                                <div className="h-2 bg-white/10 rounded-full overflow-hidden">
+                                    <div className="h-full bg-[#0DD180] rounded-full" style={{ width: `${sidebarInfo.progress || 0}%` }} />
+                                </div>
+                            </div>
+
+                            <hr className="border-white/10" />
+
+                            <SidebarRow label="Price" value={sidebarInfo.price ? `£${sidebarInfo.price}` : "—"} />
+
 
 
                         </div>
-                    );
-                })}
-
-                {activeServiceType === "holiday camp" && parents.length > 0 && (
-                    <button
-                        onClick={handleAddParent}
-                        className="md:hidden flex items-center gap-1 px-4 py-2 font-semibold rounded-lg text-sm bg-[#0DD180] text-white"
-                        disabled={editingIndex !== null}
-                    >
-                        <Plus size={17} /> Add Parent
-                    </button>
-                )}
-            </div>
-
-            {/* ================= Emergency Contact ================= */}
-            {hasEmergencyContact && (
-                <div className="bg-white lg:rounded-[30px] p-6 shadow-sm">
-                    <div
-                        className="flex gap-2 items-center mb-2"
-                        onClick={() => {
-                            if (activeServiceType !== "weekly class membership" && activeServiceType !== "holiday camp") return;
-                            if (!sameAsParent && !emergencyEditing) setEmergencyEditing(true);
-                            // Don't toggle off edit by clicking again, force Save
-                        }}
-                    >
-                        <h2 className="font-bold 2xl:text-[24px] text-[#282829] lg:text-[20px] text-[18px]">Emergency contact details</h2>
-                        {(activeServiceType === "weekly class membership" || activeServiceType === "holiday camp") && (
-                            emergencyEditing ? (
-                                <button onClick={() => handleSaveEmergency()} aria-label="Save Emergency Contact">
-                                    <Save size={20} />
-                                </button>
-                            ) : (
-                                <img src="/assets/edit.png" className="w-5 cursor-pointer" alt="Edit" />
-                            )
-                        )}
                     </div>
 
+                    <div className="space-y-2 mt-4 bg-white rounded-[30px] shadow p-6">
 
-                    <label className="flex items-center gap-2 text-[16px] text-[#717073] font-semibold mb-4 cursor-pointer">
-                        <input type="checkbox" checked={sameAsParent} disabled={activeServiceType !== "weekly class membership" && activeServiceType !== "holiday camp"} onChange={(e) => setSameAsParent(e.target.checked)} />
-                        Fill same as above
-                    </label>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                        <Input
-                            label="First name"
-                            value={emergency.emergencyFirstName}
-                            editable={!sameAsParent && emergencyEditing}
-                            error={emergencyErrors.emergencyFirstName}
-                            onChange={(e) => handleEmergencyChange("emergencyFirstName", e.target.value)}
-                        />
-
-                        <Input
-                            label="Last name"
-                            value={emergency.emergencyLastName}
-                            editable={!sameAsParent && emergencyEditing}
-                            error={emergencyErrors.emergencyLastName}
-                            onChange={(e) => handleEmergencyChange("emergencyLastName", e.target.value)}
-                        />
-
-                        <div>
-                            <Label>Phone number</Label>
-                            <div className={`w-full flex items-center rounded-lg px-4 py-3 font-semibold outline-none ${(!sameAsParent && emergencyEditing) ? "bg-white border" : "bg-[#F0F5FF]"
-                                } ${emergencyErrors.phone ? "border-red-500" : "border-gray-300"}`}>
-                                <div className="2xl:w-[6%] lg:w-[14%] w-[18%]">
-                                    <PhoneInput
-                                        country="us"
-                                        value={dialCodes}
-                                        disableDropdown={true}
-                                        disableCountryCode={true}
-                                        countryCodeEditable={false}
-                                        inputStyle={{
-                                            display: "none",
-                                        }}
-                                    />
-                                </div>
-                                <input
-                                    value={emergency.emergencyPhoneNumber}
-                                    onChange={(e) => handleEmergencyChange("emergencyPhoneNumber", e.target.value)}
-                                    disabled={!(!sameAsParent && emergencyEditing)}
-                                    className={`poppins 2xl:ps-3 ps-4 text-[14px] border-l border-gray-300 outline-none w-full bg-transparent`}
-                                />
-                            </div>
-                            {emergencyErrors.emergencyPhoneNumber && <p className="text-red-500 text-sm mt-1">{emergencyErrors.emergencyPhoneNumber}</p>}
-                        </div>
-
-                        <CustomSelect
-                            label="Relation to child"
-                            value={emergency.emergencyRelation}
-                            editable={!sameAsParent && emergencyEditing}
-                            error={emergencyErrors.emergencyRelation}
-                            onChange={(e) => handleEmergencyChange("emergencyRelation", e.target.value)}
-                        />
+                        <button className="w-full py-2.5 rounded-[10px] border border-[#0DD180] text-[#0DD180] text-[18px] font-semibold hover:bg-[#0DD180]/10 transition">
+                            Add to the waiting list
+                        </button>
+                        <button className="w-full py-2.5 rounded-[10px] border border-gray-200 bg-white text-[18px] font-semibold text-[#282829] hover:bg-gray-50 transition">
+                            Transfer Class
+                        </button>
+                        <button className="w-full py-2.5 rounded-[10px] border border-red-200 text-red-500 text-[18px] font-semibold hover:bg-red-50 transition">
+                            Cancel Membership
+                        </button>
                     </div>
                 </div>
-            )}
+            </div>
         </div>
     );
 };
 
-/* ================= Reusable Components ================= */
+/* ─── Helpers ─── */
+const inputClass = (editable, hasError) =>
+    `w-full lg:p-3 p-2 border border-[#E2E1E5] rounded-[12px] focus:outline-none focus:border-[#042C89] text-[#383A46] outline-none  transition-colors bg-white focus:border-[#042C89]
+    } ${hasError ? "!border-red-500" : ""}`;
 
-const Label = ({ children }) => (
-    <p className="text-[16px] lg:text-[18px] font-medium text-[#282829] mb-1">{children}</p>
-);
-
-const Input = ({ label, value, onChange, editable, error }) => (
+const Field = ({ label, error, children }) => (
     <div>
-        <Label>{label}</Label>
-        <input
-            value={value}
-            onChange={onChange}
-            disabled={!editable}
-            className={`w-full rounded-lg px-4 py-3 font-semibold outline-none ${editable ? "bg-white border" : "text-[#9E9FAA] placeholder:text-[#9E9FAA] bg-[#F0F5FF]"
-                } ${error ? "border-red-500" : "border-gray-300"}`}
-        />
-        {error && <p className="text-red-500 text-sm mt-1">{error}</p>}
+        <p className="text-[16px] font-semibold text-[#282829] mb-1.5">{label}</p>
+        {children}
+        {error && <p className="text-red-500 text-[12px] mt-1">{error}</p>}
     </div>
 );
 
-const CustomSelect = ({ label, value, onChange, editable, error }) => {
-    const isHearAboutUs = label === "How did you hear about us?";
-    const currentOptions = isHearAboutUs ? howDidHearOptions : options;
-    const selectedOption = currentOptions.find((opt) => opt.value?.toLowerCase() === value?.toLowerCase()) || null;
+const SidebarRow = ({ label, value, children, mono }) => (
+    <div className="border-b border-[#495362] pb-2">
+        <p className="text-white 2xl:text-[20px] xl:text-[18px] lg:text-[16px] text-[14px] font-medium mb-1">{label}</p>
+        {children || (
+            <p className={`font-semibold text-[#BDC0C3] lg:text-[16px] text-[14px]`}>{value}</p>
+        )}
+    </div>
+);
 
-    const handleChange = (selected) => {
-        onChange({ target: { value: selected ? selected.value : "" } });
-    };
-
+const CustomSelect = ({ value, onChange, editable, options, error }) => {
+    const selectedOption = options.find((opt) => opt.value?.toLowerCase() === value?.toLowerCase()) || null;
     return (
-        <div>
-            <Label>{label}</Label>
-            <ReactSelect
-                value={selectedOption}
-                onChange={handleChange}
-                options={currentOptions}
-                isDisabled={!editable}
-                classNamePrefix="react-select"
-                styles={{
-                    control: (provided, state) => ({
-                        ...provided,
-                        backgroundColor: editable ? "#fff" : "#F0F5FF",
-                        borderColor: error ? "#ef4444" : editable ? "#ccc" : "#fff",
-                        borderRadius: "0.5rem",
-                        minHeight: "48px",
-                        fontWeight: "600",
-                        fontSize: "1rem",
-                        boxShadow: state.isFocused ? "0 0 0 1px #2684FF" : "none",
-                        "&:hover": {
-                            borderColor: state.isFocused ? "#2684FF" : "#999",
-                        },
-                    }),
-
-                    singleValue: (provided) => ({
-                        ...provided,
-                        color: editable ? "#000" : "#999",
-                    }),
-                    menu: (provided) => ({
-                        ...provided,
-                        zIndex: 9999,
-                    }),
-                }}
-                placeholder="Select"
-            />
-            {error && <p className="text-red-500 text-sm mt-1">{error}</p>}
-        </div>
+        <ReactSelect
+            value={selectedOption}
+            onChange={(selected) => onChange({ target: { value: selected ? selected.value : "" } })}
+            options={options}
+            isDisabled={!editable}
+            classNamePrefix="react-select"
+            styles={{
+                control: (provided, state) => ({
+                    ...provided,
+                    backgroundColor: "#fff",
+                    borderColor: error ? "#ef4444" : "#E2E1E5",
+                    borderRadius: "12px",
+                    minHeight: "52px",
+                    fontWeight: "600",
+                    color: "#383A46",
+                    fontSize: "14px",
+                    boxShadow: "none",
+                    "&:hover": { borderColor: state.isFocused ? "#042C89" : "#9CA3AF" },
+                }),
+                singleValue: (provided) => ({ ...provided, color: "#282829" }),
+                indicatorSeparator: () => ({ display: "none" }),
+                dropdownIndicator: (provided) => ({ ...provided, color: editable ? "#6B7280" : "#9CA3AF" }),
+                menu: (provided) => ({ ...provided, zIndex: 9999 }),
+            }}
+            placeholder="Select"
+        />
     );
 };
 

@@ -2,7 +2,7 @@ import { Plus, Save } from "lucide-react";
 import React, { useState, useEffect } from "react";
 import Select from "react-select";
 import { useProfile } from "../../context/ProfileContext";
-import AddStudentModal from "./AddStudentModal";
+import AddStudentModal from "../modals/AddStudentModal";
 
 const genderOptions = [
   { value: "", label: "Select Gender" },
@@ -16,41 +16,27 @@ const emptyStudent = {
   dateOfBirth: "",
   age: "",
   gender: "",
-  medicalInformation: "",
+  medicalInfo: "",
 };
 
 const convertToDDMMYYYY = (dateStr) => {
   if (!dateStr) return "";
-  if (/^\d{2}[/\-]\d{2}[/\-]\d{4}$/.test(dateStr)) {
-    return dateStr.replace(/-/g, "/");
-  }
+  if (/^\d{2}[/\-]\d{2}[/\-]\d{4}$/.test(dateStr)) return dateStr.replace(/-/g, "/");
   const match = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})/);
-  if (match) {
-    return `${match[3]}/${match[2]}/${match[1]}`;
-  }
+  if (match) return `${match[3]}/${match[2]}/${match[1]}`;
   const d = new Date(dateStr);
   if (isNaN(d.getTime())) return dateStr;
-  const day = String(d.getDate()).padStart(2, "0");
-  const month = String(d.getMonth() + 1).padStart(2, "0");
-  const year = d.getFullYear();
-  return `${day}/${month}/${year}`;
+  return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()}`;
 };
 
 const convertToYYYYMMDD = (dateStr) => {
   if (!dateStr) return "";
-  if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
-    return dateStr;
-  }
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return dateStr;
   const match = dateStr.match(/^(\d{2})[/\-](\d{2})[/\-](\d{4})$/);
-  if (match) {
-    return `${match[3]}-${match[2]}-${match[1]}`;
-  }
+  if (match) return `${match[3]}-${match[2]}-${match[1]}`;
   const d = new Date(dateStr);
   if (isNaN(d.getTime())) return dateStr;
-  const day = String(d.getDate()).padStart(2, "0");
-  const month = String(d.getMonth() + 1).padStart(2, "0");
-  const year = d.getFullYear();
-  return `${year}-${month}-${day}`;
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 };
 
 const isValidDate = (dateStr) => {
@@ -60,152 +46,85 @@ const isValidDate = (dateStr) => {
   const day = parseInt(match[1], 10);
   const month = parseInt(match[2], 10);
   const year = parseInt(match[3], 10);
-
   if (month < 1 || month > 12) return false;
   if (day < 1 || day > 31) return false;
   if (year < 1900 || year > new Date().getFullYear()) return false;
-
   const date = new Date(year, month - 1, day);
-  return (
-    date.getFullYear() === year &&
-    date.getMonth() === month - 1 &&
-    date.getDate() === day
-  );
+  return date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day;
 };
 
 const handleDobChange = (value, prevValue = "") => {
-  if (value.length < prevValue.length) {
-    return value;
-  }
+  if (value.length < prevValue.length) return value;
   const clean = value.replace(/\D/g, "");
   const truncated = clean.substring(0, 8);
   let formatted = "";
   if (truncated.length > 0) {
     formatted += truncated.substring(0, 2);
-    if (truncated.length === 2 && value.length >= prevValue.length) {
-      formatted += "/";
-    }
+    if (truncated.length === 2 && value.length >= prevValue.length) formatted += "/";
   }
   if (truncated.length > 2) {
     formatted += "/" + truncated.substring(2, 4);
-    if (truncated.length === 4 && value.length >= prevValue.length) {
-      formatted += "/";
-    }
+    if (truncated.length === 4 && value.length >= prevValue.length) formatted += "/";
   }
-  if (truncated.length > 4) {
-    formatted += "/" + truncated.substring(4, 8);
-  }
+  if (truncated.length > 4) formatted += "/" + truncated.substring(4, 8);
   return formatted;
 };
 
 function calculateAge(dateOfBirth) {
   if (!dateOfBirth) return "";
-  const yyyymmdd = convertToYYYYMMDD(dateOfBirth);
-  const birthDate = new Date(yyyymmdd);
+  const birthDate = new Date(convertToYYYYMMDD(dateOfBirth));
   if (isNaN(birthDate.getTime())) return "";
   const today = new Date();
   let age = today.getFullYear() - birthDate.getFullYear();
   const m = today.getMonth() - birthDate.getMonth();
-  if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
-    age--;
-  }
+  if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) age--;
   return age < 0 ? "" : age;
 }
 
-const getBookingLabel = (booking) => {
-  if (!booking) return "Booking";
-  const dateStr = booking.createdAt ? new Date(booking.createdAt).toLocaleDateString() : "";
+/* ─── Same inputClass helper as ParentProfile ─── */
+const inputClass = (editable, hasError) =>
+  `w-full lg:p-3 p-2 border border-[#E2E1E5] rounded-[12px] focus:outline-none focus:border-[#042C89] text-[#383A46] outline-none transition-colors bg-white ${hasError ? "!border-red-500" : ""}`;
 
-  let title = "";
-  if (booking.serviceType === "weekly class membership") {
-    title = booking?.paymentPlan?.title || "Weekly Class Membership";
-  } else if (booking.serviceType === "holiday camp") {
-    title = booking?.holidayCamp?.name || "Holiday Camp";
-  } else if (booking.serviceType === "birthday party") {
-    title = booking?.leads?.packageInterest || "Birthday Party";
-  } else if (booking.serviceType === "one to one") {
-    title = booking?.leads?.packageInterest || "One to One";
-  } else {
-    title = booking?.serviceType || "Booking";
-  }
+/* ─── Field wrapper same as ParentProfile ─── */
+const Field = ({ label, error, children }) => (
+  <div>
+    <p className="text-[16px] font-semibold text-[#282829] mb-1.5">{label}</p>
+    {children}
+    {error && <p className="text-red-500 text-[12px] mt-1">{error}</p>}
+  </div>
+);
 
-  const venue = booking?.classSchedule?.venue?.name || booking?.venue?.name || booking?.holidayVenue?.name || booking?.location || "";
+/* ─── Sidebar row helper ─── */
+const SidebarRow = ({ label, value, children }) => (
+  <div className="border-b border-[#495362] pb-2">
+    <p className="text-white 2xl:text-[20px] xl:text-[18px] lg:text-[16px] text-[14px] font-medium mb-1">{label}</p>
+    {children || (
+      <p className="font-semibold text-[#BDC0C3] lg:text-[16px] text-[14px]">{value}</p>
+    )}
+  </div>
+);
 
-  return [title, venue, dateStr].filter(Boolean).join(" - ");
-};
-
-const StudentProfile = ({ activeServiceType }) => {
+const StudentProfile = () => {
   const [students, setStudents] = useState([{ ...emptyStudent }]);
   const [editingIndex, setEditingIndex] = useState(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [errors, setErrors] = useState([{}]);
   const { profile, updateProfile } = useProfile();
 
-  // Validation errors: array of objects per student
-  const [errors, setErrors] = useState([{}]);
-
-  const serviceKey = Array.isArray(activeServiceType)
-    ? "weekly-classes"
-    : activeServiceType;
-  const [selectedBookingId, setSelectedBookingId] = useState(() => {
-    return localStorage.getItem(`selectedBookingId_${serviceKey}`) || "";
-  });
-
-  const getBookingId = (booking, index) => {
-    return booking?.id ? String(booking.id) : String(index);
-  };
-
-
-  const allBookingsList = profile?.combinedBookings
-    || (profile?.groupedBookings ? Object.values(profile.groupedBookings).flat() : [])
-    || (Array.isArray(profile) ? profile : []);
-
-  const activeBookings = allBookingsList.filter((booking) => {
-    if (!activeServiceType) return true;
-
-    return Array.isArray(activeServiceType)
-      ? activeServiceType.includes(booking?.serviceType)
-      : booking?.serviceType === activeServiceType;
-  });
+  /* ===== LOAD DATA FROM PROFILE ===== */
   useEffect(() => {
-    if (activeBookings.length > 0) {
-      const hasSelected = activeBookings.some((b, idx) => getBookingId(b, idx) === selectedBookingId);
-      if (!hasSelected) {
-        const initialId = getBookingId(activeBookings[0], 0);
-        setSelectedBookingId(initialId);
-        localStorage.setItem(`selectedBookingId_${serviceKey}`, initialId);
-      }
-    } else {
-      setSelectedBookingId("");
-    }
-  }, [activeBookings, activeServiceType, selectedBookingId]);
-
-  const selectedBooking = activeBookings.find((b, idx) => getBookingId(b, idx) === selectedBookingId) || activeBookings[0];
-
-  const handleBookingChange = (bookingId) => {
-    setSelectedBookingId(bookingId);
-    localStorage.setItem(`selectedBookingId_${activeServiceType}`, bookingId);
-    setEditingIndex(null);
-  };
-
-  useEffect(() => {
-    if (!selectedBooking) {
+    if (!profile) {
       setStudents([]);
       setErrors([]);
       return;
     }
-    const bookingStudents = selectedBooking.students || [];
-    setStudents(bookingStudents.map(s => ({
+    const profileStudents = profile?.adminMeta?.students || [];
+    setStudents(profileStudents.map((s) => ({
       ...s,
-      dateOfBirth: convertToDDMMYYYY(s.dateOfBirth)
+      dateOfBirth: convertToDDMMYYYY(s.dateOfBirth),
     })));
-    setErrors(bookingStudents.map(() => ({})));
-  }, [selectedBooking]);
-
-  const addStudent = () => {
-    setStudents((prev) => [...prev, { ...emptyStudent }]);
-    setErrors((prev) => [...prev, {}]);
-    setEditingIndex(students.length); // auto-edit new student
-  };
+    setErrors(profileStudents.map(() => ({})));
+  }, [profile]);
 
   const deleteStudent = (index) => {
     setStudents((prev) => prev.filter((_, i) => i !== index));
@@ -216,14 +135,8 @@ const StudentProfile = ({ activeServiceType }) => {
   const updateStudentField = (index, field, value) => {
     const updated = [...students];
     updated[index] = { ...updated[index], [field]: value };
-
-    // Update age on dateOfBirth change
-    if (field === "dateOfBirth") {
-      updated[index].age = calculateAge(value);
-    }
+    if (field === "dateOfBirth") updated[index].age = calculateAge(value);
     setStudents(updated);
-
-    // Clear error for that field as user types
     const newErrors = [...errors];
     if (newErrors[index]) {
       newErrors[index][field] = "";
@@ -231,61 +144,40 @@ const StudentProfile = ({ activeServiceType }) => {
     }
   };
 
-  // Validate student fields, return error object
   const validateStudent = (student) => {
     const err = {};
     if (!student.studentFirstName.trim()) err.studentFirstName = "First name is required";
     if (!student.studentLastName.trim()) err.studentLastName = "Last name is required";
-
     if (!student.dateOfBirth) {
       err.dateOfBirth = "Date of birth is required";
     } else if (!isValidDate(student.dateOfBirth)) {
       err.dateOfBirth = "Invalid date of birth (use DD/MM/YYYY)";
     }
-
     if (!student.gender) err.gender = "Gender is required";
-
     return err;
   };
-
-
-
 
   const parentData = JSON.parse(localStorage.getItem("parentData"));
   const parentId = parentData?.id;
 
+  const cleanedStudents = students.map(({ id, studentFirstName, studentLastName, dateOfBirth, age, gender, medicalInfo }) => ({
+    id,
+    studentFirstName,
+    studentLastName,
+    dateOfBirth: convertToYYYYMMDD(dateOfBirth),
+    age,
+    gender,
+    medicalInfo,
+  }));
 
-  const cleanedStudents = students.map(
-    ({
-      id,
-      studentFirstName,
-      studentLastName,
-      dateOfBirth,
-      age,
-      gender,
-      medicalInformation,
-    }) => ({
-      id,
+  const profileParents = profile?.parents || [];
+  const cleanedParents = profileParents.map(({ relationChild, howDidHear, ...rest }) => ({
+    ...rest,
+    relationToChild: relationChild ?? "",
+    howDidYouHear: howDidHear ?? "",
+  }));
 
-      studentFirstName,
-      studentLastName,
-      dateOfBirth: convertToYYYYMMDD(dateOfBirth),
-      age,
-      gender,
-      medicalInformation,
-    })
-  );
-
-  const bookingParents = selectedBooking?.parents || [];
-  const cleanedParents = bookingParents.map(
-    ({ relationChild, howDidHear, ...rest }) => ({
-      ...rest,
-      relationToChild: relationChild ?? "",
-      howDidYouHear: howDidHear ?? "",
-    })
-  );
-
-  const emergency = selectedBooking?.emergency || {};
+  const emergency = profile?.emergency || {};
   const cleanedEmergency = {
     id: emergency?.id,
     studentId: emergency?.studentId,
@@ -295,311 +187,281 @@ const StudentProfile = ({ activeServiceType }) => {
     emergencyRelation: emergency?.emergencyRelation,
   };
 
-
   const handleSave = (index) => {
     const student = students[index];
     const validationErrors = validateStudent(student);
-
     const newErrors = [...errors];
     newErrors[index] = validationErrors;
     setErrors(newErrors);
 
-    // If no errors, close edit mode
     if (Object.keys(validationErrors).length === 0) {
       setEditingIndex(null);
-
-      let finalDataToSend;
-      if (activeServiceType === "weekly class membership" || activeServiceType === "holiday camp") {
-        const mappedParents = bookingParents.map((p) => ({
-          id: p.id,
-          parentFirstName: p.parentFirstName,
-          parentLastName: p.parentLastName,
-          parentEmail: p.parentEmail,
-          parentPhoneNumber: p.parentPhoneNumber,
-          relationChild: p.relationChild || p.relationToChild || "",
-          howDidHear: p.howDidHear || p.howDidYouHear || "",
-        }));
-
-        const mappedEmergency = {
-          id: emergency?.id,
-          emergencyFirstName: emergency?.emergencyFirstName,
-          emergencyLastName: emergency?.emergencyLastName,
-          emergencyPhoneNumber: emergency?.emergencyPhoneNumber,
-          emergencyRelation: emergency?.emergencyRelation,
-        };
-
-        finalDataToSend = {
-          serviceType: activeServiceType === "weekly class membership" ? "weekly class" : "holiday camp",
-          bookingId: selectedBooking?.id,
-          students: cleanedStudents,
-          parents: mappedParents,
-          emergency: mappedEmergency,
-          ...(activeServiceType === "holiday camp" ? {
-            paymentPlanId: selectedBooking?.paymentPlan?.id,
-            holidayCampId: selectedBooking?.holidayCamp?.id,
-            payment: selectedBooking?.payment
-          } : {})
-        };
-      } else {
-        finalDataToSend = {
-          parentAdminId: parentId,
-          students: cleanedStudents,
-          parents: cleanedParents,
-          emergencyContacts: [cleanedEmergency]
-        };
-      }
-
-      updateProfile(finalDataToSend);
+      updateProfile({
+        parentAdminId: parentId,
+        students: cleanedStudents,
+        parents: cleanedParents,
+        emergencyContacts: [cleanedEmergency],
+      });
     }
   };
 
+  /* ===== SIDEBAR DATA ===== */
+  const sidebarInfo = profile?.adminMeta || {};
+  const parentFirstName = sidebarInfo?.parents?.[0]?.parentFirstName?.trim() || "";
+  const parentLastName = sidebarInfo?.parents?.[0]?.parentLastName?.trim() || "";
+  const parentDisplayName = `${parentFirstName} ${parentLastName}`.trim();
+  const relationChild = sidebarInfo?.parents?.[0]?.relationChild?.trim();
+  const parentRelation = relationChild ? ` / ${relationChild}` : "";
+  const profilePhoto = sidebarInfo?.parents?.[0]?.profile;
+
   return (
-    <div className="md:py-4 ">
-      {/* ================= Booking Selector ================= */}
-      {activeBookings.length > 0 && (
-        <div className="bg-white lg:rounded-[30px] p-6 mb-6 flex flex-col gap-2 shadow-sm">
-          <label className="text-[15px] font-semibold text-[#111827]">
-            Select Booking
-          </label>
-          <div className="relative w-full">
-            <select
-              value={selectedBookingId}
-              onChange={(e) => handleBookingChange(e.target.value)}
-              className="w-full appearance-none rounded-2xl border border-[#E5EAF2] bg-[#F9FAFB] hover:bg-white px-5 py-4 pr-12 text-[15px] font-medium text-[#111827] shadow-sm outline-none transition-all duration-300 focus:border-[#042C89] focus:ring-4 focus:ring-[#042C89]/10"
-            >
-              {activeBookings.map((b, idx) => (
-                <option key={getBookingId(b, idx)} value={getBookingId(b, idx)}>
-                  {getBookingLabel(b)}
-                </option>
-              ))}
-            </select>
-            <div className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2">
-              <svg
-                width="18"
-                height="18"
-                viewBox="0 0 24 24"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
+    <div className="min-h-screen bg-[#F4F6FA] p-5 md:p-0">
+      <div className="lg:flex gap-5 mt-2 items-start">
+
+        {/* LEFT — Student Cards */}
+        <div className="flex-1 lg:w-9/12 min-w-0 md:py-4">
+
+          {/* Add Student Button */}
+          {students.length <= 3 && (
+            <div className="md:text-right px-6 lg:p-0 lg:bg-white md:bg-transparent xl:absolute top-7 right-5 mb-6">
+              <button
+                onClick={() => setIsAddModalOpen(true)}
+                className="inline-flex items-center gap-2 font-medium text-[18px] px-4 py-2 bg-[#0DD180] text-white rounded-lg hover:bg-green-700"
               >
-                <path
-                  d="M6 9L12 15L18 9"
-                  stroke="#6B7280"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
+                <Plus size={20} className="text-white font-bold" />
+                Add New Student
+              </button>
+            </div>
+          )}
+
+          {students.length === 0 && (
+            <div className="bg-white lg:rounded-[30px] p-6 py-16 md:mb-6 text-center text-gray-500 text-[18px] font-medium border border-gray-100 shadow-sm">
+              No students found.
+            </div>
+          )}
+
+          {students.map((student, index) => {
+            const isEditing = editingIndex === index;
+            const err = errors[index] || {};
+
+            return (
+              <div key={index} className="bg-white rounded-[30px] p-6 md:mb-6 shadow-sm">
+
+                {/* Card Header */}
+                <div className="flex justify-between items-center mb-5">
+                  <h2 className="font-bold text-[18px] text-[#282829]">
+                    Student {index + 1} information
+                  </h2>
+                  <button
+                    onClick={() => { if (isEditing) handleSave(index); else setEditingIndex(index); }}
+                    title={isEditing ? "Save" : "Edit"}
+                    className="text-gray-400 hover:text-black"
+                  >
+                    {isEditing
+                      ? <Save size={18} />
+                      : <img src="/assets/edit.png" className="w-5" alt="Edit" />}
+                  </button>
+                </div>
+
+                {/* Fields Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+
+                  {/* First Name */}
+                  <Field label="First name" error={err.studentFirstName}>
+                    <input
+                      type="text"
+                      disabled={!isEditing}
+                      value={student.studentFirstName}
+                      onChange={(e) => updateStudentField(index, "studentFirstName", e.target.value)}
+                      className={inputClass(isEditing, !!err.studentFirstName)}
+                    />
+                  </Field>
+
+                  {/* Last Name */}
+                  <Field label="Last name" error={err.studentLastName}>
+                    <input
+                      type="text"
+                      disabled={!isEditing}
+                      value={student.studentLastName}
+                      onChange={(e) => updateStudentField(index, "studentLastName", e.target.value)}
+                      className={inputClass(isEditing, !!err.studentLastName)}
+                    />
+                  </Field>
+
+                  {/* Date of Birth */}
+                  <Field label="Date of birth" error={err.dateOfBirth}>
+                    <input
+                      type="text"
+                      placeholder="DD/MM/YYYY"
+                      disabled={!isEditing}
+                      value={student.dateOfBirth}
+                      onChange={(e) => {
+                        const formatted = handleDobChange(e.target.value, student.dateOfBirth);
+                        updateStudentField(index, "dateOfBirth", formatted);
+                      }}
+                      className={inputClass(isEditing, !!err.dateOfBirth)}
+                    />
+                  </Field>
+
+                  {/* Age — always disabled */}
+                  <Field label="Age">
+                    <input
+                      type="number"
+                      disabled
+                      value={student.age}
+                      className={inputClass(false, false) + " cursor-not-allowed"}
+                    />
+                  </Field>
+
+                  {/* Gender */}
+                  <Field label="Gender" error={err.gender}>
+                    <Select
+                      isDisabled={!isEditing}
+                      value={genderOptions.find((o) => o.value?.toLowerCase() === student.gender?.toLowerCase()) || null}
+                      onChange={(selected) => updateStudentField(index, "gender", selected ? selected.value : "")}
+                      options={genderOptions}
+                      classNamePrefix="react-select"
+                      styles={{
+                        control: (provided, state) => ({
+                          ...provided,
+                          backgroundColor: "#fff",
+                          borderColor: err.gender ? "#ef4444" : "#E2E1E5",
+                          borderRadius: "12px",
+                          minHeight: "52px",
+                          fontWeight: "600",
+                          fontSize: "14px",
+                          boxShadow: "none",
+                          "&:hover": { borderColor: state.isFocused ? "#042C89" : "#9CA3AF" },
+                        }),
+                        singleValue: (provided) => ({ ...provided, color: "#383A46" }),
+                        indicatorSeparator: () => ({ display: "none" }),
+                        dropdownIndicator: (provided) => ({ ...provided, color: isEditing ? "#6B7280" : "#9CA3AF" }),
+                        menu: (provided) => ({ ...provided, zIndex: 9999 }),
+                      }}
+                      placeholder="Select"
+                    />
+                  </Field>
+
+                  {/* Medical Info */}
+                  <Field label="Medical information">
+                    <input
+                      type="text"
+                      disabled={!isEditing}
+                      value={student.medicalInfo}
+                      onChange={(e) => updateStudentField(index, "medicalInfo", e.target.value)}
+                      className={inputClass(isEditing, false)}
+                    />
+                  </Field>
+
+                </div>
+
+                {/* Delete / Save Buttons */}
+                {isEditing && index > 0 && (
+                  <div className="flex justify-end gap-4 mt-6">
+                    <button
+                      onClick={() => deleteStudent(index)}
+                      className="px-4 py-2 text-[17px] rounded-lg bg-blue-50 font-bold text-[#8DC2FF] hover:bg-[#466abe]"
+                    >
+                      Delete
+                    </button>
+                    <button
+                      onClick={() => handleSave(index)}
+                      className="px-4 py-2 text-[17px] rounded-lg bg-[#8DC2FF] text-white hover:bg-blue-700"
+                    >
+                      Save
+                    </button>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+
+          <AddStudentModal
+            isOpen={isAddModalOpen}
+            onClose={() => setIsAddModalOpen(false)}
+            selectedBooking={profile}
+          />
+        </div>
+
+        {/* RIGHT SIDEBAR */}
+        <div className="xl:w-[30%] md:w-[40%]  m-auto mt-5 md:mt-0">
+          <div className="bg-[#363E49] rounded-[30px] overflow-hidden text-white shadow-lg flex flex-col lg:p-4 p-3 h-fit">
+
+            {/* Header banner */}
+            <div
+              style={{ backgroundImage: "url('/assets/Frame.png')" }}
+              className="bg-cover bg-center px-6 rounded-[20px] md:py-4 py-2 flex justify-between items-center relative overflow-hidden"
+            >
+              <div className="flex flex-col">
+                <h3 className="text-black font-bold 2xl:text-[20px] xl:text-[18px] lg:text-[16px] text-[14px] leading-tight">
+                  Account Status
+                </h3>
+                <span className="text-black/80 lg:text-[16px] text-[14px] text-[#282829] font-semibold">
+                  {sidebarInfo?.status || "Active"}
+                </span>
+              </div>
+            </div>
+
+            <div className="px-5 py-4 space-y-4">
+              {/* Avatar + name */}
+              <div className="flex items-center gap-4">
+                <img src={profilePhoto || "/assets/dummy-avatar.png"} alt="Avatar" className="w-20 h-full object-cover" />
+                <div>
+                  <h4 className="md:text-[24px] 2xl:text-[20px] xl:text-[18px] lg:text-[16px] text-[14px] font-bold leading-tight">
+                    Account Holder
+                  </h4>
+                  <p className="lg:text-[16px] text-[14px] text-[#BDC0C3] font-medium">
+                    {parentDisplayName}{parentRelation}
+                  </p>
+                </div>
+              </div>
+
+              <hr className="border-white/10" />
+
+              <SidebarRow label="Venue">
+                <span className="px-2.5 py-0.5 rounded-[6px] bg-[#042C89] text-white text-[12px] font-semibold">
+                  {typeof sidebarInfo.venue === "object"
+                    ? sidebarInfo.venue?.name || sidebarInfo.venue?.area || "London"
+                    : sidebarInfo.venue || "London"}
+                </span>
+              </SidebarRow>
+
+              <SidebarRow label="Membership Plan" value={sidebarInfo.membershipPlan || "—"} />
+              <SidebarRow label="Membership Start Date" value={sidebarInfo.startDate || "—"} />
+              <SidebarRow label="Membership Tenure" value={sidebarInfo.tenure || "0 days"} />
+              <SidebarRow label="ID" value={sidebarInfo.id || "—"} />
+
+              <div>
+                <div className="flex justify-between mb-1.5">
+                  <span className="text-white 2xl:text-[20px] xl:text-[18px] lg:text-[16px] text-[14px] font-medium">Progress</span>
+                  <span className="font-semibold text-[#BDC0C3] lg:text-[16px] text-[14px]">{sidebarInfo.progress || 0}%</span>
+                </div>
+                <div className="h-2 bg-white/10 rounded-full overflow-hidden">
+                  <div className="h-full bg-[#0DD180] rounded-full" style={{ width: `${sidebarInfo.progress || 0}%` }} />
+                </div>
+              </div>
+
+              <hr className="border-white/10" />
+
+              <SidebarRow label="Price" value={sidebarInfo.price ? `£${sidebarInfo.price}` : "—"} />
             </div>
           </div>
-        </div>
-      )}
 
-      {/* Add Student Button */}
-      {activeServiceType === "holiday camp" && students.length <= 3 && (
-        <div className="md:text-right px-6 lg:p-0 bg-white md:bg-transparent xl:absolute top-7 right-5 md:mb-6">
-          <button
-            onClick={() => setIsAddModalOpen(true)}
-            className="inline-flex items-center gap-2 font-medium text-[18px] px-4 py-2 bg-[#0DD180] text-white rounded-lg hover:bg-green-700"
-          >
-            <Plus size={20} className="text-white font-bold" />
-            Add New Student
-          </button>
-        </div>
-      )}
-
-      {students.length === 0 && (
-        <div className="bg-white lg:rounded-[30px] p-6 py-16 md:mb-6 text-center text-gray-500 text-[18px] font-medium border border-gray-100 shadow-sm">
-          No students found.
-        </div>
-      )}
-
-      {students.map((student, index) => {
-        const isEditing = editingIndex === index;
-        const err = errors[index] || {};
-
-        return (
-          <div
-            key={index}
-            className="bg-white lg:rounded-[30px] p-6 md:mb-6"
-          >
-            <div className="flex gap-2 items-center mb-4">
-              <h2 className="font-bold text-[24px] text-[#282829]">
-                Student {index + 1} information
-              </h2>
-              {(activeServiceType === "weekly class membership" || activeServiceType === "holiday camp") && (
-                <button
-                  onClick={() => {
-                    if (isEditing) handleSave(index);
-                    else setEditingIndex(index);
-                  }}
-                  title={isEditing ? "Save" : "Edit"}
-                  className={`... ${isEditing ? "bg-white border border-gray-300 text-black" : "bg-[#F0F5FF] border-transparent text-[#9E9FAA] placeholder:text-[#9E9FAA]"}`}                >
-                  {isEditing ? <Save size={20} /> : <img src="/assets/edit.png" className="w-5" alt="Edit" />}
-                </button>
-              )}
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {/* First Name */}
-              <div>
-                <label className="text-[16px] lg:text-[18px] font-medium text-[#282829] mb-1 block ">
-                  First name
-                </label>
-                <input
-                  type="text"
-                  disabled={!isEditing}
-                  value={student.studentFirstName}
-                  onChange={(e) => updateStudentField(index, "studentFirstName", e.target.value)}
-                  className={`w-full rounded-md px-3 py-3 border 
-  ${isEditing ? (err.studentFirstName ? " text-black placeholder:text-black  border-red-500 bg-white" : "border-gray-300 bg-white text-black") : "bg-[#F0F5FF] border-transparent text-[#9E9FAA] placeholder:text-[#9E9FAA]"} 
-  `}
-
-                />
-                {err.studentFirstName && <p className="text-red-600 mt-1 text-sm">{err.studentFirstName}</p>}
-              </div>
-
-              {/* Last Name */}
-              <div>
-                <label className="text-[16px] lg:text-[18px] font-medium text-[#282829] mb-1 block ">
-                  Last name
-                </label>
-                <input
-                  type="text"
-                  disabled={!isEditing}
-                  value={student.studentLastName}
-                  onChange={(e) => updateStudentField(index, "studentLastName", e.target.value)}
-                  className={`w-full rounded-md px-3 py-3 border 
-  ${isEditing ? (err.studentLastName ? " text-black placeholder:text-black  border-red-500 bg-white" : "border-gray-300 bg-white text-black") : "bg-[#F0F5FF] border-transparent text-[#9E9FAA] placeholder:text-[#9E9FAA]"} 
-  `}
-
-                />
-                {err.studentLastName && <p className="text-red-600 mt-1 text-sm">{err.studentLastName}</p>}
-              </div>
-
-              {/* dateOfBirth */}
-              <div>
-                <label className="text-[16px] lg:text-[18px] font-medium text-[#282829] mb-1 block ">
-                  Date of birth
-                </label>
-                <input
-                  type="text"
-                  placeholder="DD/MM/YYYY"
-                  disabled={!isEditing}
-                  value={student.dateOfBirth}
-                  onChange={(e) => {
-                    const formatted = handleDobChange(e.target.value, student.dateOfBirth);
-                    updateStudentField(index, "dateOfBirth", formatted);
-                  }}
-                  className={`w-full rounded-md px-3 py-3 border 
-  ${isEditing ? (err.dateOfBirth ? " text-black placeholder:text-black  border-red-500 bg-white" : "border-gray-300 bg-white text-black") : "bg-[#F0F5FF] border-transparent text-[#9E9FAA] placeholder:text-[#9E9FAA]"} 
-  `}
-
-                />
-                {err.dateOfBirth && <p className="text-red-600 mt-1 text-sm">{err.dateOfBirth}</p>}
-              </div>
-
-              {/* Age */}
-              <div>
-                <label className="text-[16px] lg:text-[18px] font-medium text-[#282829] mb-1 block ">
-                  Age
-                </label>
-                <input
-                  type="number"
-                  disabled
-                  value={student.age}
-                  className="w-full rounded-md px-3 py-3 bg-[#F0F5FF] border-transparent  cursor-not-allowed text-[#9E9FAA] placeholder:text-[#9E9FAA]"
-                />
-              </div>
-
-              {/* Gender */}
-              <div>
-                <label className="text-[16px] lg:text-[18px] font-medium text-[#282829] mb-1 block ">
-                  Gender
-                </label>
-                <Select
-                  isDisabled={!isEditing}
-                  value={genderOptions.find((o) => o.value?.toLowerCase() === student.gender?.toLowerCase()) || null}
-                  onChange={(selected) =>
-                    updateStudentField(index, "gender", selected ? selected.value : "")
-                  }
-                  styles={{
-                    control: (provided, state) => ({
-                      ...provided,
-                      backgroundColor: isEditing ? "#fff" : "#F0F5FF",
-                      borderColor: err.gender ? "#ef4444" : isEditing ? "#ccc" : "#fff",
-                      color: isEditing ? "#000" : "#999",
-                      borderRadius: "0.5rem",
-                      minHeight: "48px",
-                      fontWeight: "600",
-                      fontSize: "1rem",
-                      boxShadow: state.isFocused ? "0 0 0 1px #2684FF" : "none",
-                      "&:hover": {
-                        borderColor: state.isFocused ? "#2684FF" : "#999",
-                      },
-                    }),
-                    singleValue: (provided) => ({
-                      ...provided,
-                      color: isEditing ? " text-black #000" : "#999",
-                    }),
-                    menu: (provided) => ({
-                      ...provided,
-                      zIndex: 9999,
-                    }),
-                  }}
-                  options={genderOptions}
-                  classNamePrefix="react-select"
-                />
-                {err.gender && <p className="text-red-600 mt-1 text-sm">{err.gender}</p>}
-
-
-              </div>
-
-              {/* Medical Info */}
-              <div>
-                <label className="text-[16px] lg:text-[18px] font-medium text-[#282829] mb-1 block ">
-                  Medical information
-                </label>
-
-                <input
-                  type="text"
-                  disabled={!isEditing}
-                  value={student.medicalInformation}
-                  onChange={(e) => updateStudentField(index, "medicalInformation", e.target.value)}
-                  className={`w-full rounded-md px-3 py-3 border 
-  ${isEditing ? " text-black " : "bg-[#F0F5FF] border-transparent text-[#9E9FAA] placeholder:text-[#9E9FAA]"} 
-  `}
-
-                />
-              </div>
-            </div>
-
-            {/* Save / Delete Buttons */}
-            {(isEditing && index > 0) && (
-              <div className="flex justify-end gap-4 mt-6">
-                <button
-                  onClick={() => deleteStudent(index)}
-                  className="px-4 py-2 text-[17px] rounded-lg bg-blue-50 font-bold text-[#8DC2FF] hover:bg-[#466abe]"
-                >
-                  Delete
-                </button>
-                <button
-                  onClick={() => handleSave(index)}
-                  className="px-4 py-2 text-[17px] rounded-lg bg-[#8DC2FF] text-white hover:bg-blue-700"
-                >
-                  Save
-                </button>
-              </div>
-            )}
+          {/* Action buttons */}
+          <div className="space-y-2 mt-4 bg-white rounded-[30px] shadow p-6">
+            <button className="w-full py-2.5 rounded-[10px] border border-[#0DD180] text-[#0DD180] text-[18px] font-semibold hover:bg-[#0DD180]/10 transition">
+              Add to the waiting list
+            </button>
+            <button className="w-full py-2.5 rounded-[10px] border border-gray-200 bg-white text-[18px] font-semibold text-[#282829] hover:bg-gray-50 transition">
+              Transfer Class
+            </button>
+            <button className="w-full py-2.5 rounded-[10px] border border-red-200 text-red-500 text-[18px] font-semibold hover:bg-red-50 transition">
+              Cancel Membership
+            </button>
           </div>
-        );
-      })}
+        </div>
 
-      <AddStudentModal
-        isOpen={isAddModalOpen}
-        onClose={() => setIsAddModalOpen(false)}
-        selectedBooking={selectedBooking}
-        activeServiceType={activeServiceType}
-      />
+      </div>
     </div>
   );
 };

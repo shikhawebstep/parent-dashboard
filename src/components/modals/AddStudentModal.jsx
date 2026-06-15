@@ -470,7 +470,7 @@ const AddStudentModal = ({ isOpen, onClose, selectedBooking, activeServiceType }
                 </div>
 
                 {/* Stepper */}
-                <div className="p-6 bg-gray-50 border-b">
+                <div className="p-6 bg-gray-50 h-[140px] ps-[100px]">
                     <ol className="flex items-center w-full justify-between">
                         {STEPS.map((step, index) => {
                             const isActive = currentStep === step.id;

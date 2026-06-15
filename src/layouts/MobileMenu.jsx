@@ -3,6 +3,7 @@ import { X, ChevronDown, Bell, LogOut } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { showConfirm, showSuccess } from "../../utils/swalHelper";
+import { useProfile } from "../context/ProfileContext";
 
 // Reusing the same menu items from Sidebar
 const menu = [
@@ -42,6 +43,7 @@ const parentData = JSON.parse(localStorage.getItem("parentData"));
 const MobileMenu = ({ isOpen, onClose }) => {
     const [dateTime, setDateTime] = useState(new Date());
     const navigate = useNavigate();
+    const { profile } = useProfile();
 
     const handleLogout = () => {
         onClose(); // Close mobile menu first
@@ -109,7 +111,7 @@ const MobileMenu = ({ isOpen, onClose }) => {
                 {/* User Profile */}
                 <div className="flex items-center gap-3 mb-8">
                     <img
-                        src="/assets/user.png"
+                        src={profile?.accountInfo?.profile || "/assets/dummy-avatar.png"}
                         alt="John Doe"
                         className="w-12 h-12 rounded-full border-2 border-green-500 object-cover"
                     />

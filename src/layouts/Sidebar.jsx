@@ -84,7 +84,7 @@ const Sidebar = () => {
       </nav>
 
       {/* LOGOUT */}
-      <div className="p-4">
+      <div className="p-4 fixed bottom-0 left-0">
         <button onClick={handleLogout} className="p-3 flex items-center gap-3 text-[18px] font-semibold hover:text-red-300">
           <img src="/assets/logout-04.png" alt="" className="w-5" />
           Logout

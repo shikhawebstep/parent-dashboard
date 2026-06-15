@@ -19,6 +19,7 @@ import { FeedbackProvider } from "./context/FeedbackContext";
 import { SkillProvider } from "./context/SkillContext";
 import SkillDetail from "./components/profile/SkillDetail";
 import SetPassword from "./components/auth/SetPassword";
+import Detail from "./components/profile/see-details/Detail";
 function App() {
   return (
     <StepProvider>
@@ -38,6 +39,7 @@ function App() {
                   <Route path="/refer" element={<ReferFriend />} />
                   <Route path="/surveys" element={<Surveys />} />
                   <Route path="/surveys/:id" element={<SurveyDetail />} />
+                  <Route path="/account-information/see-details" element={<Detail />} />
                   <Route path="/skills/:id" element={<SkillDetail />} />
                   <Route path="/settings" element={<Settings />} />
                   <Route path="*" element={<NotFound />} />

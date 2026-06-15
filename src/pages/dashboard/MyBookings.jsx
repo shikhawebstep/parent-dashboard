@@ -2,9 +2,11 @@ import React, { useEffect, useState } from 'react';
 import { showError } from '../../../utils/swalHelper';
 import Loader from '../../components/Loader';
 import EmptyState from '../../components/profile/EmptyState';
+import CancelTrial from '../../components/modals/CancelTrial';
 
 const MyBookings = () => {
     const [activeTab, setActiveTab] = useState('Upcoming');
+    const [cancelModal, setCancelModal] = useState({ open: false, booking: null })
 
     const tabs = ['Upcoming', 'Past', 'Cancelled'];
     const [bookings, setBookings] = useState({
@@ -67,7 +69,10 @@ const MyBookings = () => {
         fetchBooking();
     }, []);
 
-
+    const handleCancelTrial = ({ reason, notes, booking }) => {
+        console.log('Cancel trial:', { reason, notes, bookingId: booking?.id })
+        // call your API here
+    }
 
 
     // Simple filter simulation (since data is static, mostly showing same list or filtering by logic if needed)
@@ -83,98 +88,112 @@ const MyBookings = () => {
     }
 
 
-    const formatBooking = (booking) => {
-        const sType = booking?.serviceType?.toLowerCase();
+   const formatBooking = (booking) => {
+    const sType = booking?.serviceType?.toLowerCase();
 
-        let dateObj = booking?.createdAt ? new Date(booking.createdAt) : null;
-        let venue = "-";
-        let time = "-";
-        let address = "-";
-        let classType = booking?.serviceType || "-";
-        let coachName = "-";
+    let dateObj = booking?.createdAt ? new Date(booking.createdAt) : null;
+    let venue = "-";
+    let time = "-";
+    let address = "-";
+    let classType = booking?.serviceType || "-";
+    let coachName = "";
 
-        if (booking?.coach?.firstName) {
-            coachName = `${booking.coach.firstName} ${booking.coach.lastName || ''}`.trim();
+    if (booking?.coach?.firstName) {
+        coachName = `${booking.coach.firstName} ${booking.coach.lastName || ''}`.trim();
+    }
+
+    const student = booking?.students?.[0];
+
+    if (sType === "holiday camp") {
+        venue = booking?.holidayVenue?.name || "-";
+        address = booking?.holidayVenue?.address || "-";
+
+        const schedule = student?.holidayClassSchedules;
+        const levelName = schedule?.level?.name || schedule?.level || "";
+        const cName = schedule?.className || "Holiday Camp";
+        classType = levelName ? `${cName} (${levelName})` : cName;
+
+        const campDate = booking?.holidayCamp?.holidayCampDates?.[0];
+        if (campDate?.startDate) {
+            dateObj = new Date(campDate.startDate);
         }
 
-        const student = booking?.students?.[0];
+        if (schedule?.startTime && schedule?.endTime) {
+            time = `${schedule.startTime} - ${schedule.endTime}`;
+        } else if (campDate?.startDate && campDate?.endDate) {
+            time = `${campDate.startDate} - ${campDate.endDate}`;
+        }
 
-        if (sType === "holiday camp") {
-            venue = booking?.holidayVenue?.name || "-";
-            address = booking?.holidayVenue?.address || "-";
+    } else if (sType === "weekly class membership" || sType === "weekly class trial") {
+        venue = booking?.venue?.name || "-";
+        address = booking?.venue?.address || "-";
 
-            const schedule = student?.holidayClassSchedules;
+        const schedule = student?.classSchedule || student?.holidayClassSchedules;
+        if (schedule) {
             const levelName = schedule?.level?.name || schedule?.level || "";
-            const cName = schedule?.className || "Holiday Camp";
+            const cName = schedule?.className || (sType === "weekly class trial" ? "Weekly Class Trial" : "Weekly Class");
             classType = levelName ? `${cName} (${levelName})` : cName;
 
-            const startDate = booking?.holidayCamp?.holidayCampDates?.[0]?.startDate;
-            if (startDate) {
-                dateObj = new Date(startDate);
-            }
-
-            if (schedule?.startTime && schedule?.endTime) {
+            if (schedule.startTime && schedule.endTime) {
                 time = `${schedule.startTime} - ${schedule.endTime}`;
-            } else if (startDate && booking?.holidayCamp?.holidayCampDates?.[0]?.endDate) {
-                time = `${startDate} - ${booking.holidayCamp.holidayCampDates[0].endDate}`;
             }
 
-        } else if (sType === "weekly class membership") {
-            venue = booking?.venue?.name || "-";
-            address = booking?.venue?.address || "-";
-
-            const schedule = student?.classSchedule || student?.holidayClassSchedules;
-            if (schedule) {
-                const levelName = schedule?.level?.name || schedule?.level || "";
-                const cName = schedule?.className || "Weekly Class";
-                classType = levelName ? `${cName} (${levelName})` : cName;
-                
-                if (schedule.startTime && schedule.endTime) {
-                    time = `${schedule.startTime} - ${schedule.endTime}`;
-                }
-            }
-        } else if (sType === "one to one") {
-            venue = booking?.location || "-";
-            address = booking?.address || "-";
-            if (booking?.date) {
-                dateObj = new Date(booking.date);
-            }
-            if (booking?.time) {
-                time = booking.time;
-            }
-            classType = "One to One";
-        } else if (sType === "birthday party") {
-            if (booking?.leads?.partyDate) {
-                dateObj = new Date(booking.leads.partyDate);
-            }
-            classType = "Birthday Party";
-            venue = booking?.location || "-";
-            address = booking?.address || "-";
-        } else {
-            venue = booking?.venue?.name || "-";
-            address = booking?.venue?.address || "-";
-            classType = booking?.serviceType || "-";
-            time = booking?.time || "-";
-            if (booking?.createdAt) {
+            if (schedule.day && booking?.createdAt) {
+                // Use createdAt as fallback; real impl might compute next session day
                 dateObj = new Date(booking.createdAt);
             }
         }
 
-        return {
-            id: booking?.id ?? Math.random(),
-            day: dateObj ? dateObj.toLocaleDateString("en-US", { weekday: "short" }) : "-",
-            date: dateObj ? dateObj.getDate() : "-",
-            month: dateObj ? dateObj.toLocaleDateString("en-US", { month: "short" }) : "-",
-            fullMonth: dateObj ? dateObj.toLocaleDateString("en-US", { month: "long" }) : "-",
-            year: dateObj ? dateObj.getFullYear() : "-",
-            venue,
-            time,
-            address,
-            classType,
-            coach: coachName,
-            status: booking?.status ?? "-",
-        };
+    } else if (sType === "one to one") {
+        venue = booking?.location || "-";
+        address = booking?.address || "-";
+        if (booking?.date) {
+            dateObj = new Date(booking.date);
+        }
+        if (booking?.time) {
+            time = booking.time;
+        }
+        classType = "One to One";
+
+    } else if (sType === "birthday party") {
+        if (booking?.leads?.partyDate) {
+            dateObj = new Date(booking.leads.partyDate);
+        }
+        classType = "Birthday Party";
+        // birthday party has no location/venue field — use address directly
+        venue = booking?.address || "-";
+        address = booking?.address || "-";
+
+    } else {
+        venue = booking?.venue?.name || "-";
+        address = booking?.venue?.address || "-";
+        classType = student?.classSchedule?.className || "-";
+        const startTime = student?.classSchedule?.startTime;
+        const endTime = student?.classSchedule?.endTime;
+        time = startTime && endTime ? `${startTime} - ${endTime}` : "-";
+        if (booking?.createdAt) {
+            dateObj = new Date(booking.createdAt);
+        }
+    }
+
+    return {
+        id: booking?.id ?? Math.random(),
+        day: dateObj ? dateObj.toLocaleDateString("en-US", { weekday: "short" }) : "-",
+        date: dateObj ? dateObj.getDate() : "-",
+        month: dateObj ? dateObj.toLocaleDateString("en-US", { month: "short" }) : "-",
+        fullMonth: dateObj ? dateObj.toLocaleDateString("en-US", { month: "long" }) : "-",
+        year: dateObj ? dateObj.getFullYear() : "-",
+        venue,
+        time,
+        address,
+        classType,
+        coach: coachName,
+        status: booking?.status ?? "-",
+        bookingType: booking?.bookingType ?? "-",
     };
+};
+
+
 
     if (loading) {
         return <Loader />;
@@ -183,7 +202,7 @@ const MyBookings = () => {
     return (
         <div className="md:p-4 p-2 md:space-y-8 animate-fadeIn min-h-screen bg-[#fff] rounded-[30px] md:m-6 m-4">
             {/* Tabs */}
-            <div className="flex items-center md:gap-8 gap-2 mb-12 md:mb-0  pb-1">
+            <div className="flex items-center md:gap-8 gap-2 mb-12 md:mb-0  pb-6">
                 {tabs.map((tab) => (
                     <button
                         key={tab}
@@ -219,21 +238,27 @@ const MyBookings = () => {
                             seenMonths.add(monthKey);
                         }
 
+                        const isCurrentMonth =
+                            formatted.fullMonth === new Date().toLocaleDateString("en-US", { month: "long" }) &&
+                            formatted.year === new Date().getFullYear();
+                        console.log('formatted', formatted)
                         return (
                             <div key={formatted.id || index}>
 
-                                {showMonthHeader && (
-                                    <div className="flex items-center gap-4 mb-4 mt-8 bg-[#EAF0FF] p-2 px-6 md:text-[24px] text-[20px] rounded-[15px] text-[#042C89] font-bold uppercase w-full">
+                                {showMonthHeader && !isCurrentMonth && (
+                                    <div className="flex items-center gap-4 mb-4 mt-8 bg-[#EAF0FF] p-2 px-11 md:text-[24px] text-[20px] rounded-[15px] text-[#042C89] font-bold uppercase w-full">
                                         <img src="/assets/calender.png" className='w-6' alt="" />
                                         {formatted.fullMonth} {formatted.year}
                                     </div>
                                 )}
-                                <div className="bg-[#F8F8F8] p-6 rounded-[16px] flex flex-col md:flex-row  overflow-hidden mb-4">
+                                <div className="bg-[#F8F8F8] p-6 py-2 rounded-[16px] flex flex-col md:flex-row  overflow-hidden mb-4">
                                     {/* Date Column */}
+
                                     <div className="bg-[#F9FAFB] md:w-[120px] text-left flex flex-col md:items-center md:text-center 2xl:px-5 px-0  2xl:pe-10 md:pe-5 md:justify-center md:border-r border-b md:border-b-0 border-[#E2E1E5]">
                                         <span className="text-[#5F5F6D] 2xl:text-[24px] text-[20px] font-bold block">{formatted.day}</span>
                                         <span className="text-[#5F5F6D] font-bold 2xl:text-[42px] text-[36px]">{formatted.date}</span>
                                     </div>
+
 
                                     {/* Details */}
                                     <div className="flex-1 xl:flex grid grid-cols-1 sm:grid-cols-2 mt-4 md:mt-0 md:grid-cols-3 md:ps-7 lg:gap-6 gap-3 justify-between items-center">
@@ -255,11 +280,23 @@ const MyBookings = () => {
                                         </div>
                                         <div className='xl:w-[10%]'>
                                             <p className="text-[#9E9FAA] 2xl:text-[16px] text-[14px] mb-1">Coach</p>
-                                            <p className="text-[#5F5F6D] 2xl:text-[16px] text-[14px] font-semibold"> <div className="flex gap-2 items-center"><img src="/assets/Ethan-test1.png" className='w-8' alt="" />{formatted.coach}</div></p>
+                                            <p className="text-[#5F5F6D] 2xl:text-[16px] text-[14px] font-semibold">
+                                                {
+                                                    formatted.coach.length ? (
+
+                                                        <div className="flex gap-2 items-center"><img src="/assets/Ethan-test1.png" className='w-8' alt="" />{formatted.coach}</div>
+                                                    ) : (
+                                                        <span>
+                                                            -
+                                                        </span>
+
+                                                    )
+                                                }
+                                            </p>
                                         </div>
 
                                         {/* Action Button */}
-                                        <div className="xl:w-[13%] w-full flex justify-end">
+                                        <div className="xl:w-[13%] w-full flex flex-wrap gap-4 justify-end">
                                             {formatted.status === 'upcoming' ? (
                                                 <button className="bg-[#042C89] text-white w-full  px-2 2xl:px-4 py-2.5 2xl:py-3 rounded-[12px] font-semibold 2xl:text-sm md:text-[12px] text-[14px] hover:bg-[#032066] transition-colors">
                                                     Give Feedback
@@ -268,6 +305,20 @@ const MyBookings = () => {
                                                 <button className="bg-[#FFAB00] text-white w-full 2xl:px-8 px-4 py-2.5 2xl:py-3 rounded-[12px] font-semibold 2xl:text-sm md:text-[12px] text-[14px] hover:bg-[#e69500] transition-colors ">
                                                     Pending
                                                 </button>
+                                            )}
+                                            {formatted.bookingType === "free" && (
+                                                <>
+
+                                                    <button onClick={() => setCancelModal({ open: true, booking })}
+                                                        className="bg-red-500 block text-white w-full 2xl:px-8 px-4 py-2.5 2xl:py-3 rounded-[12px] font-semibold 2xl:text-sm md:text-[12px] text-[14px] hover:bg-[#e69500] transition-colors ">
+                                                        Cancel Trial
+                                                    </button>
+                                                    <button className="bg-[#042C89] text-white w-full  px-2 2xl:px-4 py-2.5 2xl:py-3 rounded-[12px] font-semibold 2xl:text-sm md:text-[12px] text-[14px] hover:bg-[#032066] transition-colors">
+                                                        Book Membership
+                                                    </button>
+
+                                                </>
+
                                             )}
                                         </div>
                                     </div>
@@ -278,6 +329,13 @@ const MyBookings = () => {
                 })() : (
                     <EmptyState />
                 )}
+
+                <CancelTrial
+                    isOpen={cancelModal.open}
+                    onClose={() => setCancelModal({ open: false, booking: null })}
+                    onConfirm={handleCancelTrial}
+                    booking={cancelModal.booking}
+                />
             </div>
         </div>
     );

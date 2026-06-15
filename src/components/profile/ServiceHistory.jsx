@@ -4,7 +4,6 @@ import { Plus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import BookingCard from "./BookingCard";
 import Calendar from "./Calender";
-import ServiceDetails from "./ServiceDetails";
 import EmptyState from "./EmptyState";
 import { useProfile } from "../../context/ProfileContext";
 
@@ -33,18 +32,9 @@ export default function ServiceHistory({ activeServiceType }) {
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  const allBookingsList = profile?.combinedBookings 
-    || (profile?.groupedBookings ? Object.values(profile.groupedBookings).flat() : [])
-    || (Array.isArray(profile) ? profile : []);
-
-const allBookings = allBookingsList.filter((booking) => {
-    if (!activeServiceType) return true;
-    return Array.isArray(activeServiceType)
-        ? activeServiceType.includes(booking?.serviceType)
-        : booking?.serviceType === activeServiceType;
-});
-
-console.log('allBookings',allBookings)
+  const allBookings = Array.isArray(profile?.bookings)
+    ? profile.bookings
+    : [];
   const handleApplyFilter = () => {
     setAppliedOptions(filterOptions);
     setAppliedStartDate(startDate);
@@ -55,43 +45,50 @@ console.log('allBookings',allBookings)
   const filteredBookings = allBookings.filter((booking) => {
     if (!booking) return false;
 
-    // 1. DATE RANGE CHECK
     if (appliedStartDate && appliedEndDate) {
       if (!booking.createdAt) return false;
+
       const bDate = new Date(booking.createdAt).getTime();
       const sDate = new Date(appliedStartDate).setHours(0, 0, 0, 0);
       const eDate = new Date(appliedEndDate).setHours(23, 59, 59, 999);
+
       if (bDate < sDate || bDate > eDate) return false;
     }
 
-    // 2. OPTIONS CHECK (If "All time" is selected or array is empty, show all)
-    if (!appliedOptions?.length || appliedOptions.includes("All time") || appliedOptions.includes("All purchases")) {
+    if (
+      !appliedOptions?.length ||
+      appliedOptions.includes("All time") ||
+      appliedOptions.includes("All purchases")
+    ) {
       return true;
     }
 
-    const type = (booking.serviceType || "").toLowerCase();
+    const type = (booking?.serviceType || "").toLowerCase();
 
-    // Check against individual string matches
-    const mappedTypes = appliedOptions.map(opt => opt.toLowerCase());
+    const mappedTypes = appliedOptions.map(
+      (opt) => (opt || "").toLowerCase()
+    );
+
     if (mappedTypes.includes(type)) return true;
 
-    // Support edge case string variations
-    if (mappedTypes.includes("weekly classes") &&( type === "weekly class membership" ||  type === "weekly class trial")) return true;
-    if (mappedTypes.includes("birthday") && type.includes("birthday")) return true;
+    if (
+      mappedTypes.includes("weekly classes") &&
+      (type === "weekly class membership" ||
+        type === "weekly class trial")
+    ) {
+      return true;
+    }
+
+    if (
+      mappedTypes.includes("birthday") &&
+      type.includes("birthday")
+    ) {
+      return true;
+    }
 
     return false;
   });
-
-
-  console.log('filteredBookings',filteredBookings)
   const visibleBookings = filteredBookings;
-  console.log('visibleBookings',visibleBookings)
-
-
-  if (selectedBooking) {
-    return <ServiceDetails booking={selectedBooking} onBack={() => setSelectedBooking(null)} />;
-  }
-
   return (
     <>
       <div className="text-right 2xl:absolute top-7 right-5 mb-6">
@@ -144,10 +141,14 @@ console.log('allBookings',allBookings)
         </div>
       </div>
       <div className="py-6 md:p-4 xl:px-0 bg-gray-100 min-h-screen">
-        {allBookings.length > 0 ? (
-          visibleBookings.length > 0 ? (
+        {allBookings?.length > 0 ? (
+          visibleBookings?.length > 0 ? (
             visibleBookings.map((b, idx) => (
-              <BookingCard key={b.id || idx} booking={b} onSeeDetails={setSelectedBooking} />
+              <BookingCard
+                key={b?.id || idx}
+                booking={b}
+                onSeeDetails={setSelectedBooking}
+              />
             ))
           ) : (
             <EmptyState
@@ -159,7 +160,6 @@ console.log('allBookings',allBookings)
           <EmptyState />
         )}
       </div>
-
 
     </>
   );

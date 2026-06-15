@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Plus } from "lucide-react";
-import AddFeedbackModal from './AddFeedbackModal';
+import AddFeedbackModal from '../modals/AddFeedbackModal';
 import Loader from '../Loader';
 import { useFeedback } from '../../context/FeedbackContext';
 

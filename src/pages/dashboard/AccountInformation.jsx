@@ -6,31 +6,20 @@ import Skills from "../../components/profile/Skills";
 import Feedback from "../../components/profile/Feedback";
 import ServiceHistory from "../../components/profile/ServiceHistory";
 import { useProfile } from "../../context/ProfileContext";
-
-const serviceTabs = [
-  { name: "Weekly Classes", serviceType: "Weekly Classes" },
-  { name: "Holiday Camps", serviceType: "holiday camp" },
-  { name: "One-to-One", serviceType: "one to one" },
-  { name: "Birthday Party", serviceType: "birthday party" },
-];
-
-const subTabs = [
-  { name: "Parent Profile" },
-  { name: "Child's Profile" },
-  { name: "Service History" },
-  { name: "Feedback" },
-  { name: "Skills tracker" },
+const tabs = [
+  { name: "Parent Profile", component: <ParentProfile /> },
+  { name: "Child's Profile", component: <StudentProfile /> },
+  { name: "Service History", component: <ServiceHistory /> },
+  { name: "Feedback", component: <Feedback /> },
+  { name: "Skills tracker", component: <Skills /> },
 ];
 
 const AccountInformation = () => {
-  const { fetchProfileData, loading } = useProfile();
 
-  const [activeServiceTab, setActiveServiceTab] = useState(() => {
-    return localStorage.getItem("activeServiceTab") || "Weekly Classes";
-  });
-
-  const [activeSubTab, setActiveSubTab] = useState(() => {
-    return localStorage.getItem("activeAccountTab") || "Parent Profile";
+  const { fetchProfileData, loading, } = useProfile();
+  const [activeTab, setActiveTab] = useState(() => {
+    const storedTab = localStorage.getItem("activeAccountTab");
+    return storedTab && tabs.some(tab => tab.name === storedTab) ? storedTab : tabs[0].name;
   });
 
   useEffect(() => {
@@ -38,117 +27,36 @@ const AccountInformation = () => {
   }, []);
 
   useEffect(() => {
-    localStorage.setItem("activeServiceTab", activeServiceTab);
-  }, [activeServiceTab]);
+    localStorage.setItem("activeAccountTab", activeTab);
+  }, [activeTab]);
 
-  useEffect(() => {
-    localStorage.setItem("activeAccountTab", activeSubTab);
-  }, [activeSubTab]);
 
   if (loading) {
-    return <Loader />;
+    return <Loader />
   }
 
-const currentServiceType =
-  activeServiceTab === "Weekly Classes"
-    ? ["weekly class membership", "weekly class trial"]
-    : serviceTabs.find((t) => t.name === activeServiceTab)?.serviceType;
-
-  const renderSubComponent = () => {
-    switch (activeSubTab) {
-      case "Parent Profile":
-        return <ParentProfile activeServiceType={currentServiceType} />;
-
-      case "Child's Profile":
-        return <StudentProfile activeServiceType={currentServiceType} />;
-
-      case "Service History":
-        return <ServiceHistory activeServiceType={currentServiceType} />;
-
-      case "Feedback":
-        return <Feedback activeServiceType={currentServiceType} />;
-
-      case "Skills tracker":
-        return <Skills activeServiceType={currentServiceType} />;
-
-      default:
-        return null;
-    }
-  };
-
   return (
-    <div className="relative space-y-6 lg:p-6 p-4">
+    <div className=" lg:p-6 relative">
 
-      {/* Service Dropdown */}
-      <div className="flex flex-col gap-2">
+      <div className="flex lg:w-max items-center overflow-x-auto bg-white p-2 gap-1 lg:rounded-[14px] ">
 
-        <label className="text-[15px] font-semibold text-[#111827]">
-          Select Service
-        </label>
-
-        <div className="relative w-full lg:w-[320px]">
-
-          <select
-            value={activeServiceTab}
-            onChange={(e) => setActiveServiceTab(e.target.value)}
-            className="w-full appearance-none rounded-2xl border border-[#E5EAF2] bg-white px-5 py-4 pr-12 text-[15px] font-medium text-[#111827] shadow-sm outline-none transition-all duration-300 focus:border-[#042C89] focus:ring-4 focus:ring-[#042C89]/10"
+        {tabs.map((tab) => (
+          <button
+            key={tab.name}
+            onClick={() => setActiveTab(tab.name)}
+            className={`w-max relative flex-1 whitespace-nowrap md:px-4 px-2 2xl:text-[18px] lg:text-[16px] text-[16px] font-semibold md:py-3 py-1.5 rounded-[14px] transition-all ${activeTab === tab.name
+              ? "bg-[#042C89] shadow text-white "
+              : "text-[#282829] hover:text-[#282829]"
+              }`}
           >
-            {serviceTabs.map((tab) => (
-              <option key={tab.name} value={tab.name}>
-                {tab.name}
-              </option>
-            ))}
-          </select>
+            {tab.name}
 
-          {/* Custom Arrow */}
-          <div className="pointer-events-none absolute right-4 top-9  -translate-y-1/2">
-            <svg
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M6 9L12 15L18 9"
-                stroke="#6B7280"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </div>
-        </div>
+          </button>
+        ))}
       </div>
 
-      {/* Sub Tabs */}
-      <div className="overflow-x-auto scrollbar-hide border-b border-[#E5EAF2]">
-        <div className="flex w-max items-center gap-8 px-1">
-
-          {subTabs.map((tab) => (
-            <button
-              key={tab.name}
-              onClick={() => setActiveSubTab(tab.name)}
-              className={`relative whitespace-nowrap py-3 text-[15px] font-medium transition-all duration-300
-              
-              ${activeSubTab === tab.name
-                  ? "text-[#042C89]"
-                  : "text-[#6B7280] hover:text-[#042C89]"
-                }`}
-            >
-              {tab.name}
-
-              {activeSubTab === tab.name && (
-                <span className="absolute bottom-0 left-0 h-[3px] w-full rounded-full bg-[#042C89]" />
-              )}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Content */}
       <div className="lg:mt-6">
-        {renderSubComponent()}
+        {tabs.find((tab) => tab.name === activeTab)?.component}
       </div>
     </div>
   );
