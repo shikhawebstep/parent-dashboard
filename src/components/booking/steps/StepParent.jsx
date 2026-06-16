@@ -148,6 +148,34 @@ export default function StepParent() {
                             )}
                         </div>
 
+                        {/* Interest Reason */}
+                        <div>
+                            <label className="text-[14px] text-[#282829] poppins block mb-1 font-normal">
+                                What's the main reason you're interested in Samba Soccer Schools?
+                            </label>
+                            <input
+                                type="text"
+                                name="interestReason"
+                                value={parent.interestReason || ""}
+                                onChange={(e) => handleChange(index, e)}
+                                className={`poppins ${inputClass("interestReason", index)}`}
+                            />
+                        </div>
+
+                        {/* Tell us a bit more */}
+                        <div>
+                            <label className="text-[14px] text-[#282829] poppins block mb-1 font-normal">
+                                Tell us a bit more (optional)
+                            </label>
+                            <input
+                                type="text"
+                                name="interestReasonOther"
+                                value={parent.interestReasonOther || ""}
+                                onChange={(e) => handleChange(index, e)}
+                                className={`poppins ${inputClass("interestReasonOther", index)}`}
+                            />
+                        </div>
+
                         {/* Relation */}
                         <div>
                             <label className="text-[14px] text-[#282829] poppins block mb-1 font-normal">

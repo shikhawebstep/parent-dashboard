@@ -5,11 +5,13 @@ import { showSuccess, showError } from "../../../../utils/swalHelper";
 export default function StepNavigation() {
   const [loading, setLoading] = useState(false);
 
-  const { nextStep, prevStep, currentStep, STEPS, formData, data } = useStep();
+  const { nextStep, prevStep, currentStep, getActiveSteps, formData, data } = useStep();
+  const activeSteps = getActiveSteps();
 
   const filteredData = Array.isArray(data)
     ? data.filter((item) => item?.venueId === formData?.venue)
     : [];
+
   const handleSubmit = async () => {
     try {
       setLoading(true);
@@ -19,7 +21,7 @@ export default function StepNavigation() {
       const parentId = parentData?.id;
       const API_URL = import.meta.env.VITE_API_BASE_URL;
 
-      // ✅ Students array handling
+      // Students array handling
       const studentsArray =
         Array.isArray(formData?.students) && formData.students.length > 0
           ? formData.students
@@ -27,7 +29,6 @@ export default function StepNavigation() {
             ? [formData.student]
             : [];
 
-      // ✅ Clean students properly
       const cleanedStudents = studentsArray.map((student) => ({
         studentFirstName: student.studentFirstName,
         studentLastName: student.studentLastName,
@@ -35,10 +36,9 @@ export default function StepNavigation() {
         age: student.age,
         gender: student.gender,
         medicalInformation: student.medicalInformation,
-        classScheduleId: student.classScheduleId, // ✅ FIXED
+        classScheduleId: student.classScheduleId,
       }));
 
-      // ✅ Clean parents
       const finalParents =
         formData?.parents?.map((parent) => ({
           parentFirstName: parent.parentFirstName,
@@ -49,7 +49,6 @@ export default function StepNavigation() {
           howDidYouHear: parent.howDidHear,
         })) || [];
 
-      // ✅ Clean emergency safely
       const cleanedEmergency = formData?.emergency
         ? {
           emergencyFirstName: formData.emergency.emergencyFirstName,
@@ -59,6 +58,27 @@ export default function StepNavigation() {
         }
         : null;
 
+      // Handle custom services locally with a success popup
+      if (formData.service !== "Holiday Camp Booking") {
+        let msg = `${formData.service} has been booked successfully!`;
+        if (formData.service === "Weekly Class Membership") {
+          msg = `Your Weekly Class Membership (${formData.membershipPlan || "Gold"}) has been set up successfully for ${cleanedStudents.length} student(s) at ${filteredData?.[0]?.address || "the selected venue"}.`;
+        } else if (formData.service === "Book Free Trial") {
+          msg = `Your Free Trial has been booked for ${cleanedStudents.length} student(s) on ${formData.trialDate ? new Date(formData.trialDate).toLocaleDateString() : "the selected date"}.`;
+        } else if (formData.service === "Add To Waiting List") {
+          msg = `Successfully added to the Waiting List with a ${formData.levelOfInterest || "Low"} level of interest.`;
+        } else if (formData.service === "One To One") {
+          msg = `Your One to One session has been booked with ${formData.oneToOne?.coach || "your coach"} on ${formData.oneToOne?.date || "selected date"} at ${formData.oneToOne?.time || "selected time"}.`;
+        } else if (formData.service === "Birthday Party") {
+          msg = `Your Birthday Party package (${formData.birthdayParty?.package || "Gold"}) has been booked successfully for ${formData.birthdayParty?.date || "selected date"} at ${formData.birthdayParty?.time || "selected time"}.`;
+        }
+
+        showSuccess("Booking Successful 🎉", msg);
+        setLoading(false);
+        return;
+      }
+
+      // Holiday Camp Booking submission
       const response = await fetch(
         `${API_URL}api/parent/holiday/book-a-camp`,
         {
@@ -102,26 +122,26 @@ export default function StepNavigation() {
   };
 
   return (
-    <div className="flex justify-center gap-3 md:mt-8">
+    <div className="flex justify-center gap-4 md:mt-10 mt-6 pt-6 border-t border-[#F1F1F1]">
       {currentStep > 1 && (
         <button
           onClick={prevStep}
           disabled={currentStep === 1}
-          className="md:px-[70px] px-[20px] md:py-4 py-2 text-[#717073] poppins font-semibold md:text-[18px] border border-[#E1E1E1] rounded-[12px] disabled:opacity-40"
+          className="md:px-[70px] px-[30px] md:py-4 py-3 text-[#6B7280] poppins font-bold md:text-[16px] text-[15px] border-2 border-[#E5E7EB] hover:border-[#D1D5DB] hover:text-[#374151] rounded-[16px] disabled:opacity-40 transition-all active:scale-[0.98] shadow-sm"
         >
-          Cancel
+          Back
         </button>
       )}
 
       <button
-        onClick={currentStep === STEPS.length ? handleSubmit : nextStep}
+        onClick={currentStep === activeSteps.length ? handleSubmit : nextStep}
         disabled={loading}
-        className="md:px-[70px] px-[20px] md:py-4 py-2 bg-[#237FEA] text-white poppins rounded-[12px] disabled:opacity-40"
+        className="md:px-[70px] px-[30px] md:py-4 py-3 bg-[#042C89] hover:bg-[#031d5c] text-white poppins font-bold md:text-[16px] text-[15px] rounded-[16px] disabled:opacity-50 transition-all active:scale-[0.98] shadow-md hover:shadow-lg"
       >
-        {currentStep === STEPS.length
+        {currentStep === activeSteps.length
           ? loading
             ? "Submitting..."
-            : currentStep === 7 ? "confirm payment" : "Finish"
+            : activeSteps[currentStep - 1]?.name === "payment" ? "Confirm payment" : "Finish"
           : "Next"}
       </button>
     </div>

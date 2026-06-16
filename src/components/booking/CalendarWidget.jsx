@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { IoIosArrowBack, IoIosArrowForward } from "react-icons/io";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, isToday, startOfWeek, endOfWeek } from 'date-fns';
 
-const CalendarWidget = ({ selectedDate, onSelectDate }) => {
+const CalendarWidget = ({ selectedDate, onSelectDate, title = "Select trial date" }) => {
     const [currentMonth, setCurrentMonth] = useState(new Date());
 
     const days = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
@@ -28,7 +28,7 @@ const CalendarWidget = ({ selectedDate, onSelectDate }) => {
 
     return (
         <div className="bg-white p-6 rounded-[20px] shadow-sm animate-fadeIn">
-            <h3 className="text-[#282829] font-bold text-[24px] pb-5">Select trial date</h3>
+            <h3 className="text-[#282829] font-bold text-[24px] pb-5">{title}</h3>
 
 
 

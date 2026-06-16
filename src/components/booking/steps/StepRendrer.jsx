@@ -6,13 +6,20 @@ import StepEmergency from "./StepEmergency";
 import StepPayment from "./StepPayment";
 import StepSummary from "./StepSummary";
 import VenueStep from "./VenueStep";
+import MembershipInfoStep from "./MembershipInfoStep";
+import TrialInfoStep from "./TrialInfoStep";
+import WaitingListInfoStep from "./WaitingListInfoStep";
+import WaitingListDetailsStep from "./WaitingListDetailsStep";
+import OneToOneInfoStep from "./OneToOneInfoStep";
+import BirthdayPartyInfoStep from "./BirthdayPartyInfoStep";
+import DateStep from "./DateStep";
 import { useStep } from "../../../context/StepContext";
 import { useEffect, useMemo } from "react";
 import { useProfile } from "../../../context/ProfileContext";
 import Loader from "../../Loader";
 
 export default function StepRenderer() {
-  const { currentStep, fetchData, loading, setLoading, setFormData } = useStep();
+  const { currentStep, fetchData, loading, setLoading, setFormData, getActiveSteps, formData } = useStep();
   const { fetchProfileData, profile } = useProfile();
 
   // Flatten all bookings from groupedBookings or fall back to combinedBookings
@@ -28,9 +35,20 @@ export default function StepRenderer() {
     return [];
   }, [profile]);
 
-  const holidayBooking = useMemo(() => {
-    return booking.filter((b) => b?.serviceType === "holiday camp");
-  }, [booking]);
+  // Determine serviceTypeKey for filtering profile data
+  const serviceTypeKey = useMemo(() => {
+    if (formData.service === "Holiday Camp Booking") return "holiday camp";
+    if (formData.service === "Weekly Class Membership") return "weekly class";
+    return null;
+  }, [formData.service]);
+
+  // Filter bookings based on selected service or fallback to all bookings
+  const bookingsToProcess = useMemo(() => {
+    const serviceBookings = serviceTypeKey
+      ? booking.filter((b) => b?.serviceType === serviceTypeKey)
+      : [];
+    return serviceBookings.length > 0 ? serviceBookings : booking;
+  }, [booking, serviceTypeKey]);
 
   useEffect(() => {
     let isMounted = true;
@@ -57,77 +75,90 @@ export default function StepRenderer() {
   }, []);
 
   useEffect(() => {
-    if (!holidayBooking.length) return;
+    if (!profile?.adminMeta) return;
 
-    // Parents: collect unique parents across all holiday bookings by parent id
-    const allParents = holidayBooking.flatMap(
-      (b) => (Array.isArray(b?.parents) ? b.parents : [])
-    );
-    const uniqueParents = Array.from(
-      new Map(
-        allParents
-          .filter((p) => p?.id !== undefined && p?.id !== null)
-          .map((p) => [p.id, p])
-      ).values()
-    );
-
-    // Emergency: take the first available emergency contact across holiday bookings
-    const emergency = holidayBooking
-      .map((b) => b?.emergency)
-      .find((e) => e !== undefined && e !== null) ?? null;
-
-    // Students: collect unique students across all holiday bookings by student id
-    const allStudents = holidayBooking.flatMap(
-      (b) => (Array.isArray(b?.students) ? b.students : [])
-    );
-    const uniqueStudents = Array.from(
-      new Map(
-        allStudents
-          .filter((s) => s?.id !== undefined && s?.id !== null)
-          .map((s) => [s.id, s])
-      ).values()
-    );
+    const uniqueParents = profile.adminMeta.parents || [];
+    const emergency = profile.adminMeta.emergency || null;
+    const uniqueStudents = profile.adminMeta.students || [];
 
     setFormData((prev) => {
+      const mappedParents = uniqueParents.map((p) => ({
+        ...p,
+        relationChild: p.relationChild || p.relationToChild || "",
+        howDidHear: p.howDidHear || p.howDidYouHear || "",
+      }));
+
+      const mappedEmergency = emergency ? {
+        ...emergency,
+        emergencyPhoneNumber: emergency.emergencyPhoneNumber || emergency.emergencyPhone || "",
+      } : null;
+
+      const mappedStudents = uniqueStudents.map((s) => ({
+        ...s,
+        medicalInformation: s.medicalInformation || s.medicalInfo || "",
+      }));
+
       const parentsChanged =
-        JSON.stringify(prev.parents) !== JSON.stringify(uniqueParents);
+        JSON.stringify(prev.parents) !== JSON.stringify(mappedParents);
       const emergencyChanged =
-        JSON.stringify(prev.emergency) !== JSON.stringify(emergency);
+        JSON.stringify(prev.emergency) !== JSON.stringify(mappedEmergency);
       const studentsChanged =
-        JSON.stringify(prev.availableStudents) !== JSON.stringify(uniqueStudents);
+        JSON.stringify(prev.availableStudents) !== JSON.stringify(mappedStudents);
 
       // Only update if something actually changed
       if (!parentsChanged && !emergencyChanged && !studentsChanged) return prev;
 
       return {
         ...prev,
-        ...(parentsChanged && { parents: uniqueParents }),
-        ...(emergencyChanged && { emergency }),
-        ...(studentsChanged && { availableStudents: uniqueStudents }),
+        ...(parentsChanged && { parents: mappedParents }),
+        ...(emergencyChanged && { emergency: mappedEmergency }),
+        ...(studentsChanged && { availableStudents: mappedStudents }),
       };
     });
-  }, [holidayBooking]);
+  }, [profile]);
 
   if (loading) {
     return <Loader />;
   }
 
-  switch (currentStep) {
-    case 1:
+  const activeSteps = getActiveSteps();
+  const step = activeSteps[currentStep - 1];
+
+  if (!step) {
+    return <div>Coming soon</div>;
+  }
+
+  switch (step.name) {
+    case "service":
       return <ServiceStep />;
-    case 2:
+    case "venue":
       return <VenueStep />;
-    case 3:
+    case "plan":
       return <PlanStep />;
-    case 4:
+    case "membership_info":
+      return <MembershipInfoStep />;
+    case "start_date":
+    case "trial_date":
+      return <DateStep />;
+    case "trial_info":
+      return <TrialInfoStep />;
+    case "waiting_list_info":
+      return <WaitingListInfoStep />;
+    case "waiting_list_details":
+      return <WaitingListDetailsStep />;
+    case "one_to_one_info":
+      return <OneToOneInfoStep />;
+    case "birthday_party_info":
+      return <BirthdayPartyInfoStep />;
+    case "student":
       return <StepStudent />;
-    case 5:
+    case "parent":
       return <StepParent />;
-    case 6:
+    case "emergency":
       return <StepEmergency />;
-    case 7:
+    case "payment":
       return <StepPayment />;
-    case 8:
+    case "summary":
       return <StepSummary />;
     default:
       return <div>Coming soon</div>;

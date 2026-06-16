@@ -4,6 +4,7 @@ import { useStep } from "../../../context/StepContext";
 export default function StepStudent() {
   const { formData, setFormData, data, errors, clearError } = useStep();
   const [activeTab, setActiveTab] = useState("existing");
+  const showClassAndTime = formData.service !== "Birthday Party" && formData.service !== "One To One";
   const [dobError, setDobError] = useState("");
 
   const availableStudents = formData.availableStudents || [];
@@ -208,8 +209,7 @@ export default function StepStudent() {
   };
 
   const inputClass = (hasError) =>
-    `mt-1 w-full placeholder:text-[#9C9C9C] bg-white poppins font-normal mainShadow ${
-      hasError ? "border border-red-500" : ""
+    `mt-1 w-full placeholder:text-[#9C9C9C] bg-white poppins font-normal mainShadow ${hasError ? "border border-red-500" : ""
     } p-3 rounded-[6px] text-sm focus:ring-2 focus:ring-[#0496FF] outline-none`;
 
   const student = formData.student || {};
@@ -241,22 +241,20 @@ export default function StepStudent() {
       <div className="flex justify-center items-center gap-6 mb-8">
         <button
           onClick={() => setActiveTab("existing")}
-          className={`poppins font-semibold transition-all ${
-            activeTab === "existing"
-              ? "bg-[#E8F1FF] text-[#0496FF] md:px-6 px-3 py-2 rounded-lg"
-              : "text-[#282829] md:text-[16px] text-[14px]"
-          }`}
+          className={`poppins font-semibold transition-all ${activeTab === "existing"
+            ? "bg-[#E8F1FF] text-[#0496FF] md:px-6 px-3 py-2 rounded-lg"
+            : "text-[#282829] md:text-[16px] text-[14px]"
+            }`}
         >
           Select an existing child
         </button>
 
         <button
           onClick={() => setActiveTab("new")}
-          className={`poppins font-semibold transition-all ${
-            activeTab === "new"
-              ? "bg-[#E8F1FF] text-[#0496FF] md:px-6 px-3 py-2 rounded-lg"
-              : "text-[#282829] md:text-[16px] text-[14px]"
-          }`}
+          className={`poppins font-semibold transition-all ${activeTab === "new"
+            ? "bg-[#E8F1FF] text-[#0496FF] md:px-6 px-3 py-2 rounded-lg"
+            : "text-[#282829] md:text-[16px] text-[14px]"
+            }`}
         >
           Add a new child
         </button>
@@ -276,18 +274,17 @@ export default function StepStudent() {
           {availableStudents.map((s) => {
             const isSelected = selectedStudents.some((sel) => sel.id === s.id);
             const isDisabled = !isSelected && atLimit;
-
+           
             return (
               <div
                 key={s.id}
                 onClick={() => !isDisabled && handleToggleStudent(s)}
-                className={`border rounded-xl p-6 relative transition-all ${
-                  isDisabled
-                    ? "border-gray-200 bg-gray-50 opacity-50 cursor-not-allowed"
-                    : isSelected
+                className={`border rounded-xl p-6 relative transition-all ${isDisabled
+                  ? "border-gray-200 bg-gray-50 opacity-50 cursor-not-allowed"
+                  : isSelected
                     ? "border-[#0496FF] bg-blue-50/30 shadow-sm cursor-pointer"
                     : "border-gray-200 bg-white hover:border-gray-300 cursor-pointer"
-                }`}
+                  }`}
               >
                 {isSelected && (
                   <div className="absolute top-4 right-4 text-[#0496FF]">
@@ -299,9 +296,8 @@ export default function StepStudent() {
                   </div>
                 )}
 
-                <h3 className={`font-semibold text-[18px] mb-4 poppins ${
-                  isSelected ? "text-[#0496FF]" : "text-[#282829]"
-                }`}>
+                <h3 className={`font-semibold text-[18px] mb-4 poppins ${isSelected ? "text-[#0496FF]" : "text-[#282829]"
+                  }`}>
                   {s.studentFirstName} {s.studentLastName}
                 </h3>
 
@@ -322,13 +318,23 @@ export default function StepStudent() {
                       {s.gender === "Male" ? "M" : s.gender === "Female" ? "F" : s.gender}
                     </p>
                   </div>
-                  <div>
+                  {showClassAndTime && (
+                    <div>
+                      <label className="text-[12px] text-[#939395] block font-normal mb-1 poppins">
+                        Class / Level
+                      </label>
+                      <p className="text-[14px] text-[#282829] poppins font-medium">
+                        {s?.classSchedule?.className || s?.className || s?.holidayClassSchedules?.className || "-"}{" "}
+                        {s?.classSchedule?.level || s?.level || s?.holidayClassSchedules?.level || ""}
+                      </p>
+                    </div>
+                  )}
+                  <div className={!showClassAndTime ? "col-span-2" : ""}>
                     <label className="text-[12px] text-[#939395] block font-normal mb-1 poppins">
-                      Class / Level
+                      Medical Info
                     </label>
-                    <p className="text-[14px] text-[#282829] poppins font-medium">
-                      {s?.classSchedule?.className || s?.className || s?.holidayClassSchedules?.className || "-"}{" "}
-                      {s?.classSchedule?.level || s?.level || s?.holidayClassSchedules?.level || ""}
+                    <p className="text-[14px] text-[#282829] poppins font-medium truncate">
+                      {s?.medicalInformation || s?.medicalInfo || "None"}
                     </p>
                   </div>
                 </div>
@@ -423,49 +429,60 @@ export default function StepStudent() {
             />
           </div>
 
-          <div>
-            <label className="block text-[14px] text-[#282829] poppins font-normal mb-1 capitalize">
-              Class
-            </label>
-            <div className="relative">
-              <select
-                value={student?.classScheduleId ?? student?.classSchedule?.classId ?? ""}
-                onChange={(e) => handleClassChange(e.target.value)}
-                className={`${inputClass()} bg-white text-gray-700 appearance-none`}
-              >
-                <option value="">Select Class</option>
-                {(filteredData?.[0]?.classes ?? []).map((cls) => (
-                  <option key={cls?.classId} value={cls?.classId}>
-                    {cls?.className}{cls?.level ? ` (${cls.level})` : ""}
-                  </option>
-                ))}
-              </select>
-              <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
-                <svg className="w-4 h-4 text-[#939395]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-                </svg>
+          {showClassAndTime && (
+            <>
+              <div>
+                <label className="block text-[14px] text-[#282829] poppins font-normal mb-1 capitalize">
+                  Class
+                </label>
+                <div className="relative">
+                  <select
+                    value={student?.classScheduleId ?? student?.classSchedule?.classId ?? ""}
+                    onChange={(e) => handleClassChange(e.target.value)}
+                    className={`${inputClass()} bg-white text-gray-700 appearance-none`}
+                  >
+                    <option value="">Select Class</option>
+                    {(Array.isArray(filteredData?.[0]?.classes)
+                      ? filteredData[0].classes
+                      : []
+                    ).map((cls) => (
+                      <option
+                        key={cls?.classId || Math.random()}
+                        value={cls?.classId || ""}
+                      >
+                        {cls?.className || "N/A"}
+                        {cls?.level ? ` (${cls.level})` : ""}
+                      </option>
+                    ))}
+                  </select>
+                  <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+                    <svg className="w-4 h-4 text-[#939395]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
 
-          <div>
-            <label className="block text-[14px] text-[#282829] poppins font-normal mb-1 capitalize">
-              Time
-            </label>
-            <div className="relative">
-              <input
-                readOnly
-                value={student?.time || ""}
-                placeholder="Automatic entry"
-                className={`${inputClass()} bg-white text-gray-500`}
-              />
-              <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
-                <svg className="w-4 h-4 text-[#939395]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-                </svg>
+              <div>
+                <label className="block text-[14px] text-[#282829] poppins font-normal mb-1 capitalize">
+                  Time
+                </label>
+                <div className="relative">
+                  <input
+                    readOnly
+                    value={student?.time || ""}
+                    placeholder="Automatic entry"
+                    className={`${inputClass()} bg-white text-gray-500`}
+                  />
+                  <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+                    <svg className="w-4 h-4 text-[#939395]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
+            </>
+          )}
 
           <div className="md:col-span-2 flex justify-end mt-4">
             <button
