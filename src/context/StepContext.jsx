@@ -96,8 +96,8 @@ export function StepProvider({ children }) {
           if (!parent?.parentPhoneNumber?.trim())
             newErrors[`parentPhoneNumber_${index}`] = "Phone number is required";
 
-          if (!parent?.relationChild)
-            newErrors[`relationChild_${index}`] = "Relation is required";
+          if (!parent?.relationToChild)
+            newErrors[`relationToChild_${index}`] = "Relation is required";
         });
         break;
 

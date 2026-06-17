@@ -665,7 +665,7 @@ const BookMembership = () => {
                         <div>
                             <label className="text-base font-semibold">Venue</label>
                             <Select
-                                options={venues?.map((v) => ({
+                                options={venues?.capacityVenues?.map((v) => ({
                                     value: v.venueId,
                                     label: v.venueName,
                                     all: v,
@@ -1011,7 +1011,7 @@ const BookMembership = () => {
                             </div>
 
                             <div>
-                                <label className="block text-[16px] font-semibold">Main reason for joining</label>
+                                <label className="block text-[16px] font-semibold">What's the main reason you're interested in Samba Soccer Schools?</label>
                                 {parent.isCustomReason ? (
                                     <div className="relative">
                                         <input value={parent.interestReason} placeholder="Please specify"

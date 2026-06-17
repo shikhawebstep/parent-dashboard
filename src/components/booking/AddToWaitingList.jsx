@@ -611,7 +611,7 @@ export default function AddToWaitingList() {
                                     }
                                 >
                                     <option value="">Select venue</option>
-                                    {venues?.map((v) => (
+                                    {venues?.noCapacityVenues?.map((v) => (
                                         <option key={String(v.venueId)} value={String(v.venueId)}>
                                             {v.venueName}
                                         </option>
@@ -729,7 +729,7 @@ export default function AddToWaitingList() {
                                     />
                                     <div>
                                         <label className="text-base font-semibold block mb-1 text-gray-900">
-                                            Class<span className="ml-0.5 text-red-500">*</span>
+                                            Class / Level<span className="ml-0.5 text-red-500">*</span>
                                         </label>
                                         <div className="relative">
                                             <select
@@ -889,7 +889,7 @@ export default function AddToWaitingList() {
 
                                         <div className="sm:col-span-2">
                                             <label className="text-base font-semibold block mb-1 text-gray-900">
-                                                Main reason for joining<span className="ml-0.5 text-red-500">*</span>
+                                               What's the main reason you're interested in Samba Soccer Schools?<span className="ml-0.5 text-red-500">*</span>
                                             </label>
                                             {parent.isCustomReason ? (
                                                 <div className="relative">

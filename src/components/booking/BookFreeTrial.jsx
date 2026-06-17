@@ -4,7 +4,7 @@ import { Search, ChevronDown, ChevronRight, FileText, Send, ArrowLeft, Trash2 } 
 import { useCommon } from "../../context/CommonContext";
 import PhoneNumberInput from "../../commom/PhoneNumberInput";
 import axios from "axios";
-
+import Select from "react-select";
 import { useProfile } from "../../context/ProfileContext";
 
 import { showSuccess, showError } from "../../../utils/swalHelper";
@@ -148,6 +148,29 @@ const BookFreeTrial = () => {
         fetchVenues();
         fetchProfileData();
     }, [fetchVenues]);
+
+
+
+    const selectStyles = {
+        control: (base, state) => ({
+            ...base,
+            minHeight: "52px",
+            borderRadius: "12px",
+            borderColor: state.isFocused ? "#0496FF" : "#E2E1E5",
+            boxShadow: "none",
+            "&:hover": {
+                borderColor: "#0496FF",
+            },
+        }),
+        placeholder: (base) => ({
+            ...base,
+            color: "#9CA3AF",
+        }),
+        menu: (base) => ({
+            ...base,
+            zIndex: 9999,
+        }),
+    };
 
     // Parse Venue's classes and terms
     const venueData = selectedVenue || null;
@@ -537,20 +560,42 @@ const BookFreeTrial = () => {
                             <div className="space-y-1">
                                 <label className={labelClass}>Venue</label>
                                 <div className="relative">
-                                    <select
-                                        name="venue"
-                                        className={`w-full bg-white border ${errors.venue ? 'border-red-500' : 'border-[#E2E1E5]'} rounded-[12px] px-4 py-3 text-[16px] focus:ring-2 focus:ring-[#0496FF] outline-none appearance-none`}
-                                        value={selectedVenue ? String(selectedVenue.venueId) : ""}
-                                        onChange={handleVenueChange}
-                                    >
-                                        <option value="">Choose Venue</option>
-                                        {venues?.map((v) => (
-                                            <option key={String(v.venueId)} value={String(v.venueId)}>
-                                                {v.venueName}
-                                            </option>
-                                        ))}
-                                    </select>
-                                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
+                                    <Select
+                                        styles={selectStyles}
+                                        placeholder="Choose Venue"
+                                        options={
+                                            venues?.capacityVenues?.map((v) => ({
+                                                value: v.venueId,
+                                                label: v.venueName,
+                                            })) || []
+                                        }
+                                        value={
+                                            selectedVenue
+                                                ? {
+                                                    value: selectedVenue.venueId,
+                                                    label: selectedVenue.venueName,
+                                                }
+                                                : null
+                                        }
+                                        onChange={(option) => {
+                                            const found =
+                                                venues?.capacityVenues?.find(
+                                                    (v) => String(v.venueId) === String(option?.value)
+                                                ) || null;
+
+                                            setSelectedVenue(found);
+
+                                            setStudents((prev) =>
+                                                prev.map((s) => ({
+                                                    ...s,
+                                                    selectedClassId: "",
+                                                    selectedClassData: null,
+                                                }))
+                                            );
+
+                                            clearErr("venue");
+                                        }}
+                                    />
                                 </div>
                                 {errors.venue && <span className="text-red-500 text-sm">{errors.venue}</span>}
                             </div>
@@ -656,17 +701,28 @@ const BookFreeTrial = () => {
                                 <div>
                                     <label className={labelClass}>Gender</label>
                                     <div className="relative">
-                                        <select
-                                            className={`${inputClass(errors[`s${index}_gender`])} appearance-none`}
-                                            value={student.gender}
-                                            onChange={(e) => handleStudentChange(index, "gender", e.target.value)}
-                                        >
-                                            <option value="">Select gender</option>
-                                            {genderOptions.map((o) => (
-                                                <option key={o.value} value={o.value}>{o.label}</option>
-                                            ))}
-                                        </select>
-                                        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
+                                        <Select
+                                            styles={selectStyles}
+                                            placeholder="Select gender"
+                                            options={genderOptions.map((g) => ({
+                                                value: g.value,
+                                                label: g.label,
+                                            }))}
+                                            value={
+                                                student.gender
+                                                    ? {
+                                                        value: student.gender,
+                                                        label:
+                                                            genderOptions.find(
+                                                                (g) => g.value === student.gender
+                                                            )?.label || "",
+                                                    }
+                                                    : null
+                                            }
+                                            onChange={(option) =>
+                                                handleStudentChange(index, "gender", option?.value || "")
+                                            }
+                                        />
                                     </div>
                                     {errors[`s${index}_gender`] && (
                                         <span className="text-red-500 text-sm">{errors[`s${index}_gender`]}</span>
@@ -686,22 +742,42 @@ const BookFreeTrial = () => {
                                 </div>
 
                                 <div>
-                                    <label className={labelClass}>Class</label>
+                                    <label className={labelClass}>Class / Level</label>
                                     <div className="relative">
-                                        <select
-                                            className={`${inputClass(errors[`s${index}_selectedClassId`])} appearance-none`}
-                                            value={student.selectedClassId ? String(student.selectedClassId) : ""}
-                                            disabled={!selectedVenue}
-                                            onChange={(e) => handleStudentChange(index, "selectedClassId", e.target.value)}
-                                        >
-                                            <option value="">{selectedVenue ? "Select Class" : "Select a Venue first"}</option>
-                                            {availableClasses.map((c) => (
-                                                <option key={String(c.id)} value={String(c.id)}>
-                                                    {c.className} {c.level ? `(${c.level})` : ""} - {c.dayOfWeek}
-                                                </option>
-                                            ))}
-                                        </select>
-                                        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
+                                        <Select
+                                            styles={selectStyles}
+                                            isDisabled={!selectedVenue}
+                                            placeholder={
+                                                selectedVenue
+                                                    ? "Select Class"
+                                                    : "Select a Venue first"
+                                            }
+                                            options={availableClasses.map((c) => ({
+                                                value: c.id,
+                                                label: `${c.className}${c.level ? ` (${c.level})` : ""
+                                                    } - ${c.dayOfWeek}`,
+                                            }))}
+                                            value={
+                                                student.selectedClassId
+                                                    ? {
+                                                        value: student.selectedClassId,
+                                                        label:
+                                                            availableClasses.find(
+                                                                (c) =>
+                                                                    String(c.id) ===
+                                                                    String(student.selectedClassId)
+                                                            )?.className || "",
+                                                    }
+                                                    : null
+                                            }
+                                            onChange={(option) =>
+                                                handleStudentChange(
+                                                    index,
+                                                    "selectedClassId",
+                                                    option?.value || ""
+                                                )
+                                            }
+                                        />
                                     </div>
                                     {errors[`s${index}_selectedClassId`] && (
                                         <span className="text-red-500 text-sm">{errors[`s${index}_selectedClassId`]}</span>
@@ -802,17 +878,29 @@ const BookFreeTrial = () => {
                                     <div>
                                         <label className={labelClass}>Relation to child</label>
                                         <div className="relative">
-                                            <select
-                                                className={`${inputClass(errors[`p${index}_relationToChild`])} appearance-none`}
-                                                value={parent.relationToChild}
-                                                onChange={(e) => handleParentChange(index, "relationToChild", e.target.value)}
-                                            >
-                                                <option value="">Select relation</option>
-                                                {relationOptions.map((o) => (
-                                                    <option key={o.value} value={o.value}>{o.label}</option>
-                                                ))}
-                                            </select>
-                                            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
+                                            <Select
+                                                styles={selectStyles}
+                                                placeholder="Select relation"
+                                                options={relationOptions.map((r) => ({
+                                                    value: r.value,
+                                                    label: r.label,
+                                                }))}
+                                                value={
+                                                    parent.relationToChild
+                                                        ? {
+                                                            value: parent.relationToChild,
+                                                            label: parent.relationToChild,
+                                                        }
+                                                        : null
+                                                }
+                                                onChange={(option) =>
+                                                    handleParentChange(
+                                                        index,
+                                                        "relationToChild",
+                                                        option?.value || ""
+                                                    )
+                                                }
+                                            />
                                         </div>
                                         {errors[`p${index}_relationToChild`] && (
                                             <span className="text-red-500 text-sm">{errors[`p${index}_relationToChild`]}</span>
@@ -821,17 +909,29 @@ const BookFreeTrial = () => {
                                     <div>
                                         <label className={labelClass}>How did you hear about us?</label>
                                         <div className="relative">
-                                            <select
-                                                className={`${inputClass(errors[`p${index}_howDidYouHear`])} appearance-none`}
-                                                value={parent.howDidYouHear}
-                                                onChange={(e) => handleParentChange(index, "howDidYouHear", e.target.value)}
-                                            >
-                                                <option value="">Select how you heard</option>
-                                                {hearOptions.map((o) => (
-                                                    <option key={o.value} value={o.value}>{o.label}</option>
-                                                ))}
-                                            </select>
-                                            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
+                                            <Select
+                                                styles={selectStyles}
+                                                placeholder="Select how you heard"
+                                                options={hearOptions.map((o) => ({
+                                                    value: o.value,
+                                                    label: o.label,
+                                                }))}
+                                                value={
+                                                    parent.howDidYouHear
+                                                        ? {
+                                                            value: parent.howDidYouHear,
+                                                            label: parent.howDidYouHear,
+                                                        }
+                                                        : null
+                                                }
+                                                onChange={(option) =>
+                                                    handleParentChange(
+                                                        index,
+                                                        "howDidYouHear",
+                                                        option?.value || ""
+                                                    )
+                                                }
+                                            />
                                         </div>
                                         {errors[`p${index}_howDidYouHear`] && (
                                             <span className="text-red-500 text-sm">{errors[`p${index}_howDidYouHear`]}</span>
@@ -839,7 +939,7 @@ const BookFreeTrial = () => {
                                     </div>
 
                                     <div className="md:col-span-2">
-                                        <label className={labelClass}>Main reason for joining</label>
+                                        <label className={labelClass}>What's the main reason you're interested in Samba Soccer Schools?</label>
                                         {parent.isCustomReason ? (
                                             <div className="relative">
                                                 <input
@@ -861,11 +961,16 @@ const BookFreeTrial = () => {
                                             </div>
                                         ) : (
                                             <div className="relative">
-                                                <select
-                                                    className={`${inputClass(errors[`p${index}_interestReason`])} appearance-none`}
-                                                    value={parent.interestReason}
-                                                    onChange={(e) => {
-                                                        const val = e.target.value;
+                                                <Select
+                                                    styles={selectStyles}
+                                                    placeholder="What's the main reason you're interested in Samba Soccer Schools?"
+                                                    options={interestReasonOptions.map((o) => ({
+                                                        value: o.value,
+                                                        label: o.label,
+                                                    }))}
+                                                    onChange={(option) => {
+                                                        const val = option?.value;
+
                                                         if (val === "Other") {
                                                             handleParentChange(index, "interestReason", "");
                                                             handleParentChange(index, "isCustomReason", true);
@@ -874,13 +979,15 @@ const BookFreeTrial = () => {
                                                             handleParentChange(index, "isCustomReason", false);
                                                         }
                                                     }}
-                                                >
-                                                    <option value="">Select a reason</option>
-                                                    {interestReasonOptions.map((o) => (
-                                                        <option key={o.value} value={o.value}>{o.label}</option>
-                                                    ))}
-                                                </select>
-                                                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
+                                                    value={
+                                                        parent.interestReason
+                                                            ? {
+                                                                value: parent.interestReason,
+                                                                label: parent.interestReason,
+                                                            }
+                                                            : null
+                                                    }
+                                                />
                                             </div>
                                         )}
                                         {errors[`p${index}_interestReason`] && (

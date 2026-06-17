@@ -1,23 +1,26 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useStep } from "../../../context/StepContext";
 
 export default function StepStudent() {
   const { formData, setFormData, data, errors, clearError } = useStep();
   const [activeTab, setActiveTab] = useState("existing");
   const [dobError, setDobError] = useState("");
+  const classSelectRef = useRef({});
 
   const availableStudents = formData.availableStudents || [];
   const selectedStudents = formData.students || [];
   const MAX_STUDENTS = 4;
 
+  const venueId = formData?.venue?.id ?? formData?.venue;
+
   const filteredData = Array.isArray(data)
-    ? data.filter((item) => item?.venueId === formData?.venue)
+    ? data.filter((item) => item?.venueId === venueId)
     : [];
 
+  const classes = filteredData?.[0]?.classes ?? filteredData?.[0]?.classSchedules ?? [];
+
   const handleClassChange = (classId) => {
-    const selectedClass = (filteredData?.[0]?.classes ?? []).find(
-      (cls) => cls?.classId === Number(classId)
-    );
+    const selectedClass = classes.find((cls) => cls?.classId === Number(classId));
     if (!selectedClass) return;
 
     setFormData((prev) => ({
@@ -41,10 +44,8 @@ export default function StepStudent() {
         students: (prev.students || []).filter((s) => s.id !== student.id),
       }));
     } else {
-      // Block if already 4 selected
       if (selectedStudents.length >= MAX_STUDENTS) return;
 
-      const classes = filteredData?.[0]?.classes ?? [];
       const autoClass = classes.length === 1 ? classes[0] : null;
 
       setFormData((prev) => ({
@@ -103,9 +104,7 @@ export default function StepStudent() {
     }
   }, [activeTab]);
 
-  // ── DOB helpers ──────────────────────────────────────────────
   const parseDob = (raw) => {
-    // accepts DD-MM-YYYY
     const parts = raw.split("-");
     if (parts.length !== 3) return null;
     const [dd, mm, yyyy] = parts.map(Number);
@@ -124,11 +123,9 @@ export default function StepStudent() {
   };
 
   const handleDobInput = (raw) => {
-    // Strip everything except digits
     let digits = raw.replace(/\D/g, "");
     if (digits.length > 8) digits = digits.slice(0, 8);
 
-    // Auto-insert dashes: DD-MM-YYYY
     let formatted = digits;
     if (digits.length > 2) formatted = digits.slice(0, 2) + "-" + digits.slice(2);
     if (digits.length > 4)
@@ -208,8 +205,7 @@ export default function StepStudent() {
   };
 
   const inputClass = (hasError) =>
-    `mt-1 w-full placeholder:text-[#9C9C9C] bg-white poppins font-normal mainShadow ${
-      hasError ? "border border-red-500" : ""
+    `mt-1 w-full placeholder:text-[#9C9C9C] bg-white poppins font-normal mainShadow ${hasError ? "border border-red-500" : ""
     } p-3 rounded-[6px] text-sm focus:ring-2 focus:ring-[#0496FF] outline-none`;
 
   const student = formData.student || {};
@@ -221,12 +217,10 @@ export default function StepStudent() {
         Student information
       </h2>
 
-      {/* Selection counter */}
       <p className="text-center text-sm poppins text-[#939395] mb-6">
         {selectedStudents.length} / {MAX_STUDENTS} children selected
       </p>
 
-      {/* Limit banner */}
       {atLimit && (
         <div className="max-w-[670px] mx-auto mb-4 flex items-center gap-2 bg-amber-50 border border-amber-300 text-amber-700 text-sm poppins px-4 py-2.5 rounded-lg">
           <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -241,22 +235,19 @@ export default function StepStudent() {
       <div className="flex justify-center items-center gap-6 mb-8">
         <button
           onClick={() => setActiveTab("existing")}
-          className={`poppins font-semibold transition-all ${
-            activeTab === "existing"
-              ? "bg-[#E8F1FF] text-[#0496FF] md:px-6 px-3 py-2 rounded-lg"
-              : "text-[#282829] md:text-[16px] text-[14px]"
-          }`}
+          className={`poppins font-semibold transition-all ${activeTab === "existing"
+            ? "bg-[#E8F1FF] text-[#0496FF] md:px-6 px-3 py-2 rounded-lg"
+            : "text-[#282829] md:text-[16px] text-[14px]"
+            }`}
         >
           Select an existing child
         </button>
-
         <button
           onClick={() => setActiveTab("new")}
-          className={`poppins font-semibold transition-all ${
-            activeTab === "new"
-              ? "bg-[#E8F1FF] text-[#0496FF] md:px-6 px-3 py-2 rounded-lg"
-              : "text-[#282829] md:text-[16px] text-[14px]"
-          }`}
+          className={`poppins font-semibold transition-all ${activeTab === "new"
+            ? "bg-[#E8F1FF] text-[#0496FF] md:px-6 px-3 py-2 rounded-lg"
+            : "text-[#282829] md:text-[16px] text-[14px]"
+            }`}
         >
           Add a new child
         </button>
@@ -276,62 +267,122 @@ export default function StepStudent() {
           {availableStudents.map((s) => {
             const isSelected = selectedStudents.some((sel) => sel.id === s.id);
             const isDisabled = !isSelected && atLimit;
+            const selectedStudent = selectedStudents.find((sel) => sel.id === s.id);
+            const hasClass =
+              selectedStudent?.classSchedule?.className ||
+              selectedStudent?.className ||
+              s?.classSchedule?.className ||
+              s?.className;
 
             return (
               <div
                 key={s.id}
-                onClick={() => !isDisabled && handleToggleStudent(s)}
-                className={`border rounded-xl p-6 relative transition-all ${
-                  isDisabled
-                    ? "border-gray-200 bg-gray-50 opacity-50 cursor-not-allowed"
-                    : isSelected
-                    ? "border-[#0496FF] bg-blue-50/30 shadow-sm cursor-pointer"
-                    : "border-gray-200 bg-white hover:border-gray-300 cursor-pointer"
-                }`}
+                className={`border rounded-xl p-6 relative transition-all ${isDisabled
+                  ? "border-gray-200 bg-gray-50 opacity-50 cursor-not-allowed"
+                  : isSelected
+                    ? "border-[#0496FF] bg-blue-50/30 shadow-sm"
+                    : "border-gray-200 bg-white hover:border-gray-300"
+                  }`}
               >
-                {isSelected && (
-                  <div className="absolute top-4 right-4 text-[#0496FF]">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none"
-                      viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                        d="M5 13l4 4L19 7" />
-                    </svg>
-                  </div>
-                )}
+                {/* ── Clickable top section (toggles selection) ── */}
+                <div
+                  onClick={() => !isDisabled && handleToggleStudent(s)}
+                  className="cursor-pointer"
+                >
+                  {isSelected && (
+                    <div className="absolute top-4 right-4 text-[#0496FF]">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none"
+                        viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                          d="M5 13l4 4L19 7" />
+                      </svg>
+                    </div>
+                  )}
 
-                <h3 className={`font-semibold text-[18px] mb-4 poppins ${
-                  isSelected ? "text-[#0496FF]" : "text-[#282829]"
-                }`}>
-                  {s.studentFirstName} {s.studentLastName}
-                </h3>
+                  <h3 className={`font-semibold text-[18px] mb-4 poppins ${isSelected ? "text-[#0496FF]" : "text-[#282829]"
+                    }`}>
+                    {s.studentFirstName} {s.studentLastName}
+                  </h3>
 
-                <div className="grid grid-cols-2 gap-y-4 gap-x-2">
-                  <div>
-                    <label className="text-[12px] text-[#939395] block font-normal mb-1 poppins">
-                      Date of birth
-                    </label>
-                    <p className="text-[14px] text-[#282829] poppins font-medium">{s.dateOfBirth}</p>
-                  </div>
-                  <div>
-                    <label className="text-[12px] text-[#939395] block font-normal mb-1 poppins">Age</label>
-                    <p className="text-[14px] text-[#282829] poppins font-medium">{s.age}</p>
-                  </div>
-                  <div>
-                    <label className="text-[12px] text-[#939395] block font-normal mb-1 poppins">Gender</label>
-                    <p className="text-[14px] text-[#282829] poppins font-medium">
-                      {s.gender === "Male" ? "M" : s.gender === "Female" ? "F" : s.gender}
-                    </p>
-                  </div>
-                  <div>
-                    <label className="text-[12px] text-[#939395] block font-normal mb-1 poppins">
-                      Class / Level
-                    </label>
-                    <p className="text-[14px] text-[#282829] poppins font-medium">
-                      {s?.classSchedule?.className || s?.className || s?.holidayClassSchedules?.className || "-"}{" "}
-                      {s?.classSchedule?.level || s?.level || s?.holidayClassSchedules?.level || ""}
-                    </p>
+                  <div className="grid grid-cols-2 gap-y-4 gap-x-2">
+                    <div>
+                      <label className="text-[12px] text-[#939395] block font-normal mb-1 poppins">
+                        Date of birth
+                      </label>
+                      <p className="text-[14px] text-[#282829] poppins font-medium">{s.dateOfBirth}</p>
+                    </div>
+                    <div>
+                      <label className="text-[12px] text-[#939395] block font-normal mb-1 poppins">Age</label>
+                      <p className="text-[14px] text-[#282829] poppins font-medium">{s.age}</p>
+                    </div>
+                    <div>
+                      <label className="text-[12px] text-[#939395] block font-normal mb-1 poppins">Gender</label>
+                      <p className="text-[14px] text-[#282829] poppins font-medium">
+                        {s.gender === "Male" ? "M" : s.gender === "Female" ? "F" : s.gender}
+                      </p>
+                    </div>
+                    <div>
+                      <label className="text-[12px] text-[#939395] block font-normal mb-1 poppins">
+                        Class / Level
+                      </label>
+
+                      {isSelected ? (
+                        <div
+                          className="relative"
+                          onClick={(e) => e.stopPropagation()} // ← stops card toggle firing
+                        >
+                          <select
+                            ref={(el) => (classSelectRef.current[s.id] = el)}
+                            value={selectedStudent?.classScheduleId || ""}
+                            onChange={(e) => {
+                              const classId = e.target.value;
+                              const selectedClass = classes.find(
+                                (cls) => cls?.classId === Number(classId)
+                              );
+                              if (!selectedClass) return;
+
+                              setFormData((prev) => ({
+                                ...prev,
+                                students: prev.students.map((st) =>
+                                  st.id === s.id
+                                    ? {
+                                      ...st,
+                                      classSchedule: selectedClass,
+                                      classScheduleId: selectedClass?.classId,
+                                      className: selectedClass?.className,
+                                      time: selectedClass?.time || selectedClass?.startTime || "",
+                                    }
+                                    : st
+                                ),
+                              }));
+                            }}
+                            className="w-full bg-white mainShadow rounded-lg text-[#494949] font-medium px-4 py-2.5 text-sm focus:ring-2 focus:ring-[#0496FF] outline-none appearance-none poppins"
+                          >
+                            <option value="">Select Class</option>
+                            {classes.map((cls) => (
+                              <option key={cls?.classId} value={cls?.classId}>
+                                {cls?.className}{cls?.level ? ` (${cls.level})` : ""}
+                              </option>
+                            ))}
+                          </select>
+                          <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+                            <svg className="w-4 h-4 text-[#939395]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                            </svg>
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="text-[14px] text-[#282829] poppins font-medium">
+                          {s?.classSchedule?.className || s?.className || "-"}{" "}
+                          {s?.classSchedule?.level || s?.level || ""}
+                        </p>
+                      )}
+                    </div>
                   </div>
                 </div>
+
+                {/* ── Class dropdown (only when selected) ── */}
+
               </div>
             );
           })}
@@ -365,7 +416,6 @@ export default function StepStudent() {
             />
           </div>
 
-          {/* DOB — plain text, auto-dash */}
           <div>
             <label className="block text-[14px] text-[#282829] poppins font-normal mb-1 capitalize">
               Date of birth
@@ -434,7 +484,7 @@ export default function StepStudent() {
                 className={`${inputClass()} bg-white text-gray-700 appearance-none`}
               >
                 <option value="">Select Class</option>
-                {(filteredData?.[0]?.classes ?? []).map((cls) => (
+                {classes.map((cls) => (
                   <option key={cls?.classId} value={cls?.classId}>
                     {cls?.className}{cls?.level ? ` (${cls.level})` : ""}
                   </option>
@@ -459,11 +509,6 @@ export default function StepStudent() {
                 placeholder="Automatic entry"
                 className={`${inputClass()} bg-white text-gray-500`}
               />
-              <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
-                <svg className="w-4 h-4 text-[#939395]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-                </svg>
-              </div>
             </div>
           </div>
 

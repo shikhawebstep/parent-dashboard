@@ -27,6 +27,8 @@ export default function StepNavigation() {
             ? [formData.student]
             : [];
 
+
+            console.log("Students Array:", studentsArray);
       // ✅ Clean students properly
       const cleanedStudents = studentsArray.map((student) => ({
         studentFirstName: student.studentFirstName,
@@ -34,7 +36,7 @@ export default function StepNavigation() {
         dateOfBirth: student.dateOfBirth,
         age: student.age,
         gender: student.gender,
-        medicalInformation: student.medicalInformation,
+        medicalInformation: student.medicalInfo,
         classScheduleId: student.classScheduleId, // ✅ FIXED
       }));
 
@@ -45,8 +47,8 @@ export default function StepNavigation() {
           parentLastName: parent.parentLastName,
           parentEmail: parent.parentEmail,
           parentPhoneNumber: parent.parentPhoneNumber,
-          relationToChild: parent.relationChild,
-          howDidYouHear: parent.howDidHear,
+          relationToChild: parent.relationToChild,
+          howDidYouHear: parent.howDidYouHear,
         })) || [];
 
       // ✅ Clean emergency safely

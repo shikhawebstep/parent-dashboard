@@ -15,10 +15,10 @@ export default function StepRenderer() {
   const { currentStep, fetchData, loading, setLoading, setFormData } = useStep();
   const { fetchProfileData, profile } = useProfile();
 
-  // Flatten all bookings from groupedBookings or fall back to combinedBookings
+  // Flatten all bookings from groupedBookings or fall back to adminMeta
   const booking = useMemo(() => {
-    if (Array.isArray(profile?.combinedBookings)) {
-      return profile.combinedBookings;
+    if (Array.isArray(profile?.adminMeta)) {
+      return profile.adminMeta;
     }
     if (profile?.groupedBookings && typeof profile.groupedBookings === "object") {
       return Object.values(profile.groupedBookings)
@@ -56,58 +56,65 @@ export default function StepRenderer() {
     };
   }, []);
 
-  useEffect(() => {
-    if (!holidayBooking.length) return;
+useEffect(() => {
+  if (!profile) return;
 
-    // Parents: collect unique parents across all holiday bookings by parent id
-    const allParents = holidayBooking.flatMap(
-      (b) => (Array.isArray(b?.parents) ? b.parents : [])
-    );
-    const uniqueParents = Array.from(
-      new Map(
-        allParents
-          .filter((p) => p?.id !== undefined && p?.id !== null)
-          .map((p) => [p.id, p])
-      ).values()
-    );
+  const adminMeta = profile?.adminMeta;
 
-    // Emergency: take the first available emergency contact across holiday bookings
-    const emergency = holidayBooking
-      .map((b) => b?.emergency)
-      .find((e) => e !== undefined && e !== null) ?? null;
+  // --- From adminMeta (always available) ---
+  const metaParents = Array.isArray(adminMeta?.parents) ? adminMeta.parents : [];
+  const metaStudents = Array.isArray(adminMeta?.students) ? adminMeta.students : [];
+  const metaEmergency = adminMeta?.emergency ?? null;
 
-    // Students: collect unique students across all holiday bookings by student id
-    const allStudents = holidayBooking.flatMap(
-      (b) => (Array.isArray(b?.students) ? b.students : [])
-    );
-    const uniqueStudents = Array.from(
-      new Map(
-        allStudents
-          .filter((s) => s?.id !== undefined && s?.id !== null)
-          .map((s) => [s.id, s])
-      ).values()
-    );
+  // --- From holiday bookings (optional, overrides if present) ---
+  const allParents = holidayBooking.flatMap((b) =>
+    Array.isArray(b?.parents) ? b.parents : []
+  );
+  const uniqueParents = allParents.length
+    ? Array.from(
+        new Map(
+          allParents
+            .filter((p) => p?.id != null)
+            .map((p) => [p.id, p])
+        ).values()
+      )
+    : metaParents;
 
-    setFormData((prev) => {
-      const parentsChanged =
-        JSON.stringify(prev.parents) !== JSON.stringify(uniqueParents);
-      const emergencyChanged =
-        JSON.stringify(prev.emergency) !== JSON.stringify(emergency);
-      const studentsChanged =
-        JSON.stringify(prev.availableStudents) !== JSON.stringify(uniqueStudents);
+  const emergency =
+    holidayBooking.map((b) => b?.emergency).find((e) => e != null) ??
+    metaEmergency;
 
-      // Only update if something actually changed
-      if (!parentsChanged && !emergencyChanged && !studentsChanged) return prev;
+  const allStudents = holidayBooking.flatMap((b) =>
+    Array.isArray(b?.students) ? b.students : []
+  );
+  const uniqueStudents = allStudents.length
+    ? Array.from(
+        new Map(
+          allStudents
+            .filter((s) => s?.id != null)
+            .map((s) => [s.id, s])
+        ).values()
+      )
+    : metaStudents;
 
-      return {
-        ...prev,
-        ...(parentsChanged && { parents: uniqueParents }),
-        ...(emergencyChanged && { emergency }),
-        ...(studentsChanged && { availableStudents: uniqueStudents }),
-      };
-    });
-  }, [holidayBooking]);
+  setFormData((prev) => {
+    const parentsChanged =
+      JSON.stringify(prev.parents) !== JSON.stringify(uniqueParents);
+    const emergencyChanged =
+      JSON.stringify(prev.emergency) !== JSON.stringify(emergency);
+    const studentsChanged =
+      JSON.stringify(prev.availableStudents) !== JSON.stringify(uniqueStudents);
 
+    if (!parentsChanged && !emergencyChanged && !studentsChanged) return prev;
+
+    return {
+      ...prev,
+      ...(parentsChanged && { parents: uniqueParents }),
+      ...(emergencyChanged && { emergency }),
+      ...(studentsChanged && { availableStudents: uniqueStudents }),
+    };
+  });
+}, [profile, holidayBooking]);  // ← added profile as dependency
   if (loading) {
     return <Loader />;
   }
