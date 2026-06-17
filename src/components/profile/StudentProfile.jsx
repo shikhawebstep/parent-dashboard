@@ -3,6 +3,7 @@ import React, { useState, useEffect } from "react";
 import Select from "react-select";
 import { useProfile } from "../../context/ProfileContext";
 import AddStudentModal from "../modals/AddStudentModal";
+import { showSuccess, showError } from "../../../utils/swalHelper";
 
 const genderOptions = [
   { value: "", label: "Select Gender" },
@@ -187,42 +188,51 @@ const StudentProfile = () => {
     emergencyRelation: emergency?.emergencyRelation,
   };
 
-  const handleSave = async (index) => {
+  // add import at top
+
+// add saving state
+const [savingIndex, setSavingIndex] = useState(null);
+
+const handleSave = async (index) => {
     const student = students[index];
     const validationErrors = validateStudent(student);
     const newErrors = [...errors];
     newErrors[index] = validationErrors;
     setErrors(newErrors);
-        const token = localStorage.getItem("parentToken");
-
     if (Object.keys(validationErrors).length > 0) return;
 
+    const token = localStorage.getItem("parentToken");
+    setSavingIndex(index);
     try {
-      const res = await fetch(
-        `${import.meta.env.VITE_API_BASE_URL}api/parent/booking-update/student/${student.id}`,
-        {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            studentFirstName: student.studentFirstName,
-            studentLastName: student.studentLastName,
-            dateOfBirth: convertToYYYYMMDD(student.dateOfBirth),
-            age: student.age,
-            gender: student.gender,
-            medicalInformation: student.medicalInfo,
-          }),
-        }
-      );
-      const data = await res.json();
-      if (!res.ok) throw new Error(data?.message || 'Update failed');
-      setEditingIndex(null);
+        const res = await fetch(
+            `${import.meta.env.VITE_API_BASE_URL}api/parent/booking-update/student/${student.id}`,
+            {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({
+                    studentFirstName: student.studentFirstName,
+                    studentLastName: student.studentLastName,
+                    dateOfBirth: convertToYYYYMMDD(student.dateOfBirth),
+                    age: student.age,
+                    gender: student.gender,
+                    medicalInformation: student.medicalInfo,
+                }),
+            }
+        );
+        const data = await res.json();
+        if (!res.ok) throw new Error(data?.message || "Update failed");
+        showSuccess("Saved", data?.message || "Student updated successfully");
+        setEditingIndex(null);
     } catch (err) {
-      console.error(err);
+        console.error(err);
+        showError("Error", err.message || "Something went wrong");
+    } finally {
+        setSavingIndex(null);
     }
-  };
+};
 
   /* ===== SIDEBAR DATA ===== */
   const sidebarInfo = profile?.adminMeta || {};

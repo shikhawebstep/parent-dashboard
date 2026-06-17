@@ -1,6 +1,6 @@
 import { Menu, User, Settings, LogOut } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { showConfirm, showSuccess } from "../../utils/swalHelper";
 import NotificationPopup from "../components/NotificationPopup";
 import { useProfile } from "../context/ProfileContext";
@@ -13,6 +13,27 @@ const Header = ({ onMenuClick }) => {
   const dropdownRef = useRef(null);
   const notificationRef = useRef(null);
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const getPageTitle = () => {
+    switch (location.pathname) {
+      case "/":
+        return "Account Profile";
+      case "/booking":
+        return "Book Now";
+      case "/bookings":
+        return "My Bookings";
+      case "/refer":
+        return "Refer a Friend";
+      case "/surveys":
+        return "Surveys";
+      case "/settings":
+        return "Settings";
+      default:
+        if (location.pathname.startsWith("/surveys/")) return "Survey Details";
+        return "Account Information";
+    }
+  };
   const { profile } = useProfile();
 
   const parentData = JSON.parse(localStorage.getItem("parentData"));
@@ -146,7 +167,7 @@ const Header = ({ onMenuClick }) => {
                 : parentData?.email || "N/A"}
             </p>
             <h1 className="text-[24px] lg:text-[36px] m-0 font-semibold text-gray-900 leading-tight">
-              Account Information
+              {getPageTitle()}
             </h1>
           </div>
         </div>

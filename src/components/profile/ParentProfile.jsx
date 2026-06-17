@@ -6,6 +6,12 @@ import PhoneInput from "react-phone-input-2";
 import "react-phone-input-2/lib/style.css";
 import { useProfile } from "../../context/ProfileContext";
 
+// add imports at top
+import { showSuccess, showError } from "../../../utils/swalHelper";
+
+// add saving state inside component
+
+
 const options = [
     { value: "", label: "Select" },
     { value: "Father", label: "Father" },
@@ -32,8 +38,19 @@ const emptyParent = {
     studentId: "",
     interestReason: "",
     interestReasonOther: "",
-};
+    isCustomReason: false,  // ← add this
 
+};
+const interestReasonOptions = [
+    { value: "", label: "Select a reason" },
+    { value: "To build my child's confidence", label: "To build my child's confidence" },
+    { value: "To improve their technical football skills", label: "To improve their technical football skills" },
+    { value: "Because my child loves football", label: "Because my child loves football" },
+    { value: "To help my child make friends and build social skills", label: "To help my child make friends and build social skills" },
+    { value: "To keep my child active and healthy", label: "To keep my child active and healthy" },
+    { value: "High-quality coaching in a fun, positive environment", label: "High-quality coaching in a fun, positive environment" },
+    { value: "Other", label: "Other" },
+];
 const emptyEmergency = {
     emergencyFirstName: "",
     emergencyLastName: "",
@@ -99,7 +116,8 @@ const ParentProfile = () => {
     const [parentErrors, setParentErrors] = useState([{}]);
     const [emergencyErrors, setEmergencyErrors] = useState({});
     const [hasEmergencyContact, setHasEmergencyContact] = useState(false);
-
+    const [savingIndex, setSavingIndex] = useState(null);
+    const [savingEmergency, setSavingEmergency] = useState(false);
     useEffect(() => {
         if (!profile) {
             setParents([]);
@@ -160,13 +178,19 @@ const ParentProfile = () => {
         setSameAsParent(false);
     };
 
-    const updateParent = (index, field, value) => {
-        const updated = [...parents];
-        updated[index] = { ...updated[index], [field]: value };
-        setParents(updated);
-        validateParentField(index, field, value);
+    // Replace updateParent to support multiple fields at once
+    const updateParent = (index, fieldOrFields, value) => {
+        setParents((prev) => {
+            const updated = [...prev];
+            if (typeof fieldOrFields === "object") {
+                updated[index] = { ...updated[index], ...fieldOrFields };
+            } else {
+                updated[index] = { ...updated[index], [fieldOrFields]: value };
+                validateParentField(index, fieldOrFields, value);
+            }
+            return updated;
+        });
     };
-
     const validateEmail = (email) => {
         if (!email) return "";
         return /\S+@\S+\.\S+/.test(email) ? "" : "Invalid email address";
@@ -267,30 +291,98 @@ const ParentProfile = () => {
         howDidYouHear: howDidYouHear,
     }));
 
-    const handleSaveParent = (index) => {
-        if (validateParent(index)) {
-            setEditingIndex(null);
-            updateProfile({
-                parentAdminId: parentId,
-                students: cleanedStudents,
-                parents: cleanedParents,
-                emergencyContacts: [cleanedEmergency],
-            });
-        }
+    const handleSaveParent = async (index) => {
+    if (!validateParent(index)) return;
+
+    const token = localStorage.getItem("parentToken");
+    const parent = parents[index];
+    setSavingIndex(index);
+
+    const isNew = !parent.id; // ← new parent has no id
+
+    const payload = {
+        parentFirstName: parent.parentFirstName,
+        parentLastName: parent.parentLastName,
+        parentEmail: parent.parentEmail,
+        parentPhoneNumber: parent.parentPhoneNumber,
+        relationToChild: parent.relationToChild,
+        howDidYouHear: parent.howDidYouHear,
+        interestReason: parent.interestReason || null,
+        interestReasonOther: parent.interestReasonOther || null,
     };
 
-    const handleSaveEmergency = () => {
-        if (validateEmergency()) {
+    try {
+        const url = isNew
+            ? `${import.meta.env.VITE_API_BASE_URL}api/parent/booking-update/add-parent`
+            : `${import.meta.env.VITE_API_BASE_URL}api/parent/booking-update/parent`;
+
+        const res = await fetch(url, {
+            method: isNew ? "POST" : "PUT",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify(payload),
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data?.message || "Update failed");
+
+        // If new parent was created, store the returned id so future saves use PUT
+        if (isNew && data?.data?.id) {
+            setParents((prev) => {
+                const updated = [...prev];
+                updated[index] = { ...updated[index], id: data.data.id };
+                return updated;
+            });
+        }
+
+        showSuccess("Saved", data?.message || "Parent saved successfully");
+        setEditingIndex(null);
+    } catch (err) {
+        console.error(err);
+        showError("Error", err.message || "Something went wrong");
+    } finally {
+        setSavingIndex(null);
+    }
+};
+
+    const handleSaveEmergency = async () => {
+        if (!validateEmergency()) return;
+        setSavingEmergency(true);
+
+        const token = localStorage.getItem("parentToken");
+
+        const payload = {
+            emergencyFirstName: emergency.emergencyFirstName,
+            emergencyLastName: emergency.emergencyLastName,
+            emergencyPhoneNumber: emergency.emergencyPhoneNumber,
+            emergencyRelation: emergency.emergencyRelation,
+        };
+
+        try {
+            const res = await fetch(
+                `${import.meta.env.VITE_API_BASE_URL}api/parent/booking-update/emergency`,
+                {
+                    method: "PUT",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${token}`,
+                    },
+                    body: JSON.stringify(payload),
+                }
+            );
+            const data = await res.json();
+            if (!res.ok) throw new Error(data?.message || "Update failed");
+            showSuccess("Saved", data?.message || "Emergency contact updated successfully");
             setEmergencyEditing(false);
-            updateProfile({
-                parentAdminId: parentId,
-                students: cleanedStudents,
-                parents: cleanedParents,
-                emergencyContacts: [cleanedEmergency],
-            });
+        } catch (err) {
+            console.error(err);
+            showError("Error", err.message || "Something went wrong");
+        } finally {
+            setSavingEmergency(false);
         }
     };
-
     const sidebarInfo = profile?.adminMeta || {};
     const memberName = profile?.students?.[0]
         ? `${profile.students[0].studentFirstName} ${profile.students[0].studentLastName}`
@@ -337,8 +429,15 @@ const ParentProfile = () => {
                                         </h2>
                                         <div className="flex items-center gap-3">
                                             {editable ? (
-                                                <button onClick={() => handleSaveParent(index)} className="text-gray-500 hover:text-black">
-                                                    <Save size={18} />
+                                                <button
+                                                    onClick={() => handleSaveParent(index)}
+                                                    disabled={savingIndex === index}
+                                                    className="text-gray-500 hover:text-black disabled:opacity-50"
+                                                >
+                                                    {savingIndex === index
+                                                        ? <span className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin inline-block" />
+                                                        : <Save size={18} />
+                                                    }
                                                 </button>
                                             ) : (
                                                 <button onClick={() => { if (editingIndex === null) setEditingIndex(index); }}
@@ -391,17 +490,70 @@ const ParentProfile = () => {
 
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
                                         <Field label="What's the main reason you're interested in Samba Soccer Schools?">
-                                            <input value={parent.interestReason || ""} disabled={!editable}
-                                                onChange={(e) => updateParent(index, "interestReason", e.target.value)}
-                                                className={inputClass(editable, false)} />
+                                            {editable && parent.isCustomReason ? (
+                                                <div className="relative">
+                                                    <input
+                                                        value={parent.interestReason || ""}
+                                                        onChange={(e) => updateParent(index, "interestReason", e.target.value)}
+                                                        className={inputClass(editable, false)}
+                                                        placeholder="Please specify your reason"
+                                                    />
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            updateParent(index, "interestReason", "");
+                                                            updateParent(index, "isCustomReason", false);
+                                                        }}
+                                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-blue-600 font-semibold"
+                                                    >
+                                                        ← Back
+                                                    </button>
+                                                </div>
+                                            ) : (
+                                                <ReactSelect
+                                                    value={interestReasonOptions.find((o) => o.value === (parent.interestReason || "")) || interestReasonOptions[0]}
+                                                    onChange={(selected) => {
+                                                        if (!selected) return;
+                                                        if (selected.value === "Other") {
+                                                            updateParent(index, { interestReason: "", isCustomReason: true });
+                                                        } else {
+                                                            updateParent(index, { interestReason: selected.value, isCustomReason: false });
+                                                        }
+                                                    }}
+                                                    options={interestReasonOptions}
+                                                    isDisabled={!editable}
+                                                    classNamePrefix="react-select"
+                                                    styles={{
+                                                        control: (provided, state) => ({
+                                                            ...provided,
+                                                            backgroundColor: "#fff",
+                                                            borderColor: "#E2E1E5",
+                                                            borderRadius: "12px",
+                                                            minHeight: "52px",
+                                                            fontWeight: "600",
+                                                            fontSize: "14px",
+                                                            boxShadow: "none",
+                                                            "&:hover": { borderColor: state.isFocused ? "#042C89" : "#9CA3AF" },
+                                                        }),
+                                                        singleValue: (provided) => ({ ...provided, color: "#282829" }),
+                                                        indicatorSeparator: () => ({ display: "none" }),
+                                                        dropdownIndicator: (provided) => ({ ...provided, color: editable ? "#6B7280" : "#9CA3AF" }),
+                                                        menu: (provided) => ({ ...provided, zIndex: 9999 }),
+                                                    }}
+                                                    placeholder="Select a reason"
+                                                />
+                                            )}
                                         </Field>
                                         <Field label="Tell us a bit more (optional)">
-                                            <input value={parent.interestReasonOther || ""} disabled={!editable}
+                                            <input
+                                                value={parent.interestReasonOther || ""}
+                                                disabled={!editable}
                                                 onChange={(e) => updateParent(index, "interestReasonOther", e.target.value)}
-                                                className={inputClass(editable, false)} />
+                                                className={inputClass(editable, false)}
+                                                placeholder="Anything else you'd like to share?"
+                                            />
                                         </Field>
                                     </div>
-
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                                         <Field label="Relation to child" error={errors.relationToChild}>
                                             <CustomSelect value={parent.relationToChild} editable={editable}

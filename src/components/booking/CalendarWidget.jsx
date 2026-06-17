@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { IoIosArrowBack, IoIosArrowForward } from "react-icons/io";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, isToday, startOfWeek, endOfWeek } from 'date-fns';
 
-const CalendarWidget = ({ selectedDate, onSelectDate, title = "Select trial date" }) => {
+const CalendarWidget = ({ selectedDate, onSelectDate, title = "Select trial date", availableDates }) => {
     const [currentMonth, setCurrentMonth] = useState(new Date());
 
     const days = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
@@ -25,6 +25,9 @@ const CalendarWidget = ({ selectedDate, onSelectDate, title = "Select trial date
         start: startDate,
         end: endDate
     });
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
     return (
         <div className="bg-white p-6 rounded-[20px] shadow-sm animate-fadeIn">
@@ -63,16 +66,27 @@ const CalendarWidget = ({ selectedDate, onSelectDate, title = "Select trial date
             <div className="grid grid-cols-7 gap-y-2">
                 {calendarDays.map((day, idx) => {
                     const isSelected = selectedDate ? isSameDay(day, selectedDate) : false;
-                    // const isCurrentMonth = isSameMonth(day, currentMonth); // Optional: dim other months
-                    // Using the mock image logic, they don't explicitly dim them too much but we can subtle text
+                    const formattedDay = format(day, 'yyyy-MM-dd');
+                    const isAvailable = availableDates ? availableDates.has(formattedDay) : true;
+                    
+                    const cur = new Date(day);
+                    cur.setHours(0, 0, 0, 0);
+                    const isPast = cur < today;
+                    const isEnabled = isAvailable && !isPast;
+
                     const textColor = isSameMonth(day, currentMonth) ? 'text-[#191919]' : 'text-gray-300';
                     const fontWeight = isSelected ? 'font-bold' : 'font-medium';
-                    const bgClass = isSelected ? 'bg-[#0496FF] text-white shadow-md' : 'hover:bg-gray-50';
+                    const bgClass = isSelected 
+                        ? 'bg-[#0496FF] text-white shadow-md' 
+                        : isEnabled 
+                            ? 'hover:bg-gray-50' 
+                            : 'opacity-30 cursor-not-allowed';
 
                     return (
                         <div key={idx} className="flex justify-center">
                             <button
-                                onClick={() => onSelectDate(day)}
+                                disabled={!isEnabled}
+                                onClick={() => isEnabled && onSelectDate(day)}
                                 className={`w-8 h-8 flex items-center justify-center rounded-full 2xl:text-[16px] text-[14px] transition-colors ${textColor} ${fontWeight} ${bgClass}`}
                             >
                                 {format(day, 'd')}

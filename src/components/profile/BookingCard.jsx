@@ -200,7 +200,7 @@ const BookingCard = ({ booking, onSeeDetails }) => {
                                         booking?.classSchedule?.venue?.name || booking?.venue?.name
                                     )}
                                     {renderField("ID", booking?.bookingId)}
-                                    {renderField("Trial Attempt", safePrice(booking?.venue?.address))}
+                                    {renderField("Trial Attempt", safeValue(booking?.attempt))}
                                     {renderField("Date Of Booking", safeDate(booking?.createdAt))}
 
                                     {renderField("Booking Source", getBookingSource(booking))}

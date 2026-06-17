@@ -1,18 +1,16 @@
 import { useStep } from "../../context/StepContext";
 
 export default function Stepper() {
-  const { currentStep, getActiveSteps } = useStep();
-  const activeSteps = getActiveSteps();
+  const { currentStep, STEPS } = useStep();
 
   return (
-    <ol className="flex items-center m-auto p-[20px] text-sm font-medium gap-4 bg-[#FBFBFB] rounded-[10px] overflow-x-auto">
-      {activeSteps.map((step, index) => {
-        const stepNum = index + 1;
-        const isActive = currentStep === stepNum;
-        const isCompleted = currentStep > stepNum;
+    <ol className="flex items-center m-auto p-[20px] text-sm font-medium gap-4 bg-[#FBFBFB]  rounded-[10px] overflow-x-auto">
+      {STEPS.map((step, index) => {
+        const isActive = currentStep === step.id;
+        const isCompleted = currentStep > step.id;
 
         return (
-          <li key={step.name || stepNum} className="flex gap-1 items-center">
+          <li key={step.id} className="flex gap-1 items-center">
             <span
               className={`flex items-center poppins justify-center w-6 h-6 text-xs rounded-full
                 ${isCompleted
@@ -22,7 +20,7 @@ export default function Stepper() {
                     : "border border-gray-400 text-gray-500"
                 }`}
             >
-              {stepNum}
+              {step.id}
             </span>
 
             <span
@@ -32,7 +30,7 @@ export default function Stepper() {
               {step.label}
             </span>
 
-            {index !== activeSteps.length - 1 && (
+            {index !== STEPS.length - 1 && (
               <div className="bg-[#9E9FAA] ms-3 w-[40px] h-[1px]"></div>
             )}
           </li>

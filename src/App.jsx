@@ -21,33 +21,48 @@ import SkillDetail from "./components/profile/SkillDetail";
 import SetPassword from "./components/auth/SetPassword";
 import Detail from "./components/profile/see-details/Detail";
 import BookFreeTrial from "./components/booking/BookFreeTrial";
+import AddToWaitingList from "./components/booking/AddToWaitingList";
+import OneToOneBookingForm from "./components/booking/OneToOneBooking";
+import BookMembership from "./components/booking/BookMembership";
+import { PhoneInputProvider } from "./context/PhoneInputContext";
+import { CommonProvider } from "./context/CommonContext";
 function App() {
   return (
     <StepProvider>
       <ProfileProvider>
         <SkillProvider>
           <FeedbackProvider>
-            <BrowserRouter>
-              <Layout>
-                <Routes>
-                  <Route path="/" element={<AccountInformation />} />
-                  <Route path="/booking" element={<Booking />} />
-                  <Route path="/book-free-trial" element={<BookFreeTrial />} />
-                  <Route path="/auth/login" element={<LoginPage />} />
-                  <Route path="/auth/forgot-password" element={<ForgotPasswordPage />} />
-                  <Route path="/auth/reset-password" element={<ResetPasswordPage />} />
-                  <Route path="/auth/set-password" element={<SetPassword />} />
-                  <Route path="/bookings" element={<MyBookings />} />
-                  <Route path="/refer" element={<ReferFriend />} />
-                  <Route path="/surveys" element={<Surveys />} />
-                  <Route path="/surveys/:id" element={<SurveyDetail />} />
-                  <Route path="/account-information/see-details" element={<Detail />} />
-                  <Route path="/skills/:id" element={<SkillDetail />} />
-                  <Route path="/settings" element={<Settings />} />
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-              </Layout>
-            </BrowserRouter>
+            <PhoneInputProvider>
+              <BrowserRouter>
+              <CommonProvider>
+
+                <Layout>
+                  <Routes>
+                    <Route path="/" element={<AccountInformation />} />
+                    <Route path="/booking" element={<Booking />} />
+                    <Route path="/one-to-one-booking" element={<OneToOneBookingForm />} />
+                    <Route path="/book-free-trial" element={<BookFreeTrial />} />
+                    <Route path="/waiting-list" element={<AddToWaitingList />} />
+                    <Route path="/book-membership" element={<BookMembership />} />
+                    <Route path="/auth/login" element={<LoginPage />} />
+                    <Route path="/auth/forgot-password" element={<ForgotPasswordPage />} />
+                    <Route path="/auth/reset-password" element={<ResetPasswordPage />} />
+                    <Route path="/auth/set-password" element={<SetPassword />} />
+                    <Route path="/bookings" element={<MyBookings />} />
+                    <Route path="/refer" element={<ReferFriend />} />
+                    <Route path="/surveys" element={<Surveys />} />
+                    <Route path="/surveys/:id" element={<SurveyDetail />} />
+                    <Route path="/account-information/see-details" element={<Detail />} />
+                    <Route path="/skills/:id" element={<SkillDetail />} />
+                    <Route path="/settings" element={<Settings />} />
+                    <Route path="*" element={<NotFound />} />
+                  </Routes>
+                </Layout>
+
+              </CommonProvider>
+
+              </BrowserRouter>
+            </PhoneInputProvider>
           </FeedbackProvider>
 
         </SkillProvider>

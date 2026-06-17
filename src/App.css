@@ -370,3 +370,7 @@ div:where(.swal2-icon).swal2-info {
 .react-tel-input .selected-flag{
   width: 30px !important;
 }
+
+.booking-page .react-tel-input {
+    width: 12% !important;
+}

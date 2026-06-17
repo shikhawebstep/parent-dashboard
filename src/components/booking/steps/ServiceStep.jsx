@@ -3,11 +3,6 @@ import { useStep } from "../../../context/StepContext";
 
 const serviceOptions = [
   { value: "Holiday Camp Booking", label: "Holiday Camp Booking" },
-  { value: "Weekly Class Membership", label: "Weekly Class Membership" },
-  { value: "Book Free Trial", label: "Book Free Trial" },
-  { value: "Add To Waiting List", label: "Add To Waiting List" },
-  { value:"One To One", label:"One To One" },
-  { value: "Birthday Party", label: "Birthday Party" },
 ];
 
 export default function ServiceStep() {
