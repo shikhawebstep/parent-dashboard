@@ -173,7 +173,7 @@ export default function General({ booking: propBooking, details }) {
                                 </div>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div className="space-y-1">
-                                        <label className="lg:text-[16px] text-[14px] font-medium text-[#282829]">Main reason for interest</label>
+                                        <label className="lg:text-[16px] text-[14px] font-medium text-[#282829]">What's the main reason you're interested in Samba Soccer Schools?</label>
                                         <input type="text" value={safeValue(parent?.interestReason, "")} className="w-full lg:p-3 p-2 border border-[#E2E1E5] rounded-[12px] focus:outline-none text-[#383A46] font-medium bg-white" readOnly />
                                     </div>
                                     <div className="space-y-1">
@@ -337,39 +337,38 @@ export default function General({ booking: propBooking, details }) {
 
                         <div className="py-6 pb-2 space-y-5">
                             {/* Profile */}
-                            {parents.length > 0 ? (
-                                parents.map((parent, idx) => {
-                                    const parentDisplayName = safeName(
-                                        parent?.parentFirstName || parent?.firstName,
-                                        parent?.parentLastName || parent?.lastName
-                                    );
-                                    const profilePhoto = parent?.profile;
-                                    const parentRelation = parent?.relationChild
-                                        ? ` / ${parent.relationChild}`
-                                        : "";
-                                    return (
-                                        <div key={idx} className="flex items-center gap-4">
-                                            <img
-                                                src={profilePhoto || "/assets/dummy-avatar.png"}
-                                                alt="Avatar"
-                                                className="w-20 h-20 rounded-full object-cover"
-                                            />
-                                            <div>
-                                                <h4 className="md:text-[24px] 2xl:text-[20px] xl:text-[18px] lg:text-[16px] text-[14px] font-bold leading-tight">
-                                                    Account Holder
-                                                </h4>
-                                                <p className="lg:text-[16px] text-[14px] text-[#BDC0C3] font-medium">
-                                                    {parentDisplayName}
-                                                    {parentRelation}
-                                                </p>
-                                            </div>
+                            {parents.length > 0 ? (() => {
+                                const parent = parents[0];
+                                const parentDisplayName = safeName(
+                                    parent?.parentFirstName || parent?.firstName,
+                                    parent?.parentLastName || parent?.lastName
+                                );
+                                const profilePhoto = parent?.profile;
+                                const parentRelation = parent?.relationChild
+                                    ? ` / ${parent.relationChild}`
+                                    : "";
+                                return (
+                                    <div className="flex items-center gap-4">
+                                        <img
+                                            src={profilePhoto || "/assets/dummy-avatar.png"}
+                                            alt="Avatar"
+                                            className="w-20 h-20 rounded-full object-cover"
+                                        />
+                                        <div>
+                                            <h4 className="md:text-[24px] 2xl:text-[20px] xl:text-[18px] lg:text-[16px] text-[14px] font-bold leading-tight">
+                                                Account Holder
+                                            </h4>
+                                            <p className="lg:text-[16px] text-[14px] text-[#BDC0C3] font-medium">
+                                                {parentDisplayName}
+                                                {parentRelation}
+                                            </p>
                                         </div>
-                                    );
-                                })
-                            ) : (
+                                    </div>
+                                );
+                            })() : (
                                 <div className="flex items-center gap-4">
                                     <img
-                                        src={profilePhoto|| '/assets/dummy-avatar.png'}
+                                        src={"/assets/dummy-avatar.png"}
                                         alt="Avatar"
                                         className="w-20 h-20 rounded-full object-cover"
                                     />

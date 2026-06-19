@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import { showError } from '../../../utils/swalHelper';
 import Loader from '../../components/Loader';
 import EmptyState from '../../components/profile/EmptyState';
 import CancelTrial from '../../components/modals/CancelTrial';
-
+import RenewPackage from '../../components/modals/RenewPackage'; // ✅ added
+import { showError, showWarning } from '../../../utils/swalHelper'; // ✅ showWarning added
 const MyBookings = () => {
     const [activeTab, setActiveTab] = useState('Upcoming');
     const [cancelModal, setCancelModal] = useState({ open: false, booking: null })
+    const [renewModal, setRenewModal] = useState({ open: false, booking: null }); // ✅ added
 
     const tabs = ['Upcoming', 'Past', 'Cancelled'];
     const [bookings, setBookings] = useState({
@@ -15,7 +16,12 @@ const MyBookings = () => {
         cancelled: []
     });
     const [loading, setLoading] = useState(false);
-
+    const handleBirthdayPartyCancel = () => {
+        showWarning(
+            "Contact Support to Cancel",
+            "Birthday Party bookings can't be cancelled here, and refunds aren't processed automatically. Please contact our support/admin team for assistance."
+        );
+    };
     const fetchBooking = async () => {
         setLoading(true);
         try {
@@ -88,110 +94,110 @@ const MyBookings = () => {
     }
 
 
-   const formatBooking = (booking) => {
-    const sType = booking?.serviceType?.toLowerCase();
+    const formatBooking = (booking) => {
+        const sType = booking?.serviceType?.toLowerCase();
 
-    let dateObj = booking?.createdAt ? new Date(booking.createdAt) : null;
-    let venue = "-";
-    let time = "-";
-    let address = "-";
-    let classType = booking?.serviceType || "-";
-    let coachName = "";
+        let dateObj = booking?.createdAt ? new Date(booking.createdAt) : null;
+        let venue = "-";
+        let time = "-";
+        let address = "-";
+        let classType = booking?.serviceType || "-";
+        let coachName = "";
 
-    if (booking?.coach?.firstName) {
-        coachName = `${booking.coach.firstName} ${booking.coach.lastName || ''}`.trim();
-    }
-
-    const student = booking?.students?.[0];
-
-    if (sType === "holiday camp") {
-        venue = booking?.holidayVenue?.name || "-";
-        address = booking?.holidayVenue?.address || "-";
-
-        const schedule = student?.holidayClassSchedules;
-        const levelName = schedule?.level?.name || schedule?.level || "";
-        const cName = schedule?.className || "Holiday Camp";
-        classType = levelName ? `${cName} (${levelName})` : cName;
-
-        const campDate = booking?.holidayCamp?.holidayCampDates?.[0];
-        if (campDate?.startDate) {
-            dateObj = new Date(campDate.startDate);
+        if (booking?.coach?.firstName) {
+            coachName = `${booking.coach.firstName} ${booking.coach.lastName || ''}`.trim();
         }
 
-        if (schedule?.startTime && schedule?.endTime) {
-            time = `${schedule.startTime} - ${schedule.endTime}`;
-        } else if (campDate?.startDate && campDate?.endDate) {
-            time = `${campDate.startDate} - ${campDate.endDate}`;
-        }
+const student = booking?.students?.find(s => s?.classSchedule || s?.holidayClassSchedules) || booking?.students?.[0];
+        if (sType === "holiday camp") {
+            venue = booking?.holidayVenue?.name || "-";
+            address = booking?.holidayVenue?.address || "-";
 
-    } else if (sType === "weekly class membership" || sType === "weekly class trial") {
-        venue = booking?.venue?.name || "-";
-        address = booking?.venue?.address || "-";
-
-        const schedule = student?.classSchedule || student?.holidayClassSchedules;
-        if (schedule) {
+            const schedule = student?.holidayClassSchedules;
             const levelName = schedule?.level?.name || schedule?.level || "";
-            const cName = schedule?.className || (sType === "weekly class trial" ? "Weekly Class Trial" : "Weekly Class");
+            const cName = schedule?.className || "Holiday Camp";
             classType = levelName ? `${cName} (${levelName})` : cName;
 
-            if (schedule.startTime && schedule.endTime) {
-                time = `${schedule.startTime} - ${schedule.endTime}`;
+            const campDate = booking?.holidayCamp?.holidayCampDates?.[0];
+            if (campDate?.startDate) {
+                dateObj = new Date(campDate.startDate);
             }
 
-            if (schedule.day && booking?.createdAt) {
-                // Use createdAt as fallback; real impl might compute next session day
+            if (schedule?.startTime && schedule?.endTime) {
+                time = `${schedule.startTime} - ${schedule.endTime}`;
+            } else if (campDate?.startDate && campDate?.endDate) {
+                time = `${campDate.startDate} - ${campDate.endDate}`;
+            }
+
+        } else if (sType === "weekly class membership" || sType === "weekly class trial") {
+            venue = booking?.venue?.name || "-";
+            address = booking?.venue?.address || "-";
+
+            const schedule = student?.classSchedule || student?.holidayClassSchedules;
+            if (schedule) {
+                const levelName = schedule?.level?.name || schedule?.level || "";
+                const cName = schedule?.className || (sType === "weekly class trial" ? "Weekly Class Trial" : "Weekly Class");
+                classType = levelName ? `${cName} (${levelName})` : cName;
+
+                if (schedule.startTime && schedule.endTime) {
+                    time = `${schedule.startTime} - ${schedule.endTime}`;
+                }
+
+                if (schedule.day && booking?.createdAt) {
+                    // Use createdAt as fallback; real impl might compute next session day
+                    dateObj = new Date(booking.createdAt);
+                }
+            }
+
+        } else if (sType === "one to one") {
+            venue = booking?.location || "-";
+            address = booking?.address || "-";
+            if (booking?.date) {
+                dateObj = new Date(booking.date);
+            }
+            if (booking?.time) {
+                time = booking.time;
+            }
+            classType = "One to One";
+
+        } else if (sType === "birthday party") {
+            if (booking?.leads?.partyDate) {
+                dateObj = new Date(booking.leads.partyDate);
+            }
+            classType = "Birthday Party";
+            // birthday party has no location/venue field — use address directly
+            venue = booking?.address || "-";
+            address = booking?.address || "-";
+
+        } else {
+            venue = booking?.venue?.name || "-";
+            address = booking?.venue?.address || "-";
+            classType = student?.classSchedule?.className || "-";
+            const startTime = student?.classSchedule?.startTime;
+            const endTime = student?.classSchedule?.endTime;
+            time = startTime && endTime ? `${startTime} - ${endTime}` : "-";
+            if (booking?.createdAt) {
                 dateObj = new Date(booking.createdAt);
             }
         }
 
-    } else if (sType === "one to one") {
-        venue = booking?.location || "-";
-        address = booking?.address || "-";
-        if (booking?.date) {
-            dateObj = new Date(booking.date);
-        }
-        if (booking?.time) {
-            time = booking.time;
-        }
-        classType = "One to One";
-
-    } else if (sType === "birthday party") {
-        if (booking?.leads?.partyDate) {
-            dateObj = new Date(booking.leads.partyDate);
-        }
-        classType = "Birthday Party";
-        // birthday party has no location/venue field — use address directly
-        venue = booking?.address || "-";
-        address = booking?.address || "-";
-
-    } else {
-        venue = booking?.venue?.name || "-";
-        address = booking?.venue?.address || "-";
-        classType = student?.classSchedule?.className || "-";
-        const startTime = student?.classSchedule?.startTime;
-        const endTime = student?.classSchedule?.endTime;
-        time = startTime && endTime ? `${startTime} - ${endTime}` : "-";
-        if (booking?.createdAt) {
-            dateObj = new Date(booking.createdAt);
-        }
-    }
-
-    return {
-        id: booking?.id ?? Math.random(),
-        day: dateObj ? dateObj.toLocaleDateString("en-US", { weekday: "short" }) : "-",
-        date: dateObj ? dateObj.getDate() : "-",
-        month: dateObj ? dateObj.toLocaleDateString("en-US", { month: "short" }) : "-",
-        fullMonth: dateObj ? dateObj.toLocaleDateString("en-US", { month: "long" }) : "-",
-        year: dateObj ? dateObj.getFullYear() : "-",
-        venue,
-        time,
-        address,
-        classType,
-        coach: coachName,
-        status: booking?.status ?? "-",
-        bookingType: booking?.bookingType ?? "-",
+        return {
+            id: booking?.id ?? Math.random(),
+            day: dateObj ? dateObj.toLocaleDateString("en-US", { weekday: "short" }) : "-",
+            date: dateObj ? dateObj.getDate() : "-",
+            month: dateObj ? dateObj.toLocaleDateString("en-US", { month: "short" }) : "-",
+            fullMonth: dateObj ? dateObj.toLocaleDateString("en-US", { month: "long" }) : "-",
+            year: dateObj ? dateObj.getFullYear() : "-",
+            venue,
+            time,
+            address,
+            classType,
+            coach: coachName,
+            status: booking?.status ?? "-",
+            bookingType: booking?.bookingType ?? "-",
+            serviceType: sType, // ✅ added
+        };
     };
-};
 
 
 
@@ -297,9 +303,10 @@ const MyBookings = () => {
 
                                         {/* Action Button */}
                                         <div className="xl:w-[13%] w-full flex flex-wrap gap-4 justify-end">
-                                            {formatted.status === 'upcoming' ? (
-                                                <button className="bg-[#042C89] text-white w-full  px-2 2xl:px-4 py-2.5 2xl:py-3 rounded-[12px] font-semibold 2xl:text-sm md:text-[12px] text-[14px] hover:bg-[#032066] transition-colors">
-                                                    Give Feedback
+                                            {formatted.status === 'completed' ? (
+                                                <button onClick={() => setRenewModal({ open: true, booking })} // ✅ wired
+                                                    className="bg-[#042C89] text-white w-full  px-2 2xl:px-4 py-2.5 2xl:py-3 rounded-[12px] font-semibold 2xl:text-sm md:text-[12px] text-[14px] hover:bg-[#032066] transition-colors">
+                                                    Renew Package
                                                 </button>
                                             ) : (
                                                 <button className="bg-[#FFAB00] text-white w-full 2xl:px-8 px-4 py-2.5 2xl:py-3 rounded-[12px] font-semibold 2xl:text-sm md:text-[12px] text-[14px] hover:bg-[#e69500] transition-colors ">
@@ -320,6 +327,15 @@ const MyBookings = () => {
                                                 </>
 
                                             )}
+
+                                            {formatted.serviceType === "birthday party" && ( // ✅ added
+                                                <button
+                                                    onClick={handleBirthdayPartyCancel}
+                                                    className="bg-red-500 block text-white w-full 2xl:px-8 px-4 py-2.5 2xl:py-3 rounded-[12px] font-semibold 2xl:text-sm md:text-[12px] text-[14px] hover:bg-red-600 transition-colors"
+                                                >
+                                                    Cancel
+                                                </button>
+                                            )}
                                         </div>
                                     </div>
                                 </div>
@@ -335,6 +351,12 @@ const MyBookings = () => {
                     onClose={() => setCancelModal({ open: false, booking: null })}
                     onConfirm={handleCancelTrial}
                     booking={cancelModal.booking}
+                />
+                <RenewPackage
+                    isOpen={renewModal.open}
+                    onClose={() => setRenewModal({ open: false, booking: null })}
+                    booking={renewModal.booking}
+                    onSuccess={fetchBooking} // ✅ refresh bookings list after renew
                 />
             </div>
         </div>

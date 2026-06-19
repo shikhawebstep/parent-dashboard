@@ -1,72 +1,115 @@
 import React, { useState } from 'react';
 import { X, Info } from 'lucide-react';
+import Select from 'react-select';
 import { showError, showSuccess } from '../../../utils/swalHelper';
+
+const cancellationReasonOptions = [
+    { value: "Family emergency - cannot attend", label: "Family emergency - cannot attend" },
+    { value: "Health issue", label: "Health issue" },
+    { value: "Schedule conflict", label: "Schedule conflict" },
+    { value: "Other reason", label: "Other reason" },
+];
+
+// Convert <input type="date"> value ("YYYY-MM-DD") to the API's expected "DD-MM-YYYY"
+const toApiDate = (isoDate) => {
+    if (!isoDate) return "";
+    const [year, month, day] = isoDate.split("-");
+    return `${day}-${month}-${year}`;
+};
 
 export default function CancelMembershipModal({ isOpen, onClose, booking }) {
     const [loading, setLoading] = useState(false);
     const [reason, setReason] = useState("");
+    const [effectiveDate, setEffectiveDate] = useState("");
+    const [cancellationReason, setCancellationReason] = useState(null);
+    const [selectedStudents, setSelectedStudents] = useState([]);
+    const [fieldErrors, setFieldErrors] = useState({});
 
     if (!isOpen) return null;
 
-   const handleSubmit = async () => {
-    try {
-        setLoading(true);
+    const studentOptions = (booking?.students || []).map((s) => ({
+        value: s.id,
+        label: `${s.studentFirstName || ""} ${s.studentLastName || ""}`.trim(),
+    }));
 
-        const token = localStorage.getItem("parentToken");
-        const API_URL = import.meta.env.VITE_API_BASE_URL;
-
-        if (!token) {
-            throw new Error("Authentication token not found. Please login again.");
+    const handleSubmit = async () => {
+        // Basic validation for the required fields
+        const errs = {};
+        if (!effectiveDate) errs.effectiveDate = "Please select a cancellation effective date";
+        if (!cancellationReason) errs.cancellationReason = "Please select a reason";
+        if (studentOptions.length > 0 && selectedStudents.length === 0) {
+            errs.selectedStudents = "Please select at least one student";
         }
+        setFieldErrors(errs);
+        if (Object.keys(errs).length > 0) return;
 
-        const response = await fetch(
-            `${API_URL}api/parent/account-profile/cancel-booking`,
-            {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${token}`
-                },
-                body: JSON.stringify({
-                    bookingId: booking?.id,
-                    cancelReason: reason || "Student unavailable"
-                })
-            }
-        );
-
-        // Safely parse JSON (handles empty / invalid JSON)
-        let data = {};
         try {
-            data = await response.json();
+            setLoading(true);
+
+            const token = localStorage.getItem("parentToken");
+            const API_URL = import.meta.env.VITE_API_BASE_URL;
+
+            if (!token) {
+                throw new Error("Authentication token not found. Please login again.");
+            }
+
+            const myHeaders = new Headers();
+            myHeaders.append("Content-Type", "application/json");
+            myHeaders.append("Authorization", `Bearer ${token}`);
+
+            const raw = JSON.stringify({
+                bookingId: booking?.id,
+                studentIds: selectedStudents.map((s) => s.value),
+                cancelReason: cancellationReason?.value,
+                additionalNote: reason,
+                cancellationType: "scheduled",
+                cancelDate: toApiDate(effectiveDate),
+            });
+
+            const response = await fetch(
+                `${API_URL}api/parent/booking/request-to-cancel`,
+                {
+                    method: "POST",
+                    headers: myHeaders,
+                    body: raw,
+                    redirect: "follow",
+                }
+            );
+
+            // Safely parse JSON (handles empty / invalid JSON)
+            let data = {};
+            try {
+                data = await response.json();
+            } catch (err) {
+                data = {};
+            }
+
+            // Handle both HTTP errors AND custom backend status errors
+            if (!response.ok || data?.status === false) {
+                const errorMessage =
+                    data?.message ||
+                    data?.error ||
+                    (Array.isArray(data?.errors) ? data.errors[0] : null) ||
+                    "Something went wrong";
+
+                throw new Error(errorMessage);
+            }
+
+            // Success
+            showSuccess(data?.message || "Cancellation request sent successfully!");
+
+            // Close modal after short delay
+            setTimeout(() => {
+                onClose();
+            }, 2000);
+
         } catch (err) {
-            data = {};
+            showError(err?.message || "Failed to send request");
+        } finally {
+            setLoading(false);
         }
+    };
 
-        // Handle both HTTP errors AND custom backend status errors
-        if (!response.ok || data?.status === false) {
-            const errorMessage =
-                data?.message ||
-                data?.error ||
-                (Array.isArray(data?.errors) ? data.errors[0] : null) ||
-                "Something went wrong";
-
-            throw new Error(errorMessage);
-        }
-
-        // Success
-        showSuccess(data?.message || "Cancellation request sent successfully!");
-
-        // Close modal after short delay
-        setTimeout(() => {
-            onClose();
-        }, 2000);
-
-    } catch (err) {
-        showError(err?.message || "Failed to send request");
-    } finally {
-        setLoading(false);
-    }
-};
     return (
         <div className="fixed inset-0 bg-black/50 z-[99] flex items-center justify-center p-4">
             <div className="bg-white rounded-2xl w-full max-w-lg shadow-xl relative overflow-hidden max-h-[85vh] flex flex-col">
@@ -81,7 +124,6 @@ export default function CancelMembershipModal({ isOpen, onClose, booking }) {
                 </div>
 
                 <div className="md:px-8  px-4 pb-8 space-y-6 mt-7 overflow-y-auto">
-                    {/* Warning Card */}
                     {/* Warning Card */}
                     <div className="bg-red-50 border border-red-100 rounded-xl p-4 space-y-3">
                         <div className="flex items-start gap-3">
@@ -125,6 +167,93 @@ export default function CancelMembershipModal({ isOpen, onClose, booking }) {
                             If your reason is unexceptional, you still may cancel your membership however this would involve a payout of the remaining {booking?.paymentPlan?.duration ? Math.max(0, booking.paymentPlan.duration - 1) : 0} months of your membership.
                         </p>
                     </div>
+
+                    {/* Cancellation Effective Date */}
+                    <div className="space-y-2">
+                        <label className="block text-sm font-bold text-gray-900">Cancellation Effective Date</label>
+                        <input
+                            type="date"
+                            value={effectiveDate}
+                            min={new Date().toISOString().split("T")[0]}
+                            onChange={(e) => {
+                                setEffectiveDate(e.target.value);
+                                if (fieldErrors.effectiveDate) {
+                                    setFieldErrors((prev) => ({ ...prev, effectiveDate: null }));
+                                }
+                            }}
+                            className={`w-full bg-[#F9FAFB] p-3 border ${fieldErrors.effectiveDate ? "border-[#F04438]" : "border-gray-200"} rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm`}
+                        />
+                        {fieldErrors.effectiveDate && (
+                            <p className="text-[#F04438] text-xs mt-1">{fieldErrors.effectiveDate}</p>
+                        )}
+                    </div>
+
+                    {/* Reason for Cancellation (dropdown) */}
+                    <div className="space-y-2">
+                        <label className="block text-sm font-bold text-gray-900">Reason for Cancellation</label>
+                        <Select
+                            options={cancellationReasonOptions}
+                            value={cancellationReason}
+                            onChange={(selected) => {
+                                setCancellationReason(selected);
+                                if (fieldErrors.cancellationReason) {
+                                    setFieldErrors((prev) => ({ ...prev, cancellationReason: null }));
+                                }
+                            }}
+                            placeholder="Select a reason"
+                            classNamePrefix="react-select"
+                            styles={{
+                                control: (base) => ({
+                                    ...base,
+                                    backgroundColor: "#F9FAFB",
+                                    borderColor: fieldErrors.cancellationReason ? "#F04438" : base.borderColor,
+                                    borderRadius: "0.75rem",
+                                    padding: "2px",
+                                    '&:hover': {
+                                        borderColor: fieldErrors.cancellationReason ? "#F04438" : base.borderColor
+                                    }
+                                })
+                            }}
+                        />
+                        {fieldErrors.cancellationReason && (
+                            <p className="text-[#F04438] text-xs mt-1">{fieldErrors.cancellationReason}</p>
+                        )}
+                    </div>
+
+                    {/* Select Students */}
+                    {studentOptions.length > 0 && (
+                        <div className="space-y-2">
+                            <label className="block text-sm font-bold text-gray-900">Select Students</label>
+                            <Select
+                                isMulti
+                                options={studentOptions}
+                                value={selectedStudents}
+                                onChange={(selected) => {
+                                    setSelectedStudents(selected || []);
+                                    if (fieldErrors.selectedStudents) {
+                                        setFieldErrors((prev) => ({ ...prev, selectedStudents: null }));
+                                    }
+                                }}
+                                placeholder="Select student(s) to cancel"
+                                classNamePrefix="react-select"
+                                styles={{
+                                    control: (base) => ({
+                                        ...base,
+                                        backgroundColor: "#F9FAFB",
+                                        borderColor: fieldErrors.selectedStudents ? "#F04438" : base.borderColor,
+                                        borderRadius: "0.75rem",
+                                        padding: "2px",
+                                        '&:hover': {
+                                            borderColor: fieldErrors.selectedStudents ? "#F04438" : base.borderColor
+                                        }
+                                    })
+                                }}
+                            />
+                            {fieldErrors.selectedStudents && (
+                                <p className="text-[#F04438] text-xs mt-1">{fieldErrors.selectedStudents}</p>
+                            )}
+                        </div>
+                    )}
 
                     {/* Form */}
                     <div className="space-y-2">
