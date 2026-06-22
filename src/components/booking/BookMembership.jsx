@@ -206,78 +206,81 @@ const BookMembership = () => {
         return `${d}/${m}/${y}`;
     };
 
-   useEffect(() => {
-    if (!profile) {
-        setParents([INIT_PARENT()]);
-        setStudents([INIT_STUDENT()]);
-        setEmergency(INIT_EMERGENCY);
-        return;
-    }
+    useEffect(() => {
+        if (!profile) {
+            setParents([INIT_PARENT()]);
+            setStudents([INIT_STUDENT()]);
+            setEmergency(INIT_EMERGENCY);
+            return;
+        }
 
-    const rawParents = profile?.adminMeta?.parents || [];
-    const rawStudents = profile?.adminMeta?.students || [];
+        const rawParents = profile?.adminMeta?.parents || [];
+        const rawStudents = profile?.adminMeta?.students || [];
 
-    const normalizeDOB = (raw) => {
-        if (!raw) return "";
-        return raw.includes("-") ? formatDOBForDisplay(raw) : raw;
-    };
+        const normalizeDOB = (raw) => {
+            if (!raw) return "";
+            return raw.includes("-") ? formatDOBForDisplay(raw) : raw;
+        };
 
-    const normalizedParents = rawParents.map((p) => ({
-        id: p.id ?? Date.now() + Math.random(),
-        parentFirstName: p.parentFirstName || "",
-        parentLastName: p.parentLastName || "",
-        parentEmail: p.parentEmail || "",
-        parentPhoneNumber: p.parentPhoneNumber || p.phoneNumber || "",
-        interestReason: p.interestReason || "",
-        interestReasonOther: p.interestReasonOther || "",
-        relationToChild: p.relationToChild || "",
-        howDidYouHear: p.howDidYouHear || "",
-        isCustomReason: p.isCustomReason || false,
-        starterPackSize: p.starterPackSize || "",
-        emailMessage: "",
-        emailStatus: "",
-    }));
+        const normalizedParents = rawParents.map((p) => ({
+            id: p.id ?? Date.now() + Math.random(),
+            parentFirstName: p.parentFirstName || "",
+            parentLastName: p.parentLastName || "",
+            parentEmail: p.parentEmail || "",
+            parentPhoneNumber: p.parentPhoneNumber || p.phoneNumber || "",
+            interestReason: p.interestReason || "",
+            interestReasonOther: p.interestReasonOther || "",
+            relationToChild: p.relationToChild || "",
+            howDidYouHear: p.howDidYouHear || "",
+            isCustomReason: p.isCustomReason || false,
+            starterPackSize: p.starterPackSize || "",
+            emailMessage: "",
+            emailStatus: "",
+        }));
 
-    const normalizedStudents = rawStudents.map((s) => ({
-        studentFirstName: s.studentFirstName || "",
-        studentLastName: s.studentLastName || "",
-        dateOfBirth: normalizeDOB(s.dateOfBirth || s.dob),
-        age: s.age ?? "",
-        gender: s.gender || "",
-        medicalInformation: s.medicalInformation || s.medicalInfo || "",
-        selectedClassId: s.selectedClassId || null,
-        selectedClassData: s.selectedClassData || null,
-    }));
+        const normalizedStudents = rawStudents.map((s) => ({
+            studentFirstName: s.studentFirstName || "",
+            studentLastName: s.studentLastName || "",
+            dateOfBirth: normalizeDOB(s.dateOfBirth || s.dob),
+            age: s.age ?? "",
+            gender: s.gender || "",
+            medicalInformation: s.medicalInformation || s.medicalInfo || "",
+            selectedClassId: s.selectedClassId || null,
+            selectedClassData: s.selectedClassData || null,
+        }));
 
-    setParents(normalizedParents.length ? normalizedParents : [INIT_PARENT()]);
-    setStudents(normalizedStudents.length ? normalizedStudents : [INIT_STUDENT()]);
+        setParents(normalizedParents.length ? normalizedParents : [INIT_PARENT()]);
+        setStudents(normalizedStudents.length ? normalizedStudents : [INIT_STUDENT()]);
 
-    const emergencyContact = profile?.adminMeta?.emergency;
-    if (emergencyContact) {
-        const activeParent = normalizedParents[0];
-        const isSame =
-            !!activeParent &&
-            activeParent.parentFirstName?.trim() === emergencyContact.emergencyFirstName?.trim() &&
-            activeParent.parentLastName?.trim() === emergencyContact.emergencyLastName?.trim() &&
-            activeParent.parentPhoneNumber?.trim() === emergencyContact.emergencyPhoneNumber?.trim();
+        const emergencyContact = profile?.adminMeta?.emergency;
+        if (emergencyContact) {
+            const activeParent = normalizedParents[0];
+            const isSame =
+                !!activeParent &&
+                activeParent.parentFirstName?.trim() === emergencyContact.emergencyFirstName?.trim() &&
+                activeParent.parentLastName?.trim() === emergencyContact.emergencyLastName?.trim() &&
+                activeParent.parentPhoneNumber?.trim() === emergencyContact.emergencyPhoneNumber?.trim();
 
-        setEmergency({
-            sameAsAbove: isSame,
-            emergencyFirstName: emergencyContact.emergencyFirstName || "",
-            emergencyLastName: emergencyContact.emergencyLastName || "",
-            emergencyPhoneNumber: emergencyContact.emergencyPhoneNumber || "",
-            emergencyRelation: emergencyContact.emergencyRelation || "",
-        });
-    } else {
-        setEmergency(INIT_EMERGENCY);
-    }
-}, [profile]);
+            setEmergency({
+                sameAsAbove: isSame,
+                emergencyFirstName: emergencyContact.emergencyFirstName || "",
+                emergencyLastName: emergencyContact.emergencyLastName || "",
+                emergencyPhoneNumber: emergencyContact.emergencyPhoneNumber || "",
+                emergencyRelation: emergencyContact.emergencyRelation || "",
+            });
+        } else {
+            setEmergency(INIT_EMERGENCY);
+        }
+    }, [profile]);
+
 
     // ── Effects ───────────────────────────────────────────
-   useEffect(() => {
-    fetchVenues();
-    fetchProfileData();
-}, [fetchVenues]);
+
+    useEffect(() => {
+        fetchVenues();
+        fetchProfileData();
+    }, [fetchVenues]);
+
 
     useEffect(() => {
         if (emergency.sameAsAbove && parents[0]) {
@@ -291,6 +294,7 @@ const BookMembership = () => {
             }));
         }
     }, [emergency.sameAsAbove, parents]);
+
 
     useEffect(() => {
         if (hasInitialized.current || !sessionDatesSet.size) return;

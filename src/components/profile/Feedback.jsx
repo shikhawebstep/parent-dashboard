@@ -159,7 +159,7 @@ const Feedback = () => {
                   <td className="p-4 text-sm text-[#282829] font-medium gilory whitespace-nowrap">
                     {item?.assignedAgent ? (
                       <div className="flex items-center gap-1 w-full">
-                        <img src="/assets/Ethan-test1.png" className="w-7" alt="" />
+                        <img src={item?.profile || '/assets/Ethan-test1.png'} className="w-7" alt="" />
                         <span>{renderAgentName(item.assignedAgent)}</span>
                       </div>
                     ) : (
@@ -209,7 +209,7 @@ const Feedback = () => {
                 {item?.assignedAgent ? (
                   <div className="flex items-center gap-2">
                     <img
-                      src="/assets/Ethan-test1.png"
+                      src={item?.profile || "/assets/Ethan-test1.png"}
                       className="w-9 h-9 rounded-full object-cover"
                       alt=""
                     />

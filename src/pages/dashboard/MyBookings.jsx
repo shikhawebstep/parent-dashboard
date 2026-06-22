@@ -2,12 +2,18 @@ import React, { useEffect, useState } from 'react';
 import Loader from '../../components/Loader';
 import EmptyState from '../../components/profile/EmptyState';
 import CancelTrial from '../../components/modals/CancelTrial';
-import RenewPackage from '../../components/modals/RenewPackage'; // ✅ added
+import RenewPackage from '../../components/modals/RenewPackage';
+import ChangePlanModal from '../../components/modals/ChangePlanModal';
+import TransferClassModal from '../../components/modals/TransferClassModal';
+import FreezeMembershipModal from '../../components/modals/FreezeMembershipModal';
 import { showError, showWarning } from '../../../utils/swalHelper'; // ✅ showWarning added
 const MyBookings = () => {
     const [activeTab, setActiveTab] = useState('Upcoming');
     const [cancelModal, setCancelModal] = useState({ open: false, booking: null })
-    const [renewModal, setRenewModal] = useState({ open: false, booking: null }); // ✅ added
+    const [renewModal, setRenewModal] = useState({ open: false, booking: null });
+    const [changePlanModal, setChangePlanModal] = useState({ open: false, booking: null });
+    const [transferModal, setTransferModal] = useState({ open: false, booking: null });
+    const [freezeModal, setFreezeModal] = useState({ open: false, booking: null });
 
     const tabs = ['Upcoming', 'Past', 'Cancelled'];
     const [bookings, setBookings] = useState({
@@ -76,7 +82,6 @@ const MyBookings = () => {
     }, []);
 
     const handleCancelTrial = ({ reason, notes, booking }) => {
-        console.log('Cancel trial:', { reason, notes, bookingId: booking?.id })
         // call your API here
     }
 
@@ -96,6 +101,7 @@ const MyBookings = () => {
 
     const formatBooking = (booking) => {
         const sType = booking?.serviceType?.toLowerCase();
+        
 
         let dateObj = booking?.createdAt ? new Date(booking.createdAt) : null;
         let venue = "-";
@@ -108,7 +114,7 @@ const MyBookings = () => {
             coachName = `${booking.coach.firstName} ${booking.coach.lastName || ''}`.trim();
         }
 
-const student = booking?.students?.find(s => s?.classSchedule || s?.holidayClassSchedules) || booking?.students?.[0];
+        const student = booking?.students?.find(s => s?.classSchedule || s?.holidayClassSchedules) || booking?.students?.[0];
         if (sType === "holiday camp") {
             venue = booking?.holidayVenue?.name || "-";
             address = booking?.holidayVenue?.address || "-";
@@ -193,9 +199,14 @@ const student = booking?.students?.find(s => s?.classSchedule || s?.holidayClass
             address,
             classType,
             coach: coachName,
+            coachProfile: booking.coach?.profile,
             status: booking?.status ?? "-",
             bookingType: booking?.bookingType ?? "-",
             serviceType: sType, // ✅ added
+            paymentPlan: booking?.paymentPlan,
+            payments: booking?.payments,
+            venueData:booking?.venuePlans,
+            freezeBooking: booking?.freezeBooking
         };
     };
 
@@ -290,7 +301,7 @@ const student = booking?.students?.find(s => s?.classSchedule || s?.holidayClass
                                                 {
                                                     formatted.coach.length ? (
 
-                                                        <div className="flex gap-2 items-center"><img src="/assets/Ethan-test1.png" className='w-8' alt="" />{formatted.coach}</div>
+                                                        <div className="flex gap-2 items-center"><img src={"/assets/Ethan-test1.png"} className='w-8' alt="" />{formatted.coach}</div>
                                                     ) : (
                                                         <span>
                                                             -
@@ -303,14 +314,10 @@ const student = booking?.students?.find(s => s?.classSchedule || s?.holidayClass
 
                                         {/* Action Button */}
                                         <div className="xl:w-[13%] w-full flex flex-wrap gap-4 justify-end">
-                                            {formatted.status === 'completed' ? (
+                                            {formatted.status === 'completed' && (
                                                 <button onClick={() => setRenewModal({ open: true, booking })} // ✅ wired
                                                     className="bg-[#042C89] text-white w-full  px-2 2xl:px-4 py-2.5 2xl:py-3 rounded-[12px] font-semibold 2xl:text-sm md:text-[12px] text-[14px] hover:bg-[#032066] transition-colors">
                                                     Renew Package
-                                                </button>
-                                            ) : (
-                                                <button className="bg-[#FFAB00] text-white w-full 2xl:px-8 px-4 py-2.5 2xl:py-3 rounded-[12px] font-semibold 2xl:text-sm md:text-[12px] text-[14px] hover:bg-[#e69500] transition-colors ">
-                                                    Pending
                                                 </button>
                                             )}
                                             {formatted.bookingType === "free" && (
@@ -328,6 +335,35 @@ const student = booking?.students?.find(s => s?.classSchedule || s?.holidayClass
 
                                             )}
 
+                                            {formatted.serviceType === "weekly class membership" && (
+                                                <>
+                                                    <button
+                                                        onClick={() => setChangePlanModal({ open: true, booking })}
+                                                        className="bg-[#042C89] text-white w-full px-2 2xl:px-4 py-2.5 2xl:py-3 rounded-[12px] font-semibold 2xl:text-sm md:text-[12px] text-[14px] hover:bg-[#032066] transition-colors"
+                                                    >
+                                                        Change Plan
+                                                    </button>
+                                                    <button
+                                                        onClick={() => setTransferModal({ open: true, booking })}
+                                                        className="bg-[#237FEA] text-white w-full px-2 2xl:px-4 py-2.5 2xl:py-3 rounded-[12px] font-semibold 2xl:text-sm md:text-[12px] text-[14px] hover:bg-[#1b62b7] transition-colors"
+                                                    >
+                                                        Transfer Class
+                                                    </button>
+                                                    {!formatted?.freezeBooking &&
+                                                        (formatted?.status === "active" ||
+                                                            (formatted?.status === "request_to_cancel")) &&
+                                                        !(formatted?.paymentPlan?.duration === 1 &&
+                                                            formatted?.paymentPlan?.interval === "Month") && 
+                                                        formatted?.payments?.[0]?.paymentStatus === "paid" && (
+                                                            <button
+                                                                onClick={() => setFreezeModal({ open: true, booking })}
+                                                                className="bg-[#0DD180] text-white w-full px-2 2xl:px-4 py-2.5 2xl:py-3 rounded-[12px] font-semibold 2xl:text-sm md:text-[12px] text-[14px] hover:bg-[#0aa665] transition-colors"
+                                                            >
+                                                                Freeze Membership
+                                                            </button>
+                                                        )}
+                                                </>
+                                            )}
                                             {formatted.serviceType === "birthday party" && ( // ✅ added
                                                 <button
                                                     onClick={handleBirthdayPartyCancel}
@@ -346,6 +382,12 @@ const student = booking?.students?.find(s => s?.classSchedule || s?.holidayClass
                     <EmptyState />
                 )}
 
+                <ChangePlanModal
+                    isOpen={changePlanModal.open}
+                    onClose={() => setChangePlanModal({ open: false, booking: null })}
+                    booking={changePlanModal.booking}
+                    onSuccess={fetchBooking}
+                />
                 <CancelTrial
                     isOpen={cancelModal.open}
                     onClose={() => setCancelModal({ open: false, booking: null })}
@@ -356,7 +398,19 @@ const student = booking?.students?.find(s => s?.classSchedule || s?.holidayClass
                     isOpen={renewModal.open}
                     onClose={() => setRenewModal({ open: false, booking: null })}
                     booking={renewModal.booking}
-                    onSuccess={fetchBooking} // ✅ refresh bookings list after renew
+                    onSuccess={fetchBooking}
+                />
+                <TransferClassModal
+                    isOpen={transferModal.open}
+                    onClose={() => setTransferModal({ open: false, booking: null })}
+                    booking={transferModal.booking}
+                    onSuccess={fetchBooking}
+                />
+                <FreezeMembershipModal
+                    isOpen={freezeModal.open}
+                    onClose={() => setFreezeModal({ open: false, booking: null })}
+                    booking={freezeModal.booking}
+                    onSuccess={fetchBooking}
                 />
             </div>
         </div>
