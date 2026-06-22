@@ -31,6 +31,22 @@ export const showSuccess = (title, text = '') => {
     });
 };
 
+/**
+ * Show an Error Toast Notification
+ * @param {string} title 
+ * @param {string} [text] 
+ */
+export const showErrorToast = (title, text = '') => {
+    return Toast.fire({
+        icon: 'error',
+        title: title,
+        text: text,
+        customClass: {
+            popup: 'swal-toast-custom'
+        }
+    });
+};
+
 // --- Modal Configuration (Error, Warning, Confirm) ---
 const Modal = Swal.mixin({
     customClass: {
@@ -118,6 +134,7 @@ export const showLoading = (title, html) => {
 export default {
     showSuccess,
     showError,
+    showErrorToast,
     showWarning,
     showConfirm,
     showLoading,

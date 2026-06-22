@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Loader from '../../components/Loader';
 import EmptyState from '../../components/profile/EmptyState';
 import CancelTrial from '../../components/modals/CancelTrial';
@@ -6,8 +7,9 @@ import RenewPackage from '../../components/modals/RenewPackage';
 import ChangePlanModal from '../../components/modals/ChangePlanModal';
 import TransferClassModal from '../../components/modals/TransferClassModal';
 import FreezeMembershipModal from '../../components/modals/FreezeMembershipModal';
-import { showError, showWarning } from '../../../utils/swalHelper'; // ✅ showWarning added
+import { showError, showWarning, showConfirm, showSuccess } from '../../../utils/swalHelper'; // ✅ showWarning added
 const MyBookings = () => {
+    const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState('Upcoming');
     const [cancelModal, setCancelModal] = useState({ open: false, booking: null })
     const [renewModal, setRenewModal] = useState({ open: false, booking: null });
@@ -81,9 +83,83 @@ const MyBookings = () => {
         fetchBooking();
     }, []);
 
-    const handleCancelTrial = ({ reason, notes, booking }) => {
-        // call your API here
-    }
+  
+
+    const handleCancelCamp = async (booking) => {
+        const result = await showConfirm(
+            "Cancel Camp",
+            "Are you sure you want to cancel this holiday camp?",
+            "Yes, cancel it!"
+        );
+
+        if (result.isConfirmed) {
+            setLoading(true);
+            try {
+                const token = localStorage.getItem("parentToken");
+                const API_URL = import.meta.env.VITE_API_BASE_URL;
+
+                const response = await fetch(`${API_URL}api/parent/holiday/cancel/${booking.id}`, {
+                    method: "PATCH",
+                    headers: {
+                        "Authorization": `Bearer ${token}`,
+                        "Content-Type": "application/json"
+                    }
+                });
+
+                let data = {};
+                try {
+                    data = await response.json();
+                } catch (e) {
+                    // ignore
+                }
+
+                if (!response.ok) {
+                    throw new Error(data?.message || "Failed to cancel holiday camp");
+                }
+
+                showSuccess(data?.message || "Camp Cancelled successfully");
+                fetchBooking();
+            } catch (error) {
+                showError(error?.message || "Something went wrong");
+            } finally {
+                setLoading(false);
+            }
+        }
+    };
+
+    const handleCancelTrial = async ({ reason, notes, booking }) => {
+        setLoading(true);
+        try {
+            const token = localStorage.getItem("parentToken");
+            const API_URL = import.meta.env.VITE_API_BASE_URL;
+
+            const response = await fetch(`${API_URL}api/parent/booking-update/cancel-trial`, {
+                method: "POST",
+                headers: {
+                    "Authorization": `Bearer ${token}`,
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    bookingId: booking.id,
+                    cancelReason: reason,
+                    additionalNote: notes
+                })
+            });
+
+            let data = {};
+            try { data = await response.json(); } catch (e) { }
+
+            if (!response.ok) throw new Error(data?.message || "Failed to cancel trial");
+
+            showSuccess(data?.message || "Trial cancelled successfully");
+            setCancelModal({ open: false, booking: null });
+            fetchBooking();
+        } catch (error) {
+            showError(error?.message || "Something went wrong");
+        } finally {
+            setLoading(false);
+        }
+    };
 
 
     // Simple filter simulation (since data is static, mostly showing same list or filtering by logic if needed)
@@ -101,7 +177,7 @@ const MyBookings = () => {
 
     const formatBooking = (booking) => {
         const sType = booking?.serviceType?.toLowerCase();
-        
+
 
         let dateObj = booking?.createdAt ? new Date(booking.createdAt) : null;
         let venue = "-";
@@ -205,7 +281,7 @@ const MyBookings = () => {
             serviceType: sType, // ✅ added
             paymentPlan: booking?.paymentPlan,
             payments: booking?.payments,
-            venueData:booking?.venuePlans,
+            venueData: booking?.venuePlans,
             freezeBooking: booking?.freezeBooking
         };
     };
@@ -327,7 +403,7 @@ const MyBookings = () => {
                                                         className="bg-red-500 block text-white w-full 2xl:px-8 px-4 py-2.5 2xl:py-3 rounded-[12px] font-semibold 2xl:text-sm md:text-[12px] text-[14px] hover:bg-[#e69500] transition-colors ">
                                                         Cancel Trial
                                                     </button>
-                                                    <button className="bg-[#042C89] text-white w-full  px-2 2xl:px-4 py-2.5 2xl:py-3 rounded-[12px] font-semibold 2xl:text-sm md:text-[12px] text-[14px] hover:bg-[#032066] transition-colors">
+                                                    <button onClick={() => navigate("/book-membership", { state: { booking } })} className="bg-[#042C89] text-white w-full  px-2 2xl:px-4 py-2.5 2xl:py-3 rounded-[12px] font-semibold 2xl:text-sm md:text-[12px] text-[14px] hover:bg-[#032066] transition-colors">
                                                         Book Membership
                                                     </button>
 
@@ -353,7 +429,7 @@ const MyBookings = () => {
                                                         (formatted?.status === "active" ||
                                                             (formatted?.status === "request_to_cancel")) &&
                                                         !(formatted?.paymentPlan?.duration === 1 &&
-                                                            formatted?.paymentPlan?.interval === "Month") && 
+                                                            formatted?.paymentPlan?.interval === "Month") &&
                                                         formatted?.payments?.[0]?.paymentStatus === "paid" && (
                                                             <button
                                                                 onClick={() => setFreezeModal({ open: true, booking })}
@@ -370,6 +446,14 @@ const MyBookings = () => {
                                                     className="bg-red-500 block text-white w-full 2xl:px-8 px-4 py-2.5 2xl:py-3 rounded-[12px] font-semibold 2xl:text-sm md:text-[12px] text-[14px] hover:bg-red-600 transition-colors"
                                                 >
                                                     Cancel
+                                                </button>
+                                            )}
+                                            {formatted.serviceType === "holiday camp" && formatted.status !== "cancelled" && (
+                                                <button
+                                                    onClick={() => handleCancelCamp(booking)}
+                                                    className="bg-red-500 block text-white w-full 2xl:px-8 px-4 py-2.5 2xl:py-3 rounded-[12px] font-semibold 2xl:text-sm md:text-[12px] text-[14px] hover:bg-red-600 transition-colors"
+                                                >
+                                                    Cancel Camp
                                                 </button>
                                             )}
                                         </div>

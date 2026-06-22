@@ -1,5 +1,7 @@
 import { useState, useRef, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import { X, ChevronLeft, ChevronRight, ChevronDown } from "lucide-react";
+import { showErrorToast, showError, showSuccess } from "../../../utils/swalHelper";
 import { motion, AnimatePresence } from "framer-motion";
 import Select from "react-select";
 import PhoneNumberInput from "../../commom/PhoneNumberInput";
@@ -41,20 +43,41 @@ const sizeOptions = [
 
 // ── Inits ─────────────────────────────────────────────────
 const INIT_STUDENT = () => ({
-    studentFirstName: "", studentLastName: "", dateOfBirth: "", age: "",
-    gender: "", medicalInformation: "", selectedClassId: null, selectedClassData: null,
+    studentFirstName: "",
+    studentLastName: "",
+    dateOfBirth: "",
+    age: null,
+    gender: "",
+    medicalInformation: "",
+    selectedClassId: null,
+    selectedClassData: null,
+    error: null,
 });
+
 const INIT_PARENT = () => ({
-    id: Date.now() + Math.random(), parentFirstName: "", parentLastName: "",
-    parentEmail: "", parentPhoneNumber: "", interestReason: "",
-    interestReasonOther: "", relationToChild: "", howDidYouHear: "",
-    isCustomReason: false, starterPackSize: "",
-    emailMessage: "", emailStatus: "",
+    id: Date.now() + Math.random(),
+    parentFirstName: "",
+    parentLastName: "",
+    parentEmail: "",
+    parentPhoneNumber: "",
+    interestReason: "",
+    interestReasonOther: "",
+    relationToChild: "",
+    howDidYouHear: "",
+    isCustomReason: false,
+    starterPackSize: "",
+    emailMessage: "",
+    emailStatus: "",
 });
+
 const INIT_EMERGENCY = {
-    sameAsAbove: false, emergencyFirstName: "", emergencyLastName: "",
-    emergencyPhoneNumber: "", emergencyRelation: "",
+    sameAsAbove: false,
+    emergencyFirstName: "",
+    emergencyLastName: "",
+    emergencyPhoneNumber: "",
+    emergencyRelation: "",
 };
+
 const INIT_PAYMENT = {
     email: "", account_holder_name: "", firstName: "", lastName: "",
     branch_code: "", account_number: "", line1: "", city: "",
@@ -62,7 +85,7 @@ const INIT_PAYMENT = {
 };
 
 // ── Small helpers ─────────────────────────────────────────
-const Err = ({ k, e }) => e[k] ? <p className="text-red-500 text-sm mt-1 ml-1">{e[k]}</p> : null;
+const Err = ({ k, e }) => e[k] ? <p className="text-red-500 text-sm mt-1 ml-1 font-medium">{e[k]}</p> : null;
 
 const fc = (k, e) =>
     `w-full mt-2 border rounded-xl px-4 py-3 text-base focus:outline-none ${e[k] ? "border-red-500 bg-red-50" : "border-gray-300"}`;
@@ -96,11 +119,13 @@ const formatLocalDate = (date) => {
 
 // ── Component ─────────────────────────────────────────────
 const BookMembership = () => {
-    const token = localStorage.getItem("adminToken");
+    const token = localStorage.getItem("parentToken");
     const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
     const { fetchVenues, venues } = useCommon();
     const { profile, fetchProfileData } = useProfile();
+    const location = useLocation();
+    const booking = location.state?.booking;
 
     // ── State ─────────────────────────────────────────────
     const [fe, setFe] = useState({});
@@ -267,6 +292,7 @@ const BookMembership = () => {
                 emergencyLastName: emergencyContact.emergencyLastName || "",
                 emergencyPhoneNumber: emergencyContact.emergencyPhoneNumber || "",
                 emergencyRelation: emergencyContact.emergencyRelation || "",
+                id: emergencyContact.id || "",
             });
         } else {
             setEmergency(INIT_EMERGENCY);
@@ -280,6 +306,122 @@ const BookMembership = () => {
         fetchVenues();
         fetchProfileData();
     }, [fetchVenues]);
+
+    useEffect(() => {
+        const fetchDetails = async () => {
+            if (!booking?.serviceType || !booking?.id) return;
+            try {
+                const parentToken = localStorage.getItem("parentToken");
+                const serviceType = (booking.serviceType.trim() || "")
+                    .replace(/\s+/g, "")
+                    .toLowerCase();
+
+                const formattedServices = (service) => {
+                    const serviceMap = {
+                        "weeklyclassmembership": "weekly",
+                        "weeklyclasstrial": "weekly",
+                        "onetoone": "onetoone",
+                        "birthdayparty": "birthday",
+                        "holidaycamp": "holiday",
+                    };
+                    return serviceMap[service] || service;
+                };
+
+                const response = await fetch(
+                    `${API_BASE_URL}api/parent/account-profile/preview?serviceType=${formattedServices(serviceType)}&bookingId=${booking.id}`,
+                    {
+                        method: "GET",
+                        headers: {
+                            "Authorization": `Bearer ${parentToken}`,
+                            "Content-Type": "application/json"
+                        }
+                    }
+                );
+
+                const data = await response.json();
+                if (response.ok) {
+                    const details = data?.data || data;
+
+                    const rawParents = details?.parents || (details?.parent ? [details.parent] : []);
+                    const rawStudents = details?.students || (details?.student ? [details.student] : []);
+
+                    const normalizeDOB = (raw) => {
+                        if (!raw) return "";
+                        return raw.includes("-") ? formatDOBForDisplay(raw) : raw;
+                    };
+
+                    const normalizedParents = rawParents.map((p) => ({
+                        id: p.id ?? Date.now() + Math.random(),
+                        parentFirstName: p.parentFirstName || p.firstName || "",
+                        parentLastName: p.parentLastName || p.lastName || "",
+                        parentEmail: p.parentEmail || p.email || "",
+                        parentPhoneNumber: p.parentPhoneNumber || p.phoneNumber || "",
+                        interestReason: p.interestReason || "",
+                        interestReasonOther: p.interestReasonOther || "",
+                        relationToChild: p.relationToChild || p.relationChild || "",
+                        howDidYouHear: p.howDidYouHear || p.howDidHear || "",
+                        isCustomReason: p.isCustomReason || false,
+                        starterPackSize: p.starterPackSize || "",
+                        emailMessage: "",
+                        emailStatus: "",
+                    }));
+
+                    const normalizedStudents = rawStudents.map((s) => ({
+                        studentFirstName: s.studentFirstName || s.firstName || "",
+                        studentLastName: s.studentLastName || s.lastName || "",
+                        dateOfBirth: normalizeDOB(s.dateOfBirth || s.dob),
+                        age: s.age ?? "",
+                        gender: s.gender || "",
+                        medicalInformation: s.medicalInformation || s.medicalInfo || "",
+                        selectedClassId: s.selectedClassId || s?.classSchedule?.id || null,
+                        selectedClassData: s.selectedClassData || s?.classSchedule || null,
+                    }));
+
+                    if (normalizedParents.length) setParents(normalizedParents);
+                    if (normalizedStudents.length) {
+                        setStudents(normalizedStudents);
+                        setNumberOfStudents(normalizedStudents.length);
+                    }
+
+                    const emergencyContact = details?.emergency;
+                    if (emergencyContact) {
+                        const activeParent = normalizedParents[0];
+                        const isSame =
+                            !!activeParent &&
+                            activeParent.parentFirstName?.trim() === emergencyContact.emergencyFirstName?.trim() &&
+                            activeParent.parentLastName?.trim() === emergencyContact.emergencyLastName?.trim() &&
+                            activeParent.parentPhoneNumber?.trim() === emergencyContact.emergencyPhoneNumber?.trim();
+
+                        setEmergency({
+                            sameAsAbove: isSame,
+                            emergencyFirstName: emergencyContact.emergencyFirstName || "",
+                            emergencyLastName: emergencyContact.emergencyLastName || "",
+                            emergencyPhoneNumber: emergencyContact.emergencyPhoneNumber || "",
+                            emergencyRelation: emergencyContact.emergencyRelation || "",
+                        });
+                    }
+
+                    if (details?.venue) {
+                        const vId = details.venue.id || details.venue.venueId;
+                        const vOption = venues?.capacityVenues?.find(v => v.venueId === vId);
+                        if (vOption) {
+                            setSelectedVenue({
+                                value: vOption.venueId,
+                                label: vOption.venueName,
+                                all: vOption,
+                            });
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error("Error fetching preview details:", error);
+            }
+        };
+
+        if (venues?.capacityVenues?.length > 0) {
+            fetchDetails();
+        }
+    }, [booking, venues, API_BASE_URL]);
 
 
     useEffect(() => {
@@ -522,9 +664,10 @@ const BookMembership = () => {
         setFe(errs);
 
         if (Object.keys(errs).length) {
+            showErrorToast("Validation Error", "Please fill in all required fields highlighted in red.");
             const first = Object.keys(errs)[0];
             setTimeout(() => {
-                if (errs.membershipPlan || errs.selectedDate) infoRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+                if (errs.membershipPlan || errs.selectedDate || errs.venue) infoRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
                 else if (first.startsWith("s")) studentRefs.current[Number(first[1])]?.scrollIntoView({ behavior: "smooth", block: "center" });
                 else if (first.startsWith("p")) parentRefs.current[Number(first[1])]?.scrollIntoView({ behavior: "smooth", block: "center" });
                 else if (first.startsWith("e")) emergencyRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -534,6 +677,8 @@ const BookMembership = () => {
         return true;
     };
 
+
+    console.log('students', students)
     // ── Submit ────────────────────────────────────────────
     const handleSubmit = async () => {
         setIsSubmitting(true);
@@ -557,9 +702,10 @@ const BookMembership = () => {
                     medicalInformation: student.medicalInformation || "NA",
                     selectedClassId: Number(student.selectedClassId),
                     initialClassId: student.initialClassId || null,
-                    classScheduleId: student.selectedClassData?.classScheduleId
-                        ? Number(student.selectedClassData.classScheduleId)
+                    classScheduleId: student.selectedClassData?.id || student.selectedClassData?.classScheduleId
+                        ? Number(student.selectedClassData.classScheduleId || student.selectedClassData?.id)
                         : null,
+                    id: student.id || student?.studentId || "",
                 })),
 
                 parents: parents.map((parent) => ({
@@ -586,6 +732,7 @@ const BookMembership = () => {
                     emergencyLastName: emergency.emergencyLastName,
                     emergencyPhoneNumber: emergency.emergencyPhoneNumber,
                     emergencyRelation: emergency.emergencyRelation,
+                    id: emergency.id || "",
                 },
 
                 paymentPlanId: Number(membershipPlan?.value),
@@ -602,7 +749,7 @@ const BookMembership = () => {
                     proRataAmount: Number(pricingBreakdown.finalProRataCost),
                     line1: payment.line1,
                     city: payment.city,
-                    postcode: payment.postalCode,
+                    postCode: payment.postalCode,
                     nameOnCard,
                     cardNumber: cardNumber.replace(/\s/g, ""),
                     expiryDate,
@@ -612,10 +759,11 @@ const BookMembership = () => {
                 },
             };
 
-            const response = await fetch(
-                `${API_URL}/api/admin/book-membership/create/${parentId}`,
+            const APIURL = booking ? `${API_URL}api/parent/booking/start-membership/${booking?.id}` : `${API_URL}api/parent/booking/membership/create/${parentId}`
+
+            const response = await fetch(APIURL,
                 {
-                    method: "POST",
+                    method: booking ? "PUT" : "POST",
                     headers: {
                         "Content-Type": "application/json",
                         Authorization: `Bearer ${token}`,
@@ -632,10 +780,10 @@ const BookMembership = () => {
 
             setIsBooked(true);
             setShowPopup(false);
-            alert(data?.message || "Membership created successfully.");
+            showSuccess("Success", data?.message || "Membership created successfully.");
         } catch (err) {
             console.error(err);
-            alert(err.message || "Something went wrong.");
+            showErrorToast("Error", err.message || "Something went wrong.");
         } finally {
             setIsSubmitting(false);
         }
@@ -679,8 +827,7 @@ const BookMembership = () => {
                                     setSelectedVenue(opt);
                                     setMembershipPlan(null);
                                     setSelectedDate(null);
-                                    setStudents([INIT_STUDENT()]);
-                                    setNumberOfStudents(1);
+                                    setStudents(prev => prev.map(s => ({ ...s, selectedClassId: null, selectedClassData: null, error: null })));
                                     hasInitialized.current = false;
                                 }}
                                 placeholder="Select venue"

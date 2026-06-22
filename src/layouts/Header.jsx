@@ -128,7 +128,7 @@ const Header = ({ onMenuClick }) => {
     };
 
     fetchNotificationList();
-    const intervalId = setInterval(fetchNotificationList, 5000);
+    const intervalId = setInterval(fetchNotificationList, 15000);
     return () => clearInterval(intervalId);
   }, []);
 

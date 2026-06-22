@@ -35,10 +35,7 @@ const ChangePlanModal = ({ isOpen, onClose, booking, onSuccess }) => {
 
   useEffect(() => {
     if (isOpen && booking) {
-      console.log('[ChangePlanModal] booking.venuePlans:', booking.venuePlans);
-      console.log('[ChangePlanModal] booking.venuePlans.paymentGroups:', booking.venuePlans?.paymentGroups);
-      console.log('[ChangePlanModal] booking.paymentPlan (currently active):', booking.paymentPlan);
-
+   
       const parent = booking.parents?.[0] || {};
       const fullName = `${parent.parentFirstName || ''} ${parent.parentLastName || ''}`.trim();
 
@@ -51,7 +48,6 @@ const ChangePlanModal = ({ isOpen, onClose, booking, onSuccess }) => {
       }));
 
       if (booking.paymentPlan && !membershipPlan) {
-        console.log('[ChangePlanModal] pre-selecting current plan:', booking.paymentPlan);
         setMembershipPlan({
           value: booking.paymentPlan.id,
           label: booking.paymentPlan.title,
@@ -108,15 +104,15 @@ const ChangePlanModal = ({ isOpen, onClose, booking, onSuccess }) => {
       const payload = {
         newPaymentPlanId: membershipPlan?.value,
         startDate: selectedDate,
-        student: {
-          studentFirstName: studentData.studentFirstName || "",
-          studentLastName: studentData.studentLastName || "",
-          dateOfBirth: studentData.dateOfBirth || "",
-          age: studentData.age || 0,
-          gender: studentData.gender || "",
-          medicalInformation: studentData.medicalInformation || "None",
-          classScheduleId: studentData.classSchedule?.id || null
-        },
+        // student: {
+        //   studentFirstName: studentData.studentFirstName || "",
+        //   studentLastName: studentData.studentLastName || "",
+        //   dateOfBirth: studentData.dateOfBirth || "",
+        //   age: studentData.age || 0,
+        //   gender: studentData.gender || "",
+        //   medicalInformation: studentData.medicalInformation || "None",
+        //   classScheduleId: studentData.classSchedule?.id || null
+        // },
         payment: {
           paymentType: "bank",
           price: pricingBreakdown.nextMonthPayment,

@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { useStep } from "../../../context/StepContext";
 import { showSuccess, showError } from "../../../../utils/swalHelper";
+import { useNavigate } from "react-router-dom";
 
 export default function StepNavigation() {
   const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
   const { nextStep, prevStep, currentStep, STEPS, formData, data } = useStep();
 
@@ -93,6 +95,7 @@ export default function StepNavigation() {
         "Booking Successful 🎉",
         result?.message || "Holiday camp booked successfully"
       );
+      navigate('/bookings')
 
       console.log(result);
     } catch (error) {

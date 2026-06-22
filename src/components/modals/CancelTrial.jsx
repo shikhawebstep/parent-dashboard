@@ -1,5 +1,3 @@
-// components/CancelTrial.jsx
-
 import React, { useState } from 'react'
 import Select from 'react-select'
 
@@ -25,11 +23,7 @@ const selectStyles = {
   option: (base, state) => ({
     ...base,
     fontSize: '14px',
-    backgroundColor: state.isSelected
-      ? '#042C89'
-      : state.isFocused
-      ? '#EAF0FF'
-      : 'white',
+    backgroundColor: state.isSelected ? '#042C89' : state.isFocused ? '#EAF0FF' : 'white',
     color: state.isSelected ? 'white' : '#282829',
     cursor: 'pointer',
   }),
@@ -41,14 +35,21 @@ const selectStyles = {
 const CancelTrial = ({ isOpen, onClose, onConfirm, booking }) => {
   const [reason, setReason] = useState(null)
   const [notes, setNotes] = useState('')
+  const [selectedStudent, setSelectedStudent] = useState(null)
 
   if (!isOpen) return null
 
+  const studentOptions = (booking?.students || []).map((s) => ({
+    value: s.id,
+    label: `${s.firstName} ${s.lastName || ''}`.trim(),
+  }))
+
   const handleConfirm = () => {
-    if (!reason) return
-    onConfirm({ reason: reason.value, notes, booking })
+    if (!reason || !selectedStudent) return
+    onConfirm({ reason: reason.value, notes, booking, studentId: selectedStudent.value })
     setReason(null)
     setNotes('')
+    setSelectedStudent(null)
     onClose()
   }
 
@@ -56,7 +57,6 @@ const CancelTrial = ({ isOpen, onClose, onConfirm, booking }) => {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
       <div className="bg-white rounded-[24px] w-[90%] max-w-md p-6 relative">
 
-        {/* Header */}
         <button
           onClick={onClose}
           className="absolute top-4 left-4 text-gray-500 hover:text-gray-800 text-xl font-semibold"
@@ -67,7 +67,23 @@ const CancelTrial = ({ isOpen, onClose, onConfirm, booking }) => {
           Cancel Free Trial
         </h2>
 
-        {/* Reason Dropdown */}
+        {/* Student */}
+        <div className="mb-4">
+          <label className="block text-[14px] font-semibold text-[#282829] mb-2">
+            Select Student
+          </label>
+          <Select
+            options={studentOptions}
+            value={selectedStudent}
+            onChange={setSelectedStudent}
+            placeholder="Select a student"
+            styles={selectStyles}
+            menuPortalTarget={document.body}
+            menuPosition="fixed"
+          />
+        </div>
+
+        {/* Reason */}
         <div className="mb-4">
           <label className="block text-[14px] font-semibold text-[#282829] mb-2">
             Reason for Cancellation
@@ -96,11 +112,10 @@ const CancelTrial = ({ isOpen, onClose, onConfirm, booking }) => {
           />
         </div>
 
-        {/* Button */}
         <div className="flex justify-end">
           <button
             onClick={handleConfirm}
-            disabled={!reason}
+            disabled={!reason || !selectedStudent}
             className="bg-[#FF5C5C] disabled:opacity-50 text-white px-8 py-3 rounded-[12px] text-[14px] font-bold border-b-4 border-[#e04040] hover:bg-[#e84d4d] transition-colors"
           >
             Cancel Trial
