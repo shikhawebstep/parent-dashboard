@@ -76,9 +76,15 @@ const BookingCard = ({ booking, onSeeDetails }) => {
     const renderField = (label, value) => (
         <div>
             <p className="text-[#717073] font-medium 2xl:text-sm text-xs">{label}</p>
-            <p className="mt-1 text-[#282829] font-semibold text-xs 2xl:text-[16px] truncate">
-                {safeValue(value)}
-            </p>
+            <div className="group relative">
+                <p className="mt-1 text-[#282829] font-semibold text-xs 2xl:text-[16px] truncate">
+                    {safeValue(value)}
+                </p>
+
+                <div className="absolute left-0 top-full z-50 hidden group-hover:block bg-black text-white text-xs rounded px-2 py-1 max-w-xs break-words">
+                    {safeValue(value)}
+                </div>
+            </div>
         </div>
     );
 
@@ -159,7 +165,7 @@ const BookingCard = ({ booking, onSeeDetails }) => {
                                         booking?.payments?.some(
                                             (payment) => payment?.paymentType === "accesspaysuite"
                                         )
-                                            ? "Contact"
+                                            ? "Contract ID"
                                             : "KGo/Cardless ID",
                                         booking?.payments?.some(
                                             (payment) => payment?.paymentType === "accesspaysuite"
@@ -183,7 +189,17 @@ const BookingCard = ({ booking, onSeeDetails }) => {
                                             return `${filled ?? 0} / ${total}`;
                                         })()
                                     )}
-                                    {renderField("Booking Source", getBookingSource(booking))}
+                                    {renderField("Booking Source", (() => {
+                                        const source = booking?.source || booking?.marketingChannel || booking?.leads?.source;
+                                        const adminName = safeName(
+                                            booking?.bookedByAdmin?.firstName,
+                                            booking?.bookedByAdmin?.lastName
+                                        );
+                                        if (adminName !== "-" && source) return `${adminName} (${source})`;
+                                        if (adminName !== "-") return adminName;
+                                        if (source) return source;
+                                        return "-";
+                                    })())}
                                 </>
                             )}
                             {(booking?.serviceType === "weekly class trial" && booking?.bookingType == "free") && (
@@ -203,7 +219,17 @@ const BookingCard = ({ booking, onSeeDetails }) => {
                                     {renderField("Trial Attempt", safeValue(booking?.attempt))}
                                     {renderField("Date Of Booking", safeDate(booking?.createdAt))}
 
-                                    {renderField("Booking Source", getBookingSource(booking))}
+                                    {renderField("Booking Source", (() => {
+                                        const source = booking?.source || booking?.marketingChannel || booking?.leads?.source;
+                                        const adminName = safeName(
+                                            booking?.bookedByAdmin?.firstName,
+                                            booking?.bookedByAdmin?.lastName
+                                        );
+                                        if (adminName !== "-" && source) return `${adminName} (${source})`;
+                                        if (adminName !== "-") return adminName;
+                                        if (source) return source;
+                                        return "-";
+                                    })())}
                                 </>
                             )}
                             {(booking?.serviceType === "weekly class trial" && booking?.bookingType == "waiting list") && (
@@ -219,9 +245,19 @@ const BookingCard = ({ booking, onSeeDetails }) => {
                                         booking?.classSchedule?.venue?.name || booking?.venue?.name
                                     )}
                                     {renderField("ID", booking?.bookingId || '-')}
-                                    {renderField("Address", safePrice(booking?.venue?.address))}
+                                    {renderField("Address", safeValue(booking?.venue?.address || booking?.classSchedule?.venue?.address))}
                                     {renderField("Date Of Booking", safeDate(booking?.createdAt))}
-                                    {renderField("Booking Source", getBookingSource(booking))}
+                                    {renderField("Booking Source", (() => {
+                                        const source = booking?.source || booking?.marketingChannel || booking?.leads?.source;
+                                        const adminName = safeName(
+                                            booking?.bookedByAdmin?.firstName,
+                                            booking?.bookedByAdmin?.lastName
+                                        );
+                                        if (adminName !== "-" && source) return `${adminName} (${source})`;
+                                        if (adminName !== "-") return adminName;
+                                        if (source) return source;
+                                        return "-";
+                                    })())}
                                 </>
                             )}
 
@@ -243,7 +279,17 @@ const BookingCard = ({ booking, onSeeDetails }) => {
                                         "Coach",
                                         safeName(booking?.coach?.firstName, booking?.coach?.lastName)
                                     )}
-                                    {renderField("Booking Source", getBookingSource(booking))}
+                                    {renderField("Booking Source", (() => {
+                                        const source = booking?.source || booking?.marketingChannel || booking?.leads?.source;
+                                        const adminName = safeName(
+                                            booking?.bookedByAdmin?.firstName,
+                                            booking?.bookedByAdmin?.lastName
+                                        );
+                                        if (adminName !== "-" && source) return `${adminName} (${source})`;
+                                        if (adminName !== "-") return adminName;
+                                        if (source) return source;
+                                        return "-";
+                                    })())}
                                 </>
                             )}
 
@@ -266,12 +312,22 @@ const BookingCard = ({ booking, onSeeDetails }) => {
                                         "Date of Party",
                                         formatDate(booking?.leads?.partyDate || booking?.date)
                                     )}
-                                    {renderField("Venue", booking?.location)}
+                                    {renderField("Location", booking?.location)}
                                     {renderField(
                                         "Coach",
                                         safeName(booking?.coach?.firstName, booking?.coach?.lastName)
                                     )}
-                                    {renderField("Booking Source", getBookingSource(booking))}
+                                    {renderField("Booking Source", (() => {
+                                        const source = booking?.source || booking?.marketingChannel || booking?.leads?.source;
+                                        const adminName = safeName(
+                                            booking?.bookedByAdmin?.firstName,
+                                            booking?.bookedByAdmin?.lastName
+                                        );
+                                        if (adminName !== "-" && source) return `${adminName} (${source})`;
+                                        if (adminName !== "-") return adminName;
+                                        if (source) return source;
+                                        return "-";
+                                    })())}
                                 </>
                             )}
 
@@ -298,7 +354,17 @@ const BookingCard = ({ booking, onSeeDetails }) => {
                                         booking?.holidayVenue?.name
                                     )}
                                     {renderField("Discount", booking?.payments[0]?.discount_amount)}
-                                    {renderField("Booking Source", getBookingSource(booking))}
+                                    {renderField("Booking Source", (() => {
+                                        const source = booking?.source || booking?.marketingChannel || booking?.leads?.source;
+                                        const adminName = safeName(
+                                            booking?.bookedByAdmin?.firstName,
+                                            booking?.bookedByAdmin?.lastName
+                                        );
+                                        if (adminName !== "-" && source) return `${adminName} (${source})`;
+                                        if (adminName !== "-") return adminName;
+                                        if (source) return source;
+                                        return "-";
+                                    })())}
                                 </>
                             )}
 
@@ -312,7 +378,17 @@ const BookingCard = ({ booking, onSeeDetails }) => {
                                     {renderField("Date of Booking", formatDate(booking?.createdAt))}
                                     {renderField("Discount", booking?.discount)}
                                     {renderField("Fulfillment Status", booking?.fulfillment)}
-                                    {renderField("Booking Source", getBookingSource(booking))}
+                                    {renderField("Booking Source", (() => {
+                                        const source = booking?.source || booking?.marketingChannel || booking?.leads?.source;
+                                        const adminName = safeName(
+                                            booking?.bookedByAdmin?.firstName,
+                                            booking?.bookedByAdmin?.lastName
+                                        );
+                                        if (adminName !== "-" && source) return `${adminName} (${source})`;
+                                        if (adminName !== "-") return adminName;
+                                        if (source) return source;
+                                        return "-";
+                                    })())}
                                 </>
                             )}
 
@@ -323,20 +399,20 @@ const BookingCard = ({ booking, onSeeDetails }) => {
 
                         {/* Action Buttons */}
                         <div className="flex flex-wrap mt-5 gap-3">
-                                <button
-                                    onClick={() => {
-                                        if (onSeeDetails) {
-                                            onSeeDetails(booking);
-                                        }
-                                        navigate(`/account-information/see-details?id=${booking?.id}`, {
-                                            state: { booking, activeTab: 'general' }
-                                        })
-                                    }}
-                                    className="md:px-4 md:py-2 px-2 py-1.5 border border-[#042C89] text-[#042C89] rounded-xl lg:text-[16px] text-[14px] font-semibold"
-                                >
-                                    See details
-                                </button>
-                          
+                            <button
+                                onClick={() => {
+                                    if (onSeeDetails) {
+                                        onSeeDetails(booking);
+                                    }
+                                    navigate(`/account-information/see-details?id=${booking?.id}`, {
+                                        state: { booking, activeTab: 'general' }
+                                    })
+                                }}
+                                className="md:px-4 md:py-2 px-2 py-1.5 border border-[#042C89] text-[#042C89] rounded-xl lg:text-[16px] text-[14px] font-semibold"
+                            >
+                                See details
+                            </button>
+
                             {booking?.serviceType !== "weekly class trial" && (
                                 <button
                                     onClick={() => {
@@ -352,8 +428,8 @@ const BookingCard = ({ booking, onSeeDetails }) => {
                                     See payments
                                 </button>
                             )}
-                   
-                            {booking?.serviceType !== "one to one" && booking?.serviceType !== "birthday party" && (
+
+                            {booking?.serviceType !== "one to one" && booking?.serviceType !== "birthday party" &&  booking?.bookingType !== "waiting list" && (
                                 <button
                                     onClick={() => {
                                         if (onSeeDetails) {
@@ -368,7 +444,7 @@ const BookingCard = ({ booking, onSeeDetails }) => {
                                     Attendance
                                 </button>
                             )}
-                           
+
 
                             {booking?.serviceType === "weekly class membership" && (
                                 <button

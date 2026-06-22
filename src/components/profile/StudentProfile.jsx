@@ -241,7 +241,44 @@ const handleSave = async (index) => {
   const parentDisplayName = `${parentFirstName} ${parentLastName}`.trim();
   const relationChild = sidebarInfo?.parents?.[0]?.relationChild?.trim();
   const parentRelation = relationChild ? ` / ${relationChild}` : "";
-  const profilePhoto = sidebarInfo?.parents?.[0]?.profile;
+    const profilePhoto = profile?.accountInfo?.profile;
+
+  const allBookings = Array.isArray(profile?.bookings)
+    ? profile.bookings
+    : profile?.groupedBookings
+      ? Object.values(profile.groupedBookings).flat()
+      : profile?.combinedBookings || [];
+
+  let displayBooking = null;
+  const priorities = [
+    "weekly class membership",
+    "holiday camp",
+    "one to one",
+    "birthday party"
+  ];
+
+  for (const type of priorities) {
+    const found = allBookings?.find(b => b?.serviceType?.toLowerCase() === type);
+    if (found) {
+      displayBooking = found;
+      break;
+    }
+  }
+  if (!displayBooking && allBookings?.length > 0) {
+    displayBooking = allBookings[0];
+  }
+
+  const serviceType = displayBooking?.serviceType?.toLowerCase() || "weekly class membership";
+
+  const formatDate = (dateStr) => {
+    if (!dateStr) return "—";
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return dateStr;
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${day}-${month}-${year}`;
+  };
 
   return (
     <div className="min-h-screen p-5 md:p-0">
@@ -426,7 +463,7 @@ const handleSave = async (index) => {
                   Account Status
                 </h3>
                 <span className="text-black/80 lg:text-[16px] text-[14px] text-[#282829] font-semibold">
-                  {sidebarInfo?.status || "Active"}
+                  {displayBooking?.status || sidebarInfo?.status || "Active"}
                 </span>
               </div>
             </div>
@@ -434,7 +471,7 @@ const handleSave = async (index) => {
             <div className="px-5 py-4 space-y-4">
               {/* Avatar + name */}
               <div className="flex items-center gap-4">
-                <img src={profilePhoto || "/assets/dummy-avatar.png"} alt="Avatar" className="w-20 h-full object-cover" />
+                <img src={profilePhoto || "/assets/dummy-avatar.png"} alt="Avatar" className="w-20 h-20 rounded-full object-cover" />
                 <div>
                   <h4 className="md:text-[24px] 2xl:text-[20px] xl:text-[18px] lg:text-[16px] text-[14px] font-bold leading-tight">
                     Account Holder
@@ -449,45 +486,78 @@ const handleSave = async (index) => {
 
               <SidebarRow label="Venue">
                 <span className="px-2.5 py-0.5 rounded-[6px] bg-[#042C89] text-white text-[12px] font-semibold">
-                  {typeof sidebarInfo.venue === "object"
+                  {displayBooking?.classSchedule?.venue?.name || displayBooking?.venue?.name || displayBooking?.holidayVenue?.name || displayBooking?.location || (typeof sidebarInfo.venue === "object"
                     ? sidebarInfo.venue?.name || sidebarInfo.venue?.area || "London"
-                    : sidebarInfo.venue || "London"}
+                    : sidebarInfo.venue || "London")}
                 </span>
               </SidebarRow>
 
-              <SidebarRow label="Membership Plan" value={sidebarInfo.membershipPlan || "—"} />
-              <SidebarRow label="Membership Start Date" value={sidebarInfo.startDate || "—"} />
-              <SidebarRow label="Membership Tenure" value={sidebarInfo.tenure || "0 days"} />
-              <SidebarRow label="ID" value={sidebarInfo.id || "—"} />
+              {serviceType === "weekly class membership" && (
+                <>
+                  <SidebarRow label="Membership Plan" value={sidebarInfo.membershipPlan || displayBooking?.paymentPlan?.title || "—"} />
+                  <SidebarRow label="Membership Start Date" value={sidebarInfo.startDate || formatDate(displayBooking?.startDate || displayBooking?.createdAt)} />
+                  <SidebarRow label="Membership Tenure" value={sidebarInfo.tenure || "0 days"} />
+                  <SidebarRow label="ID" value={sidebarInfo.id || displayBooking?.id || "—"} />
 
-              <div>
-                <div className="flex justify-between mb-1.5">
-                  <span className="text-white 2xl:text-[20px] xl:text-[18px] lg:text-[16px] text-[14px] font-medium">Progress</span>
-                  <span className="font-semibold text-[#BDC0C3] lg:text-[16px] text-[14px]">{sidebarInfo.progress || 0}%</span>
-                </div>
-                <div className="h-2 bg-white/10 rounded-full overflow-hidden">
-                  <div className="h-full bg-[#0DD180] rounded-full" style={{ width: `${sidebarInfo.progress || 0}%` }} />
-                </div>
-              </div>
+                  <div>
+                    <div className="flex justify-between mb-1.5">
+                      <span className="text-white 2xl:text-[20px] xl:text-[18px] lg:text-[16px] text-[14px] font-medium">Progress</span>
+                      <span className="font-semibold text-[#BDC0C3] lg:text-[16px] text-[14px]">{sidebarInfo.progress || 0}%</span>
+                    </div>
+                    <div className="h-2 bg-white/10 rounded-full overflow-hidden">
+                      <div className="h-full bg-[#0DD180] rounded-full" style={{ width: `${sidebarInfo.progress || 0}%` }} />
+                    </div>
+                  </div>
+                  <hr className="border-white/10" />
+                  <SidebarRow label="Price" value={sidebarInfo.price ? `£${sidebarInfo.price}` : displayBooking?.paymentPlan?.price ? `£${displayBooking.paymentPlan.price}` : "—"} />
+                </>
+              )}
 
-              <hr className="border-white/10" />
+              {serviceType === "holiday camp" && (
+                <>
+                  <SidebarRow label="Camp Name" value={displayBooking?.holidayCamp?.name || "—"} />
+                  <SidebarRow label="Camp Date(s)" value={formatDate(displayBooking?.holidayCamp?.holidayCampDates?.[0]?.startDate || displayBooking?.createdAt)} />
+                  <SidebarRow label="Number of Students" value={displayBooking?.students?.length || 0} />
+                  <SidebarRow label="ID" value={displayBooking?.id || "—"} />
+                  <hr className="border-white/10" />
+                  <SidebarRow label="Price" value={displayBooking?.payments?.[0]?.amount ? `£${displayBooking.payments[0].amount}` : "—"} />
+                </>
+              )}
 
-              <SidebarRow label="Price" value={sidebarInfo.price ? `£${sidebarInfo.price}` : "—"} />
+              {serviceType === "one to one" && (
+                <>
+                  <SidebarRow label="Coach Name" value={`${displayBooking?.coach?.firstName || ""} ${displayBooking?.coach?.lastName || ""}`.trim() || "—"} />
+                  <SidebarRow label="Package" value={displayBooking?.package?.packageName || "—"} />
+                  <SidebarRow label="Number of Lessons" value={displayBooking?.package?.noOfSessions || displayBooking?.package?.noOfLessons || "—"} />
+                  <SidebarRow label="Lessons Remaining" value={displayBooking?.lessonsRemaining ?? "—"} />
+                  <SidebarRow label="ID" value={displayBooking?.id || "—"} />
+                  <hr className="border-white/10" />
+                  <SidebarRow label="Price" value={displayBooking?.payment?.amount ? `£${displayBooking.payment.amount}` : "—"} />
+                  
+                  <div className="mt-4">
+                    <button className="w-full py-2 rounded-[8px] bg-[#0DD180] text-white text-[16px] font-semibold hover:bg-green-600 transition">
+                      Renew Package
+                    </button>
+                  </div>
+                </>
+              )}
+
+              {serviceType === "birthday party" && (
+                <>
+                  <SidebarRow label="Coach Name" value={`${displayBooking?.coach?.firstName || ""} ${displayBooking?.coach?.lastName || ""}`.trim() || "—"} />
+                  <SidebarRow label="Party Package" value={displayBooking?.package?.packageName || "—"} />
+                  <SidebarRow label="Party Date" value={formatDate(displayBooking?.leads?.partyDate || displayBooking?.date)} />
+                  <SidebarRow label="No of Children" value={displayBooking?.students?.length || displayBooking?.noOfChildren || "—"} />
+                  <SidebarRow label="ID" value={displayBooking?.id || "—"} />
+                  <hr className="border-white/10" />
+                  <SidebarRow label="Price Paid" value={displayBooking?.payment?.amount ? `£${displayBooking.payment.amount}` : "—"} />
+                </>
+              )}
             </div>
           </div>
 
           {/* Action buttons */}
-          <div className="space-y-2 mt-4 bg-white rounded-[30px] shadow p-6">
-            <button className="w-full py-2.5 rounded-[10px] border border-[#0DD180] text-[#0DD180] text-[18px] font-semibold hover:bg-[#0DD180]/10 transition">
-              Add to the waiting list
-            </button>
-            <button className="w-full py-2.5 rounded-[10px] border border-gray-200 bg-white text-[18px] font-semibold text-[#282829] hover:bg-gray-50 transition">
-              Transfer Class
-            </button>
-            <button className="w-full py-2.5 rounded-[10px] border border-red-200 text-red-500 text-[18px] font-semibold hover:bg-red-50 transition">
-              Cancel Membership
-            </button>
-          </div>
+         
         </div>
 
       </div>

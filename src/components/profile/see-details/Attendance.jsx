@@ -1,11 +1,8 @@
 // components/Attendance.jsx
 
 import React, { useState } from 'react'
-import { useLocation } from 'react-router-dom'
 
-const Attendance = () => {
-  const { state } = useLocation()
-  const booking = state?.booking
+const Attendance = ({booking, details, loading}) => {
   const attendanceDataMain = booking?.students || []
 
   const [activeTab, setActiveTab] = useState(attendanceDataMain[0]?.id || null)

@@ -18,7 +18,7 @@ const Detail = () => {
         { id: 'general', label: 'General' },
         ...(booking?.serviceType !== "weekly class trial" ? [{ id: 'payments', label: 'History of Payments' }] : []),
         ...(booking?.serviceType === "weekly class membership" ? [{ id: 'credits', label: 'Credits' }] : []),
-        ...(booking?.serviceType !== "one to one" && booking?.serviceType !== "birthday party" ? [{ id: 'attendance', label: 'Attendance' }] : []),
+        ...(booking?.serviceType !== "one to one" && booking?.serviceType !== "birthday party" && booking.bookingType !== "waiting list" ? [{ id: 'attendance', label: 'Attendance' }] : []),
     ];
 
     const formattedServices = (service) => {

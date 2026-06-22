@@ -5,8 +5,8 @@ import SecuritySettings from "../../components/settings/SecuritySettings";
 
 const tabs = [
     { id: "profile", name: "Profile Settings" },
-    { id: "notifications", name: "Notifications" },
-    { id: "security", name: "Security" },
+    // { id: "notifications", name: "Notifications" },
+    // { id: "security", name: "Security" },
 ];
 
 const Settings = () => {

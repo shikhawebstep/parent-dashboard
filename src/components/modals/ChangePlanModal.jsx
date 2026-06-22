@@ -35,7 +35,7 @@ const ChangePlanModal = ({ isOpen, onClose, booking, onSuccess }) => {
 
   useEffect(() => {
     if (isOpen && booking) {
-   
+
       const parent = booking.parents?.[0] || {};
       const fullName = `${parent.parentFirstName || ''} ${parent.parentLastName || ''}`.trim();
 
@@ -98,9 +98,9 @@ const ChangePlanModal = ({ isOpen, onClose, booking, onSuccess }) => {
     try {
       const token = localStorage.getItem("parentToken");
       const API_URL = import.meta.env.VITE_API_BASE_URL;
-      
+
       const studentData = booking?.students?.[0] || {};
-      
+
       const payload = {
         newPaymentPlanId: membershipPlan?.value,
         startDate: selectedDate,
@@ -154,45 +154,46 @@ const ChangePlanModal = ({ isOpen, onClose, booking, onSuccess }) => {
     }
   };
 
-// Number of students on this booking
-const studentCount = booking?.students?.length || 1;
+  // Number of students on this booking
+  const studentCount = booking?.students?.length || 1;
 
-// All available session dates across all terms for this venue
-const sessionDates = (() => {
-  const terms = booking?.venuePlans?.terms || [];
-  const dates = [];
-  terms.forEach(term => {
-    (term.sessionsMap || []).forEach(session => {
-      if (session.sessionDate) dates.push(session.sessionDate);
-    });
-  });
-  console.log('[sessionDates] built from venuePlans.terms:', dates);
-  return dates;
-})();
-
-const paymentPlanOptions = (() => {
-  const groups = booking?.venuePlans?.paymentGroups || [];
-  const currentPlanId = booking?.paymentPlan?.id;
-  const options = [];
-
-  groups.forEach(group => {
-    (group.paymentPlans || []).forEach(plan => {
-      // Only show plans matching the number of students on this booking
-      if (plan.students !== studentCount) return;
-
-      const isCurrent = plan.id === currentPlanId;
-      options.push({
-        value: plan.id,
-        label: `${plan.title} — £${plan.price} (${plan.duration} ${plan.interval}${plan.duration > 1 ? 's' : ''})${isCurrent ? ' (Current Plan)' : ''}`,
-        all: plan,
-        isCurrent
+  // All available session dates across all terms for this venue
+  const sessionDates = (() => {
+    const terms = booking?.venuePlans?.terms || [];
+    const dates = [];
+    terms.forEach(term => {
+      (term.sessionsMap || []).forEach(session => {
+        if (session.sessionDate) dates.push(session.sessionDate);
       });
     });
-  });
+    console.log('[sessionDates] built from venuePlans.terms:', dates);
+    return dates;
+  })();
 
-  console.log('[paymentPlanOptions] filtered for studentCount=', studentCount, options);
-  return options;
-})();
+  const paymentPlanOptions = (() => {
+    const groups = booking?.venuePlans?.paymentGroups || [];
+    const currentPlanId = booking?.paymentPlan?.id;
+    const options = [];
+
+    groups.forEach(group => {
+      (group.paymentPlans || []).forEach(plan => {
+        // Only show plans matching the number of students on this booking
+        if (plan.students !== studentCount) return;
+
+        const isCurrent = plan.id === currentPlanId;
+        options.push({
+          value: plan.id,
+          label: `${plan.title} — £${plan.price} (${plan.duration} ${plan.interval}${plan.duration > 1 ? 's' : ''})${isCurrent ? ' (Current Plan)' : ''}`,
+          all: plan,
+          isCurrent,
+          isDisabled: isCurrent  // ← add this
+        });
+      });
+    });
+
+    console.log('[paymentPlanOptions] filtered for studentCount=', studentCount, options);
+    return options;
+  })();
 
 
   const year = currentDate.getFullYear();
@@ -222,38 +223,38 @@ const paymentPlanOptions = (() => {
   let finalProRataCost = 0;
   let isFullMonthCharge = false;
   let totalAmountToday = 0;
-  
+
   if (selectedDate && membershipPlan) {
-    const parse = (s) => { 
+    const parse = (s) => {
       const parts = s.split("-");
-      if(parts.length === 3) {
-        const [y, m, d] = parts.map(Number); 
-        return new Date(y, m - 1, d); 
+      if (parts.length === 3) {
+        const [y, m, d] = parts.map(Number);
+        return new Date(y, m - 1, d);
       }
       return new Date(s);
     };
-    
+
     const selected = parse(selectedDate);
     selected.setHours(0, 0, 0, 0);
-    
-    const allS = Array.from(sessionDatesSet).map((d) => { 
-      const x = parse(d); 
-      x.setHours(0, 0, 0, 0); 
-      return x; 
+
+    const allS = Array.from(sessionDatesSet).map((d) => {
+      const x = parse(d);
+      x.setHours(0, 0, 0, 0);
+      return x;
     });
-    
+
     const inMonth = allS.filter((d) => d.getMonth() === selected.getMonth() && d.getFullYear() === selected.getFullYear()).sort((a, b) => a - b);
     const first = inMonth[0];
     const isFirstSelected = first && selected.getTime() === first.getTime();
     const remaining = inMonth.filter((d) => d.getTime() >= selected.getTime());
-    
+
     numberOfLessonsProRated = remaining.length;
     const monthlyPrice = Number(price);
     const ppl = Number(priceLesson);
-    
+
     const calculatedProRataCost = Math.min(Number((numberOfLessonsProRated * ppl).toFixed(2)), monthlyPrice);
     isFullMonthCharge = (isFirstSelected && numberOfLessonsProRated >= 3) || calculatedProRataCost >= monthlyPrice;
-    
+
     finalProRataCost = isFullMonthCharge ? monthlyPrice : calculatedProRataCost;
     totalAmountToday = finalProRataCost;
   }
@@ -304,6 +305,7 @@ const paymentPlanOptions = (() => {
               placeholder="Select a plan..."
               classNamePrefix="react-select"
               isClearable
+              isOptionDisabled={(option) => option.isDisabled}  // ← add this
               styles={{
                 control: (base) => ({
                   ...base,
@@ -311,9 +313,12 @@ const paymentPlanOptions = (() => {
                   padding: '4px',
                   borderColor: '#E5E7EB',
                   boxShadow: 'none',
-                  '&:hover': {
-                    borderColor: '#D1D5DB'
-                  }
+                  '&:hover': { borderColor: '#D1D5DB' }
+                }),
+                option: (base, state) => ({
+                  ...base,
+                  opacity: state.isDisabled ? 0.5 : 1,
+                  cursor: state.isDisabled ? 'not-allowed' : 'pointer',
                 })
               }}
             />

@@ -10,31 +10,35 @@ const Section = ({ title, children }) => (
   </div>
 )
 
-const Payment = () => {
-  const { state } = useLocation()
-  const booking = state?.booking
+const Payment = ({ booking, details, loading }) => {
 
-  if (!booking) {
+
+
+  if (!details) {
     return (
       <div className="p-6 text-center bg-white rounded-[30px]">
-        <p className="text-[#3c3c3d] font-medium">No booking details available.</p>
+        <p className="text-[#3c3c3d] font-medium">No details details available.</p>
       </div>
     )
   }
 
-  const { venue, paymentPlan, status, createdAt, id } = booking;
-  const payments = booking?.payments?.length > 0
-    ? booking.payments
-    : booking?.payment
-      ? [booking.payment]
+  const { venue, paymentPlan, status, createdAt, id } = details;
+
+  const payments = details?.payments?.length > 0
+    ? details.payments
+    : details?.payment
+      ? [details.payment]
       : []
 
-  const details = [
-    { label: 'Status', value: status ?? '-' },
-    { label: 'ID', value: id ?? '-' },
-    { label: 'Created', value: createdAt ? new Date(createdAt).toLocaleDateString('en-GB') : '-' },
-    { label: 'Address', value: venue ? `${venue.name}, ${venue.address}` : booking.address || booking?.location },
-    { label: 'Email', value: booking?.parents?.[0]?.parentEmail ?? '-' },
+  const firstPayment = payments[0] || {};
+
+  console.log('firstPayment', firstPayment)
+  const detailss = [
+    { label: 'Status', value: firstPayment?.payment_status ?? firstPayment?.paymentStatus ?? '-' },
+    { label: 'ID', value: firstPayment?.stripe_payment_intent_id ?? firstPayment?.stripePaymentIntentId ?? firstPayment?.gatewayResponse?.Id ?? '-' },
+    { label: 'Created', value: firstPayment?.createdAt ? new Date(firstPayment?.createdAt).toLocaleDateString('en-GB') : '-' },
+    { label: 'Address', value: firstPayment?.billingAddress || '-' },
+    { label: 'Email', value: firstPayment?.email ?? '-' },
   ]
 
   const subscription = {
@@ -47,10 +51,10 @@ const Payment = () => {
 
       {/* Details */}
       <Section title="Details">
-        {details.map((item, i) => (
+        {detailss.map((item, i) => (
           <div
             key={item.label}
-            className={`flex justify-between items-start py-4 text-sm ${i < details.length - 1 ? 'border-b border-gray-100' : ''}`}
+            className={`flex justify-between items-start py-4 text-sm ${i < detailss.length - 1 ? 'border-b border-gray-100' : ''}`}
           >
             <span className="text-[#717073] text-[16px] font-semibold w-32 shrink-0">{item.label}</span>
             <span className="text-[#282829] text-[16px] font-semibold capitalize text-right">{item.value}</span>
@@ -65,13 +69,12 @@ const Payment = () => {
 
 
       {
-        booking.serviceType === "weekly class membership" && (
+        details.serviceType === "weekly class membership" && (
           <Section title="Subscription">
             <div className="flex justify-between items-center">
               <span className="text-[#282829] text-[16px] font-semibold">{subscription.plan}</span>
               <div className="flex items-center gap-3">
                 <span className="text-[#282829] text-[16px] font-semibold">{subscription.price}</span>
-                <button className="text-blue-500 text-[16px] font-semibold hover:text-blue-600">Change</button>
               </div>
             </div>
           </Section>
@@ -109,8 +112,8 @@ const Payment = () => {
                     <td className="px-5 py-3">
                       <div className="flex items-center gap-2">
                         <span className={`w-2 h-2 rounded-full shrink-0 ${failed ? 'bg-red-500' : isPending ? 'bg-yellow-400' : 'bg-green-500'}`} />
-                        <span className="text-[16px] font-semibold text-[#282829]">
-                          {p?.paymentStatus || '-'}
+                        <span className="text-[16px] font-semibold text-[#282829] capitalize">
+                          {status || '-'}
                         </span>
                       </div>
                     </td>

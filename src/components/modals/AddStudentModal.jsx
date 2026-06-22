@@ -133,9 +133,9 @@ const AddStudentModal = ({ isOpen, onClose, selectedBooking }) => {
     try {
         const API_URL = import.meta.env.VITE_API_BASE_URL;
         const res = await fetch(
-            `${API_URL}api/parent/booking-update/student`,
+            `${API_URL}api/parent/booking-update/add-student`,
             {
-                method: "PUT",
+                method: "POST",
                 headers: {
                     "Content-Type": "application/json",
                     Authorization: `Bearer ${token}`,

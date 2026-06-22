@@ -3,16 +3,10 @@
 import React from 'react'
 import { useNavigate } from 'react-router-dom'
 
-const cancelledClasses = [
-  { id: 1, status: 'Acton – 01/06/2023 11:00 – 12:00', reason: 'Injured at home', credit: '04' },
-  { id: 2, status: 'Acton – 01/06/2023 11:00 – 12:00', reason: 'Injured at home', credit: '04' },
-  { id: 3, status: 'Acton – 01/06/2023 11:00 – 12:00', reason: 'Injured at home', credit: '-' },
-  { id: 4, status: 'Acton – 01/06/2023 11:00 – 12:00', reason: 'Weather', credit: '04' },
-  { id: 5, status: 'Acton – 01/06/2023 11:00 – 12:00', reason: 'Weather', credit: '-' },
-]
 
-const Credits = () => {
+const Credits = ({ booking, details, loading }) => {
   const navigate = useNavigate()
+  const cancelledClasses = details?.credits;
 
   return (
     <div className="min-h-screen">
@@ -24,7 +18,7 @@ const Credits = () => {
             onClick={() => navigate(-1)}
             className="text-gray-700 hover:text-gray-900 transition-colors"
           >
-           <img src="/assets/ArrowLeft.png" className='w-6 h-6' alt="" />
+            <img src="/assets/ArrowLeft.png" className='w-6 h-6' alt="" />
           </button>
           <h1 className="text-[24px] font-semibold text-[#282829]">Class Cancelled</h1>
         </div>
@@ -41,7 +35,7 @@ const Credits = () => {
           <tbody>
             {cancelledClasses.map((row) => (
               <tr key={row.id} className="border-t border-gray-100">
-                <td className="px-4 py-4 text-[#282829] text-[16px] font-semibold">{row.status}</td>
+                <td className="px-4 py-4 text-[#282829] text-[16px] font-semibold">{details?.venue?.name + "-" + row.date}</td>
                 <td className="px-4 py-4 text-[#282829] text-[16px] font-semibold">{row.reason}</td>
                 <td className="px-4 py-4 text-[#282829] text-[16px] font-semibold">{row.credit}</td>
               </tr>

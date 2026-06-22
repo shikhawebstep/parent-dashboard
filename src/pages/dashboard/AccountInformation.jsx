@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import Loader from "../../components/Loader";
 import ParentProfile from "../../components/profile/ParentProfile";
 import StudentProfile from "../../components/profile/StudentProfile";
@@ -17,18 +18,12 @@ const tabs = [
 const AccountInformation = () => {
 
   const { fetchProfileData, loading, } = useProfile();
-  const [activeTab, setActiveTab] = useState(() => {
-    const storedTab = localStorage.getItem("activeAccountTab");
-    return storedTab && tabs.some(tab => tab.name === storedTab) ? storedTab : tabs[0].name;
-  });
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTab = searchParams.get("tab") || tabs[0].name;
 
   useEffect(() => {
     fetchProfileData();
   }, []);
-
-  useEffect(() => {
-    localStorage.setItem("activeAccountTab", activeTab);
-  }, [activeTab]);
 
 
   if (loading) {
@@ -43,7 +38,7 @@ const AccountInformation = () => {
         {tabs.map((tab) => (
           <button
             key={tab.name}
-            onClick={() => setActiveTab(tab.name)}
+            onClick={() => setSearchParams({ tab: tab.name })}
             className={`w-max relative flex-1 whitespace-nowrap md:px-4 px-2 2xl:text-[18px] lg:text-[16px] text-[16px] font-semibold md:py-3 py-1.5 rounded-[14px] transition-all ${activeTab === tab.name
               ? "bg-[#042C89] shadow text-white "
               : "text-[#282829] hover:text-[#282829]"

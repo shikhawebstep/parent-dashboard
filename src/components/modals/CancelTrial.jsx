@@ -41,7 +41,7 @@ const CancelTrial = ({ isOpen, onClose, onConfirm, booking }) => {
 
   const studentOptions = (booking?.students || []).map((s) => ({
     value: s.id,
-    label: `${s.firstName} ${s.lastName || ''}`.trim(),
+    label: `${s.studentFirstName} ${s.studentLastName || ''}`.trim(),
   }))
 
   const handleConfirm = () => {

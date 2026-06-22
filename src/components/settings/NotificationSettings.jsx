@@ -74,12 +74,7 @@ const NotificationSettings = () => {
                         icon={Bell}
                         stateKey="emailBookings"
                     />
-                    <NotificationItem
-                        title="Newsletter"
-                        description="Periodic updates about new features and offers."
-                        icon={Mail}
-                        stateKey="emailNewsletter"
-                    />
+                   
                 </div>
             </div>
 
@@ -98,12 +93,7 @@ const NotificationSettings = () => {
                         icon={Smartphone}
                         stateKey="smsBookings"
                     />
-                    <NotificationItem
-                        title="Push Notifications"
-                        description="Real-time alerts directly on your device."
-                        icon={Bell}
-                        stateKey="pushAlerts"
-                    />
+                   
                 </div>
             </div>
 

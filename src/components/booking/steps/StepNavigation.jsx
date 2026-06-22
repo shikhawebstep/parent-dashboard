@@ -38,7 +38,7 @@ export default function StepNavigation() {
         dateOfBirth: student.dateOfBirth,
         age: student.age,
         gender: student.gender,
-        medicalInformation: student.medicalInfo,
+        medicalInformation: student.medicalInformation || student.medicalInfo || "",
         classScheduleId: student.classScheduleId, // ✅ FIXED
       }));
 

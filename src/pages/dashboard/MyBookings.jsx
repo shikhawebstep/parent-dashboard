@@ -83,7 +83,7 @@ const MyBookings = () => {
         fetchBooking();
     }, []);
 
-  
+
 
     const handleCancelCamp = async (booking) => {
         const result = await showConfirm(
@@ -410,6 +410,16 @@ const MyBookings = () => {
                                                 </>
 
                                             )}
+
+                                            <button
+                                                className={`block text-white w-full 2xl:px-8 px-4 py-2.5 capitalize 2xl:py-3 rounded-[12px] font-semibold 2xl:text-sm md:text-[12px] text-[14px] transition-colors ${formatted.status === "pending" ? "bg-yellow-500 hover:bg-yellow-600" :
+                                                        formatted.status === "active" ? "bg-green-500 hover:bg-green-600" :
+                                                            formatted.status === "cancelled" ? "bg-red-500 hover:bg-red-600" :
+                                                                formatted.status === "completed" ? "bg-blue-500 hover:bg-blue-600" :
+                                                                    "bg-gray-400 hover:bg-gray-500"
+                                                    }`}>
+                                                {formatted.status}
+                                            </button>
 
                                             {formatted.serviceType === "weekly class membership" && (
                                                 <>

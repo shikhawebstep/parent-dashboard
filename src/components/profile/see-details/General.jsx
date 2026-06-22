@@ -1,7 +1,9 @@
 import React, { useState } from "react";
 import { ArrowLeft } from "lucide-react";
 import CancelMembershipModal from "../CancelMembershipModal";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
+import { showSuccess, showError, showConfirm } from "../../../../utils/swalHelper";
+import CancelTrial from "../../modals/CancelTrial";
 
 // ── helpers ────────────────────────────────────────────────────────────────
 
@@ -56,10 +58,22 @@ function DetailRow({ label, value }) {
 
 // ── ServiceDetails ─────────────────────────────────────────────────────────
 
-export default function General({ booking: propBooking, details }) {
+export default function General({ booking: propBooking, details, loading: mainLoading }) {
     const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
-    const { state } = useLocation()
-    const booking = propBooking || state?.booking
+    const [cancelModal, setCancelModal] = useState({ open: false, booking: null })
+    const [loading, setLoading] = useState(false);
+    const navigate = useNavigate();
+    const booking = details;
+
+    if (mainLoading) {
+        return (
+            <div className="animate-fadeIn p-6 text-center bg-white rounded-[30px] shadow-sm flex flex-col justify-center items-center min-h-[200px] gap-3">
+                <div className="w-8 h-8 border-4 border-[#237FEA] border-t-transparent rounded-full animate-spin"></div>
+                <p className="text-[#3c3c3d] font-medium">Loading details...</p>
+            </div>
+        );
+    }
+
     if (!booking && !details) {
         return (
             <div className="animate-fadeIn p-6 text-center bg-white rounded-[30px] shadow-sm">
@@ -115,17 +129,92 @@ export default function General({ booking: propBooking, details }) {
     const progressPercent =
         progressTotal > 0 ? Math.round((progressFilled / progressTotal) * 100) : 0;
 
-    const getBookingSource = (b) => {
-        if (b?.source) return b.source;
-        if (b?.marketingChannel) return b.marketingChannel;
-        if (b?.leads?.source) return b.leads.source;
-        const adminName = safeName(
-            b?.bookedByAdmin?.firstName,
-            b?.bookedByAdmin?.lastName,
-            "N/A"
+const getBookingSource = (b) => {
+    const source = b?.source || b?.marketingChannel || b?.lead?.source;
+    const adminName = safeName(
+        b?.bookedByAdmin?.firstName,
+        b?.bookedByAdmin?.lastName,
+        ""
+    );
+    if (adminName && source) return `${adminName} (${source})`;
+    if (adminName) return adminName;
+    if (source) return source;
+    return "N/A";
+};
+    const handleCancelCamp = async (booking) => {
+        const result = await showConfirm(
+            "Cancel Camp",
+            "Are you sure you want to cancel this holiday camp?",
+            "Yes, cancel it!"
         );
-        return adminName !== "N/A" ? adminName : "N/A";
+
+        if (result.isConfirmed) {
+            setLoading(true);
+            try {
+                const token = localStorage.getItem("parentToken");
+                const API_URL = import.meta.env.VITE_API_BASE_URL;
+
+                const response = await fetch(`${API_URL}api/parent/holiday/cancel/${booking.id}`, {
+                    method: "PATCH",
+                    headers: {
+                        "Authorization": `Bearer ${token}`,
+                        "Content-Type": "application/json"
+                    }
+                });
+
+                let data = {};
+                try {
+                    data = await response.json();
+                } catch (e) {
+                    // ignore
+                }
+
+                if (!response.ok) {
+                    throw new Error(data?.message || "Failed to cancel holiday camp");
+                }
+
+                showSuccess(data?.message || "Camp Cancelled successfully");
+            } catch (error) {
+                showError(error?.message || "Something went wrong");
+            } finally {
+                setLoading(false);
+            }
+        }
     };
+
+    const handleCancelTrial = async ({ reason, notes, booking }) => {
+        setLoading(true);
+        try {
+            const token = localStorage.getItem("parentToken");
+            const API_URL = import.meta.env.VITE_API_BASE_URL;
+
+            const response = await fetch(`${API_URL}api/parent/booking-update/cancel-trial`, {
+                method: "POST",
+                headers: {
+                    "Authorization": `Bearer ${token}`,
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    bookingId: booking.id,
+                    cancelReason: reason,
+                    additionalNote: notes
+                })
+            });
+
+            let data = {};
+            try { data = await response.json(); } catch (e) { }
+
+            if (!response.ok) throw new Error(data?.message || "Failed to cancel trial");
+
+            showSuccess(data?.message || "Trial cancelled successfully");
+            setCancelModal({ open: false, booking: null });
+        } catch (error) {
+            showError(error?.message || "Something went wrong");
+        } finally {
+            setLoading(false);
+        }
+    };
+
 
     return (
         <div className="animate-fadeIn">
@@ -368,7 +457,7 @@ export default function General({ booking: propBooking, details }) {
                             })() : (
                                 <div className="flex items-center gap-4">
                                     <img
-                                        src={"/assets/dummy-avatar.png"}
+                                        src={parent?.profile || "/assets/dummy-avatar.png"}
                                         alt="Avatar"
                                         className="w-20 h-20 rounded-full object-cover"
                                     />
@@ -394,7 +483,7 @@ export default function General({ booking: propBooking, details }) {
                                         <DetailRow label="Membership Plan" value={paymentPlan?.title} />
                                         <DetailRow label="Students" value={Array.isArray(booking?.students) ? booking.students.length : null} />
                                         <DetailRow
-                                            label={booking?.payments?.some((payment) => payment?.paymentType === "accesspaysuite") ? "Contact" : "KGo/Cardless ID"}
+                                            label={booking?.payments?.some((payment) => payment?.paymentType === "accesspaysuite") ? "Contract ID" : "KGo/Cardless ID"}
                                             value={booking?.payments?.some((payment) => payment?.paymentType === "accesspaysuite") ? booking?.payments?.find((payment) => payment?.paymentType === "accesspaysuite")?.gatewayResponse?.Contract || "N/A" : booking?.payments?.find((payment) => payment?.goCardlessMandateId)?.goCardlessMandateId || "N/A"}
                                         />
                                         <DetailRow label="Monthly Price" value={safePrice(booking?.paymentPlan?.price, "N/A")} />
@@ -427,7 +516,7 @@ export default function General({ booking: propBooking, details }) {
                                         <DetailRow label="Date Of Trial" value={safeDateLocaleString(booking?.trialDate)} />
                                         <DetailRow label="Students" value={Array.isArray(booking?.students) ? booking.students.length : null} />
                                         <DetailRow label="ID" value={booking?.bookingId || "N/A"} />
-                                        <DetailRow label="Trial Attempt" value={booking?.venue?.address} />
+                                        <DetailRow label="Trial Attempt" value={booking?.attempt} />
                                         <DetailRow label="Date Of Booking" value={safeDateLocaleString(booking?.createdAt)} />
                                         <DetailRow label="Booking Source" value={getBookingSource(booking)} />
                                     </>
@@ -504,13 +593,38 @@ export default function General({ booking: propBooking, details }) {
                                     </>
                                 )}
                             </div>
+                            {
+                                serviceType == "weekly class membership" && (
 
-                            <button
-                                onClick={() => setIsCancelModalOpen(true)}
-                                className="w-full py-3 bg-[#237FEA] rounded-[12px] font-semibold text-white lg:text-[18px] text-[14px] hover:bg-blue-600 transition-colors mt-2"
-                            >
-                                Request to cancel membership
-                            </button>
+                                    <button
+                                        onClick={() => setIsCancelModalOpen(true)}
+                                        className="w-full py-3 bg-[#237FEA] rounded-[12px] font-semibold text-white lg:text-[18px] text-[14px] hover:bg-blue-600 transition-colors mt-2"
+                                    >
+                                        Request to cancel membership
+                                    </button>
+                                )
+                            }
+                            {(serviceType === "weekly class trial" && booking?.bookingType === "free") && (
+                                <>
+
+                                    <button onClick={() => setCancelModal({ open: true, booking })}
+                                        className="bg-red-500 block text-white w-full 2xl:px-8 px-4 py-2.5 2xl:py-3 rounded-[12px] font-semibold 2xl:text-sm md:text-[12px] text-[14px] hover:bg-[#e69500] transition-colors ">
+                                        Cancel Trial
+                                    </button>
+                                    <button onClick={() => navigate("/book-membership", { state: { booking } })} className="bg-[#042C89] text-white w-full  px-2 2xl:px-4 py-2.5 2xl:py-3 rounded-[12px] font-semibold 2xl:text-sm md:text-[12px] text-[14px] hover:bg-[#032066] transition-colors">
+                                        Book Membership
+                                    </button>
+                                </>
+                            )}
+                            {serviceType === "holiday camp" && (
+
+                                <button
+                                    onClick={() => handleCancelCamp(booking)}
+                                    className="bg-red-500 block text-white w-full 2xl:px-8 px-4 py-2.5 2xl:py-3 rounded-[12px] font-semibold 2xl:text-sm md:text-[12px] text-[14px] hover:bg-red-600 transition-colors"
+                                >
+                                    Cancel Camp
+                                </button>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -520,6 +634,13 @@ export default function General({ booking: propBooking, details }) {
                 isOpen={isCancelModalOpen}
                 onClose={() => setIsCancelModalOpen(false)}
                 booking={booking}
+            />
+
+            <CancelTrial
+                isOpen={cancelModal.open}
+                onClose={() => setCancelModal({ open: false, booking: null })}
+                onConfirm={handleCancelTrial}
+                booking={cancelModal.booking}
             />
         </div>
     );
