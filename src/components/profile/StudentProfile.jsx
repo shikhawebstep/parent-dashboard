@@ -110,7 +110,7 @@ const StudentProfile = () => {
   const [editingIndex, setEditingIndex] = useState(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [errors, setErrors] = useState([{}]);
-  const { profile, updateProfile } = useProfile();
+  const { profile, updateProfile, fetchProfileData } = useProfile();
 
   /* ===== LOAD DATA FROM PROFILE ===== */
   useEffect(() => {
@@ -226,6 +226,7 @@ const handleSave = async (index) => {
         if (!res.ok) throw new Error(data?.message || "Update failed");
         showSuccess("Saved", data?.message || "Student updated successfully");
         setEditingIndex(null);
+        fetchProfileData();
     } catch (err) {
         console.error(err);
         showError("Error", err.message || "Something went wrong");

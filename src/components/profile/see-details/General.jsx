@@ -184,7 +184,7 @@ const getBookingSource = (b) => {
         }
     };
 
-    const handleCancelTrial = async ({ reason, notes, booking }) => {
+    const handleCancelTrial = async ({ reason, notes, booking, studentIds }) => {
         setLoading(true);
         try {
             const token = localStorage.getItem("parentToken");
@@ -199,7 +199,8 @@ const getBookingSource = (b) => {
                 body: JSON.stringify({
                     bookingId: booking.id,
                     cancelReason: reason,
-                    additionalNote: notes
+                    additionalNote: notes,
+                    studentIds: studentIds || []
                 })
             });
 

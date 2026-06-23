@@ -46,7 +46,7 @@ const CancelTrial = ({ isOpen, onClose, onConfirm, booking }) => {
 
   const handleConfirm = () => {
     if (!reason || !selectedStudent) return
-    onConfirm({ reason: reason.value, notes, booking, studentId: selectedStudent.value })
+    onConfirm({ reason: reason.value, notes, booking, studentIds: [selectedStudent.value] })
     setReason(null)
     setNotes('')
     setSelectedStudent(null)

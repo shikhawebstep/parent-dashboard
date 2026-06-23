@@ -106,7 +106,7 @@ const phoneInputStyles = `
 `;
 
 const ParentProfile = () => {
-    const { profile, updateProfile } = useProfile();
+    const { profile, updateProfile, fetchProfileData } = useProfile();
     const [activeTab, setActiveTab] = useState("Parent Profile");
     const [parents, setParents] = useState([]);
     const [editingIndex, setEditingIndex] = useState(null);
@@ -339,6 +339,7 @@ const ParentProfile = () => {
 
             showSuccess("Saved", data?.message || "Parent saved successfully");
             setEditingIndex(null);
+            fetchProfileData();
         } catch (err) {
             console.error(err);
             showError("Error", err.message || "Something went wrong");
@@ -374,8 +375,9 @@ const ParentProfile = () => {
             );
             const data = await res.json();
             if (!res.ok) throw new Error(data?.message || "Update failed");
-            showSuccess("Saved", data?.message || "Emergency contact updated successfully");
+            showSuccess("Saved", data?.message || "Emergency contact saved");
             setEmergencyEditing(false);
+            fetchProfileData();
         } catch (err) {
             console.error(err);
             showError("Error", err.message || "Something went wrong");

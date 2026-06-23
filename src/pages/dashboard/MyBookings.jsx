@@ -127,7 +127,7 @@ const MyBookings = () => {
         }
     };
 
-    const handleCancelTrial = async ({ reason, notes, booking }) => {
+    const handleCancelTrial = async ({ reason, notes, booking, studentIds }) => {
         setLoading(true);
         try {
             const token = localStorage.getItem("parentToken");
@@ -142,7 +142,8 @@ const MyBookings = () => {
                 body: JSON.stringify({
                     bookingId: booking.id,
                     cancelReason: reason,
-                    additionalNote: notes
+                    additionalNote: notes,
+                    studentIds: studentIds || []
                 })
             });
 
@@ -356,23 +357,23 @@ const MyBookings = () => {
 
                                     {/* Details */}
                                     <div className="flex-1 xl:flex grid grid-cols-1 sm:grid-cols-2 mt-4 md:mt-0 md:grid-cols-3 md:ps-7 lg:gap-6 gap-3 justify-between items-center">
-                                        <div className='xl:w-[8%]'>
+                                        <div className='self-start xl:w-[8%]'>
                                             <p className="text-[#9E9FAA] 2xl:text-[16px] text-[14px] mb-1">Venue</p>
                                             <p className="text-[#5F5F6D] 2xl:text-[16px] text-[14px] font-semibold">{formatted.venue}</p>
                                         </div>
-                                        <div className='xl:w-[10%]'>
+                                        <div className='self-start xl:w-[10%]'>
                                             <p className="text-[#9E9FAA] 2xl:text-[16px] text-[14px] mb-1">Hour</p>
                                             <p className="text-[#5F5F6D] 2xl:text-[16px] text-[14px] font-semibold">{formatted.time}</p>
                                         </div>
-                                        <div className="xl:w-[30%]">
+                                        <div className="self-start xl:w-[30%]">
                                             <p className="text-[#9E9FAA] 2xl:text-[16px] text-[14px] mb-1">Address</p>
                                             <p className="text-[#5F5F6D] 2xl:text-[16px] text-[14px] font-semibold leading-tight">{formatted.address}</p>
                                         </div>
-                                        <div className='xl:w-[10%]'>
+                                        <div className='self-start xl:w-[10%]'>
                                             <p className="text-[#9E9FAA] 2xl:text-[16px] text-[14px] mb-1">Class</p>
                                             <p className="text-[#5F5F6D] 2xl:text-[16px] text-[14px] font-semibold">{formatted.classType}</p>
                                         </div>
-                                        <div className='xl:w-[10%]'>
+                                        <div className='self-start xl:w-[10%]'>
                                             <p className="text-[#9E9FAA] 2xl:text-[16px] text-[14px] mb-1">Coach</p>
                                             <p className="text-[#5F5F6D] 2xl:text-[16px] text-[14px] font-semibold">
                                                 {
@@ -390,7 +391,7 @@ const MyBookings = () => {
                                         </div>
 
                                         {/* Action Button */}
-                                        <div className="xl:w-[13%] w-full flex flex-wrap gap-4 justify-end">
+                                        <div className="self-start xl:w-[13%] w-full flex flex-wrap gap-4 justify-end">
                                             {formatted.status === 'completed' && (
                                                 <button onClick={() => setRenewModal({ open: true, booking })} // ✅ wired
                                                     className="bg-[#042C89] text-white w-full  px-2 2xl:px-4 py-2.5 2xl:py-3 rounded-[12px] font-semibold 2xl:text-sm md:text-[12px] text-[14px] hover:bg-[#032066] transition-colors">
