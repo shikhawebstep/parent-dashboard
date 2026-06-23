@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { X, ChevronLeft, ChevronRight, ChevronDown } from "lucide-react";
 import { showErrorToast, showError, showSuccess } from "../../../utils/swalHelper";
 import { motion, AnimatePresence } from "framer-motion";
@@ -126,6 +126,7 @@ const BookMembership = () => {
     const { profile, fetchProfileData } = useProfile();
     const location = useLocation();
     const booking = location.state?.booking;
+    const navigate = useNavigate();
 
     // ── State ─────────────────────────────────────────────
     const [fe, setFe] = useState({});
@@ -220,7 +221,7 @@ const BookMembership = () => {
     const sessionDatesSet = new Set(sessionDates);
 
     // starter pack — driven by selected plan's starterPackPrice
-    console.log('selectedVenue',selectedVenue)
+    console.log('selectedVenue', selectedVenue)
     const showStarterPack = selectedVenue?.all?.starterPack;
     const starterPackPrice = selectedVenue?.all?.starterPacks[0]?.price || 0;
 
@@ -585,13 +586,13 @@ const BookMembership = () => {
             u[index].error = null;
         } else {
             const cls = allClasses.find((c) => c.id === option.value);
-            
+
             const alreadySelectedCount = u.filter((s, i) => i !== index && s.selectedClassId === option.value).length;
             const remainingCapacity = (cls?.capacity || 0) - alreadySelectedCount;
 
             u[index].selectedClassId = option.value;
             u[index].selectedClassData = cls || null;
-            
+
             if (cls?.capacity === 0) {
                 u[index].error = "This class has no capacity. Please select another.";
             } else if (remainingCapacity <= 0) {
@@ -702,7 +703,7 @@ const BookMembership = () => {
             if (!s.dateOfBirth) errs[`s${i}_dob`] = "Date of birth is required";
             if (!s.gender) errs[`s${i}_gender`] = "Gender is required";
             if (!s.medicalInformation?.trim()) errs[`s${i}_medical`] = "Required — write 'None' if not applicable";
-            
+
             if (!s.selectedClassId) {
                 errs[`s${i}_class`] = "Please select a class";
             } else {
@@ -761,6 +762,16 @@ const BookMembership = () => {
             const parentData = JSON.parse(localStorage.getItem("parentData"));
             const parentId = parentData?.id;
 
+            let overridePaymentType = "bank";
+            const allBookings = profile?.bookings ? (Array.isArray(profile.bookings) ? profile.bookings : Object.values(profile.bookings).flat()) : [];
+            const weeklyMembershipBooking = allBookings.find(b => b?.serviceType?.toLowerCase() === "weekly class membership");
+
+            if (weeklyMembershipBooking) {
+                const usesAccessPaySuite = weeklyMembershipBooking?.payments?.some(p => p?.paymentType?.toLowerCase() === "accesspaysuite");
+                if (usesAccessPaySuite) {
+                    overridePaymentType = "accesspaysuite";
+                }
+            }
 
             const payload = {
                 venueId: selectedVenue?.value,
@@ -779,7 +790,7 @@ const BookMembership = () => {
                     classScheduleId: student.selectedClassData?.id || student.selectedClassData?.classScheduleId
                         ? Number(student.selectedClassData.classScheduleId || student.selectedClassData?.id)
                         : null,
-                    id: student.id || student?.studentId || "",
+                    ...(booking && { id: student.id || student?.studentId || "" }),
                 })),
 
                 parents: parents.map((parent) => ({
@@ -793,7 +804,7 @@ const BookMembership = () => {
                     howDidYouHear: parent.howDidYouHear,
                     isCustomReason: parent.isCustomReason || false,
                     starterPackSize: parent.starterPackSize || null,
-                    id: parent.id || "",
+                    ...(booking && { id: parent.id || parent?.parentId || "" }),
                 })),
 
                 starterPack: showStarterPack ? Number(starterPackPrice) : 0,
@@ -806,13 +817,13 @@ const BookMembership = () => {
                     emergencyLastName: emergency.emergencyLastName,
                     emergencyPhoneNumber: emergency.emergencyPhoneNumber,
                     emergencyRelation: emergency.emergencyRelation,
-                    id: emergency.id || "",
+                    ...(booking && { id: emergency.id || "" }),
                 },
 
                 paymentPlanId: Number(membershipPlan?.value),
 
                 payment: {
-                    paymentType: "bank",
+                    paymentType: overridePaymentType,
                     firstName: payment.firstName,
                     lastName: payment.lastName,
                     account_number: payment.account_number,
@@ -833,18 +844,19 @@ const BookMembership = () => {
                 },
             };
 
-            const APIURL = booking ? `${API_URL}api/parent/booking/start-membership/${booking?.id}` : `${API_URL}api/parent/booking/membership/create/${parentId}`
+       
+            const APIURL = booking
+                ? `${API_URL}api/parent/booking/start-membership/${booking?.id}`
+                : `${API_URL}api/parent/booking/membership/create/${parentId}`;
 
-            const response = await fetch(APIURL,
-                {
-                    method: booking ? "PUT" : "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        Authorization: `Bearer ${token}`,
-                    },
-                    body: JSON.stringify(payload),
-                }
-            );
+            const response = await fetch(APIURL, {
+                method: booking ? "PUT" : "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify(payload),
+            });
 
             const data = await response.json();
 
@@ -853,8 +865,10 @@ const BookMembership = () => {
             }
 
             setIsBooked(true);
+
             setShowPopup(false);
             showSuccess("Success", data?.message || "Membership created successfully.");
+            navigate('/bookings')
         } catch (err) {
             console.error(err);
             showErrorToast("Error", err.message || "Something went wrong.");
@@ -1490,7 +1504,6 @@ const BookMembership = () => {
                             {step === 2 && showStarterPack && (
                                 <div className="flex-1 flex flex-col gap-4">
                                     <h2 className="text-xl font-semibold">Checkout</h2>
-                                    <p className="text-gray-500 text-sm">Pay for Starter Pack via Stripe → Head Office</p>
 
                                     <label className="block">
                                         <span className="block text-[16px] font-semibold">Name on card</span>

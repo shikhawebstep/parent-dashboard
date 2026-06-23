@@ -414,10 +414,10 @@ const MyBookings = () => {
 
                                             <button
                                                 className={`block text-white w-full 2xl:px-8 px-4 py-2.5 capitalize 2xl:py-3 rounded-[12px] font-semibold 2xl:text-sm md:text-[12px] text-[14px] transition-colors ${formatted.status === "pending" ? "bg-yellow-500 hover:bg-yellow-600" :
-                                                        formatted.status === "active" ? "bg-green-500 hover:bg-green-600" :
-                                                            formatted.status === "cancelled" ? "bg-red-500 hover:bg-red-600" :
-                                                                formatted.status === "completed" ? "bg-blue-500 hover:bg-blue-600" :
-                                                                    "bg-gray-400 hover:bg-gray-500"
+                                                    formatted.status === "active" ? "bg-green-500 hover:bg-green-600" :
+                                                        formatted.status === "cancelled" ? "bg-red-500 hover:bg-red-600" :
+                                                            formatted.status === "completed" ? "bg-blue-500 hover:bg-blue-600" :
+                                                                "bg-gray-400 hover:bg-gray-500"
                                                     }`}>
                                                 {formatted.status}
                                             </button>
@@ -437,11 +437,24 @@ const MyBookings = () => {
                                                         Transfer Class
                                                     </button>
                                                     {!formatted?.freezeBooking &&
-                                                        (formatted?.status === "active" ||
-                                                            (formatted?.status === "request_to_cancel")) &&
-                                                        !(formatted?.paymentPlan?.duration === 1 &&
-                                                            formatted?.paymentPlan?.interval === "Month") &&
-                                                        formatted?.payments?.[0]?.paymentStatus === "paid" && (
+                                                        (formatted?.status === "active" || formatted?.status === "request_to_cancel") &&
+                                                        !(formatted?.paymentPlan?.duration === 1 && formatted?.paymentPlan?.interval === "Month") &&
+                                                        (() => {
+                                                            const payments = formatted?.payments || [];
+                                                            const hasBankOrAccess = payments.some(
+                                                                (p) => p.paymentType === "bank" || p.paymentType === "accesspaysuite"
+                                                            );
+
+                                                            if (hasBankOrAccess) {
+                                                                return payments.some(
+                                                                    (p) =>
+                                                                        (p.paymentType === "bank" || p.paymentType === "accesspaysuite") &&
+                                                                        (p.paymentStatus === "paid")
+                                                                );
+                                                            }
+
+                                                            return payments.some((p) => p.paymentStatus === "paid");
+                                                        })() && (
                                                             <button
                                                                 onClick={() => setFreezeModal({ open: true, booking })}
                                                                 className="bg-[#0DD180] text-white w-full px-2 2xl:px-4 py-2.5 2xl:py-3 rounded-[12px] font-semibold 2xl:text-sm md:text-[12px] text-[14px] hover:bg-[#0aa665] transition-colors"

@@ -77,9 +77,9 @@ const CalendarWidget = ({ selectedDate, onSelectDate, title = "Select trial date
                     const textColor = isSameMonth(day, currentMonth) ? 'text-[#191919]' : 'text-gray-300';
                     const fontWeight = isSelected ? 'font-bold' : 'font-medium';
                     const bgClass = isSelected 
-                        ? 'bg-[#0496FF] text-white shadow-md' 
+                        ? 'bg-green-500 text-white shadow-md' 
                         : isEnabled 
-                            ? 'hover:bg-gray-50' 
+                            ? 'bg-blue-400 text-white' 
                             : 'opacity-30 cursor-not-allowed';
 
                     return (
