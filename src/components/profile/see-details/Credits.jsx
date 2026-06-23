@@ -33,13 +33,21 @@ const Credits = ({ booking, details, loading }) => {
             </tr>
           </thead>
           <tbody>
-            {cancelledClasses.map((row) => (
-              <tr key={row.id} className="border-t border-gray-100">
-                <td className="px-4 py-4 text-[#282829] text-[16px] font-semibold">{details?.venue?.name + "-" + row.date}</td>
-                <td className="px-4 py-4 text-[#282829] text-[16px] font-semibold">{row.reason}</td>
-                <td className="px-4 py-4 text-[#282829] text-[16px] font-semibold">{row.credit}</td>
+            {cancelledClasses && cancelledClasses.length > 0 ? (
+              cancelledClasses.map((row) => (
+                <tr key={row.id} className="border-t border-gray-100">
+                  <td className="px-4 py-4 text-[#282829] text-[16px] font-semibold">{details?.venue?.name + "-" + row.date}</td>
+                  <td className="px-4 py-4 text-[#282829] text-[16px] font-semibold">{row.reason}</td>
+                  <td className="px-4 py-4 text-[#282829] text-[16px] font-semibold">{row.credit}</td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan="3" className="px-4 py-10 text-center text-[#717073] text-[16px] font-medium">
+                  No credits available.
+                </td>
               </tr>
-            ))}
+            )}
           </tbody>
         </table>
 

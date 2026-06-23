@@ -249,6 +249,7 @@ const MyBookings = () => {
             classType = "Birthday Party";
             // birthday party has no location/venue field — use address directly
             venue = booking?.address || "-";
+            time = booking?.time || "-";
             address = booking?.address || "-";
 
         } else {

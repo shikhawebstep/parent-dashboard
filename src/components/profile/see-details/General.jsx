@@ -123,6 +123,8 @@ export default function General({ booking: propBooking, details, loading: mainLo
 
     const paymentPlan = booking?.paymentPlan || details?.paymentPlan;
 
+    console.log('paymentPlan',paymentPlan)
+
     // Progress bar
     const progressTotal = booking?.progressBar?.totalBars || 0;
     const progressFilled = booking?.progressBar?.filledBars || 0;

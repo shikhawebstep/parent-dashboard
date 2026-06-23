@@ -100,7 +100,7 @@ const Payment = ({ booking, details, loading }) => {
                 const amount = p.price ?? p.amount ?? '-'
                 const currency = p.currency ?? '-'
                 const status = p.paymentStatus ?? p.payment_status ?? '-'
-                const date = p.createdAt ?? p.paymentDate ?? p.payment_date
+                const date =p?.dueDate ?? p.createdAt ?? p.paymentDate ?? p.payment_date
                 const chargeDate = date ? new Date(date).toLocaleDateString('en-GB') : '-'
                 const description = p.description ?? p.gatewayResponse?.payment?.description ?? '-'
                 const paymentType = p.paymentType ?? (p.stripePaymentIntentId ? 'stripe' : '-')

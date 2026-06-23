@@ -121,6 +121,7 @@ const BookFreeTrial = () => {
 
         setParents(normalizedParents.length ? normalizedParents : [createParent()]);
         setStudents(normalizedStudents.length ? normalizedStudents : [createStudent()]);
+        setNumStudents(String(normalizedStudents.length || 1));
 
         const emergencyContact = profile?.adminMeta?.emergency;
         if (emergencyContact) {
@@ -306,18 +307,36 @@ const BookFreeTrial = () => {
     };
 
     const handleStudentChange = (index, field, value) => {
+        let classError = null;
         setStudents((prev) =>
             prev.map((s, i) => {
                 if (i !== index) return s;
                 const updated = { ...s, [field]: value };
                 if (field === "selectedClassId") {
                     const foundClass = availableClasses.find((c) => String(c.id) === String(value)) || null;
+                    
+                    const alreadySelectedCount = prev.filter((st, idx) => idx !== index && String(st.selectedClassId) === String(value)).length;
+                    const remainingCapacity = (foundClass?.capacity || 0) - alreadySelectedCount;
+                    
+                    if (foundClass?.capacity === 0) {
+                        updated.error = "This class has no capacity. Please select another.";
+                        classError = updated.error;
+                    } else if (remainingCapacity <= 0) {
+                        updated.error = "Not enough space in this class for another student. Please select another.";
+                        classError = updated.error;
+                    } else {
+                        updated.error = null;
+                    }
+                    
                     updated.selectedClassData = foundClass;
                 }
                 return updated;
             })
         );
         clearErr(`s${index}_${field}`);
+        if (classError) {
+             setErrors(prev => ({ ...prev, [`s${index}_selectedClassId`]: classError }));
+        }
     };
 
     const handleRemoveStudent = (index) => {
@@ -411,6 +430,7 @@ const BookFreeTrial = () => {
         if (!selectedVenue) errs.venue = "Required";
         if (!selectedDate) errs.selectedDate = "Required";
 
+        const classSelections = {};
         students.forEach((s, i) => {
             if (!s.studentFirstName?.trim()) errs[`s${i}_studentFirstName`] = "Required";
             if (!s.studentLastName?.trim()) errs[`s${i}_studentLastName`] = "Required";
@@ -429,7 +449,20 @@ const BookFreeTrial = () => {
                 }
             } if (!s.gender) errs[`s${i}_gender`] = "Required";
             if (!s.medicalInfo?.trim()) errs[`s${i}_medicalInfo`] = "Required (write 'None')";
-            if (!s.selectedClassId) errs[`s${i}_selectedClassId`] = "Required";
+            
+            if (!s.selectedClassId) {
+                errs[`s${i}_selectedClassId`] = "Required";
+            } else {
+                const clsId = s.selectedClassId;
+                classSelections[clsId] = (classSelections[clsId] || 0) + 1;
+                if (s.selectedClassData && classSelections[clsId] > s.selectedClassData.capacity) {
+                    errs[`s${i}_selectedClassId`] = "Not enough space in this class for all selected students.";
+                } else if (s.selectedClassData?.capacity === 0) {
+                    errs[`s${i}_selectedClassId`] = "This class has no capacity";
+                } else if (s.error) {
+                    errs[`s${i}_selectedClassId`] = s.error;
+                }
+            }
         });
 
         parents.forEach((p, i) => {

@@ -220,8 +220,9 @@ const BookMembership = () => {
     const sessionDatesSet = new Set(sessionDates);
 
     // starter pack — driven by selected plan's starterPackPrice
-    const showStarterPack = Boolean(membershipPlan?.starterPackPrice > 0);
-    const starterPackPrice = membershipPlan?.starterPackPrice || 0;
+    console.log('selectedVenue',selectedVenue)
+    const showStarterPack = selectedVenue?.all?.starterPack;
+    const starterPackPrice = selectedVenue?.all?.starterPacks[0]?.price || 0;
 
 
     const formatDOBForDisplay = (isoDate) => {
@@ -276,6 +277,8 @@ const BookMembership = () => {
 
         setParents(normalizedParents.length ? normalizedParents : [INIT_PARENT()]);
         setStudents(normalizedStudents.length ? normalizedStudents : [INIT_STUDENT()]);
+
+        setNumberOfStudents(normalizedStudents.length)
 
         const emergencyContact = profile?.adminMeta?.emergency;
         if (emergencyContact) {
@@ -481,7 +484,32 @@ const BookMembership = () => {
             setNumberOfStudents(val);
             setStudents((prev) => {
                 if (val === "") return [];
-                if (val > prev.length) return [...prev, ...Array.from({ length: val - prev.length }, INIT_STUDENT)];
+                if (val > prev.length) {
+                    // profile se students lo agar available hain
+                    const profileStudents = profile?.adminMeta?.students || [];
+                    const extra = Array.from({ length: val - prev.length }, (_, i) => {
+                        const profileStudent = profileStudents[prev.length + i];
+                        if (profileStudent) {
+                            return {
+                                studentFirstName: profileStudent.studentFirstName || "",
+                                studentLastName: profileStudent.studentLastName || "",
+                                dateOfBirth: profileStudent.dateOfBirth
+                                    ? profileStudent.dateOfBirth.includes("-")
+                                        ? formatDOBForDisplay(profileStudent.dateOfBirth)
+                                        : profileStudent.dateOfBirth
+                                    : "",
+                                age: profileStudent.age ?? "",
+                                gender: profileStudent.gender || "",
+                                medicalInformation: profileStudent.medicalInformation || profileStudent.medicalInfo || "",
+                                selectedClassId: profileStudent.selectedClassId || null,
+                                selectedClassData: profileStudent.selectedClassData || null,
+                                error: null,
+                            };
+                        }
+                        return INIT_STUDENT();
+                    });
+                    return [...prev, ...extra];
+                }
                 return prev.slice(0, val);
             });
             if (membershipPlan && membershipPlan.all?.students !== val) {
@@ -496,7 +524,31 @@ const BookMembership = () => {
         const val = Number(plan.all?.students);
         setNumberOfStudents(val);
         setStudents((prev) => {
-            if (val > prev.length) return [...prev, ...Array.from({ length: val - prev.length }, INIT_STUDENT)];
+            if (val > prev.length) {
+                const profileStudents = profile?.adminMeta?.students || [];
+                const extra = Array.from({ length: val - prev.length }, (_, i) => {
+                    const profileStudent = profileStudents[prev.length + i];
+                    if (profileStudent) {
+                        return {
+                            studentFirstName: profileStudent.studentFirstName || "",
+                            studentLastName: profileStudent.studentLastName || "",
+                            dateOfBirth: profileStudent.dateOfBirth
+                                ? profileStudent.dateOfBirth.includes("-")
+                                    ? formatDOBForDisplay(profileStudent.dateOfBirth)
+                                    : profileStudent.dateOfBirth
+                                : "",
+                            age: profileStudent.age ?? "",
+                            gender: profileStudent.gender || "",
+                            medicalInformation: profileStudent.medicalInformation || profileStudent.medicalInfo || "",
+                            selectedClassId: profileStudent.selectedClassId || null,
+                            selectedClassData: profileStudent.selectedClassData || null,
+                            error: null,
+                        };
+                    }
+                    return INIT_STUDENT();
+                });
+                return [...prev, ...extra];
+            }
             return prev.slice(0, val);
         });
     };
@@ -533,11 +585,20 @@ const BookMembership = () => {
             u[index].error = null;
         } else {
             const cls = allClasses.find((c) => c.id === option.value);
+            
+            const alreadySelectedCount = u.filter((s, i) => i !== index && s.selectedClassId === option.value).length;
+            const remainingCapacity = (cls?.capacity || 0) - alreadySelectedCount;
+
             u[index].selectedClassId = option.value;
             u[index].selectedClassData = cls || null;
-            u[index].error = cls?.capacity === 0
-                ? "This class has no capacity. Please select another."
-                : null;
+            
+            if (cls?.capacity === 0) {
+                u[index].error = "This class has no capacity. Please select another.";
+            } else if (remainingCapacity <= 0) {
+                u[index].error = "Not enough space in this class for another student. Please select another.";
+            } else {
+                u[index].error = null;
+            }
         }
         setStudents(u);
     };
@@ -634,14 +695,27 @@ const BookMembership = () => {
         if (!membershipPlan) errs.membershipPlan = "Membership plan is required";
         if (!selectedDate) errs.selectedDate = "Start date is required";
 
+        const classSelections = {};
         students.forEach((s, i) => {
             if (!s.studentFirstName?.trim()) errs[`s${i}_firstName`] = "First name is required";
             if (!s.studentLastName?.trim()) errs[`s${i}_lastName`] = "Last name is required";
             if (!s.dateOfBirth) errs[`s${i}_dob`] = "Date of birth is required";
             if (!s.gender) errs[`s${i}_gender`] = "Gender is required";
             if (!s.medicalInformation?.trim()) errs[`s${i}_medical`] = "Required — write 'None' if not applicable";
-            if (!s.selectedClassId) errs[`s${i}_class`] = "Please select a class";
-            if (s.selectedClassData?.capacity === 0) errs[`s${i}_class`] = "This class has no capacity";
+            
+            if (!s.selectedClassId) {
+                errs[`s${i}_class`] = "Please select a class";
+            } else {
+                const clsId = s.selectedClassId;
+                classSelections[clsId] = (classSelections[clsId] || 0) + 1;
+                if (s.selectedClassData && classSelections[clsId] > s.selectedClassData.capacity) {
+                    errs[`s${i}_class`] = "Not enough space in this class for all selected students.";
+                } else if (s.selectedClassData?.capacity === 0) {
+                    errs[`s${i}_class`] = "This class has no capacity";
+                } else if (s.error) {
+                    errs[`s${i}_class`] = s.error;
+                }
+            }
         });
 
         parents.forEach((p, i) => {
@@ -1080,7 +1154,7 @@ const BookMembership = () => {
                                         value={venueClassOptions.find((o) => o.value === student.selectedClassId) || null}
                                         onChange={(o) => { handleStudentClassChange(index, o); clearErr(`s${index}_class`); }}
                                         styles={ss(`s${index}_class`, fe)} />
-                                    {student.error && <p className="text-red-500 text-sm mt-1">{student.error}</p>}
+                                    {student.error && !fe[`s${index}_class`] && <p className="text-red-500 text-sm mt-1 ml-1 font-medium">{student.error}</p>}
                                     <Err k={`s${index}_class`} e={fe} />
                                 </div>
                                 <div className="w-1/2">
@@ -1328,58 +1402,58 @@ const BookMembership = () => {
                                     </p>
 
                                     <label className="block">
-                                        <span className="text-sm text-gray-700 font-medium">Email</span>
+                                        <span className="block text-[16px] font-semibold">Email</span>
                                         <input type="email"
                                             value={payment.email || parents[0]?.parentEmail || ""}
                                             placeholder="Email address"
                                             onChange={(e) => setPayment({ ...payment, email: e.target.value })}
-                                            className="w-full mt-1 border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-blue-400" />
+                                            className="w-full mt-2 border border-gray-300 rounded-xl px-4 py-3 text-base focus:outline-none" />
                                     </label>
 
                                     <label className="block">
-                                        <span className="text-sm text-gray-700 font-medium">Account Holder Name</span>
+                                        <span className="block text-[16px] font-semibold">Account Holder Name</span>
                                         <input value={payment.account_holder_name} placeholder="Full name on account"
                                             onChange={(e) => {
                                                 const parts = e.target.value.trim().split(" ");
                                                 setPayment({ ...payment, account_holder_name: e.target.value, firstName: parts[0] || "", lastName: parts.slice(1).join(" ") });
                                             }}
-                                            className="w-full mt-1 border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-blue-400" />
+                                            className="w-full mt-2 border border-gray-300 rounded-xl px-4 py-3 text-base focus:outline-none" />
                                     </label>
 
                                     <div className="flex gap-4">
                                         <label className="flex-1">
-                                            <span className="text-sm text-gray-700 font-medium">Sort Code</span>
+                                            <span className="block text-[16px] font-semibold">Sort Code</span>
                                             <input value={payment.branch_code} placeholder="00-00-00"
                                                 onChange={(e) => setPayment({ ...payment, branch_code: e.target.value.replace(/\D/g, "") })}
-                                                className="w-full mt-1 border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-blue-400" />
+                                                className="w-full mt-2 border border-gray-300 rounded-xl px-4 py-3 text-base focus:outline-none" />
                                         </label>
                                         <label className="flex-1">
-                                            <span className="text-sm text-gray-700 font-medium">Account Number</span>
+                                            <span className="block text-[16px] font-semibold">Account Number</span>
                                             <input value={payment.account_number} placeholder="12345678"
                                                 onChange={(e) => setPayment({ ...payment, account_number: e.target.value.replace(/\D/g, "") })}
-                                                className="w-full mt-1 border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-blue-400" />
+                                                className="w-full mt-2 border border-gray-300 rounded-xl px-4 py-3 text-base focus:outline-none" />
                                         </label>
                                     </div>
 
                                     <label className="block">
-                                        <span className="text-sm text-gray-700 font-medium">Address Line 1</span>
+                                        <span className="block text-[16px] font-semibold">Address Line 1</span>
                                         <input value={payment.line1}
                                             onChange={(e) => setPayment({ ...payment, line1: e.target.value })}
-                                            className="w-full mt-1 border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-blue-400" />
+                                            className="w-full mt-2 border border-gray-300 rounded-xl px-4 py-3 text-base focus:outline-none" />
                                     </label>
 
                                     <div className="flex gap-4">
                                         <label className="flex-1">
-                                            <span className="text-sm text-gray-700 font-medium">City</span>
+                                            <span className="block text-[16px] font-semibold">City</span>
                                             <input value={payment.city}
                                                 onChange={(e) => setPayment({ ...payment, city: e.target.value })}
-                                                className="w-full mt-1 border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-blue-400" />
+                                                className="w-full mt-2 border border-gray-300 rounded-xl px-4 py-3 text-base focus:outline-none" />
                                         </label>
                                         <label className="flex-1">
-                                            <span className="text-sm text-gray-700 font-medium">Postal Code</span>
+                                            <span className="block text-[16px] font-semibold">Postal Code</span>
                                             <input value={payment.postalCode}
                                                 onChange={(e) => setPayment({ ...payment, postalCode: e.target.value })}
-                                                className="w-full mt-1 border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-blue-400" />
+                                                className="w-full mt-2 border border-gray-300 rounded-xl px-4 py-3 text-base focus:outline-none" />
                                         </label>
                                     </div>
 
@@ -1419,46 +1493,53 @@ const BookMembership = () => {
                                     <p className="text-gray-500 text-sm">Pay for Starter Pack via Stripe → Head Office</p>
 
                                     <label className="block">
-                                        <span className="text-sm font-medium text-gray-700">Name on card</span>
+                                        <span className="block text-[16px] font-semibold">Name on card</span>
                                         <input value={nameOnCard} placeholder="Name on card"
                                             onChange={(e) => setNameOnCard(e.target.value)}
-                                            className="w-full mt-1 border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-blue-400" />
+                                            className="w-full mt-2 border border-gray-300 rounded-xl px-4 py-3 text-base focus:outline-none" />
                                     </label>
 
                                     <label className="block">
-                                        <span className="text-sm font-medium text-gray-700">Card number</span>
+                                        <span className="block text-[16px] font-semibold">Card number</span>
                                         <input value={cardNumber} placeholder="1234 1234 1234 1234" maxLength={19} inputMode="numeric"
                                             onChange={(e) => setCardNumber(formatCard(e.target.value))}
-                                            className="w-full mt-1 border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-blue-400" />
+                                            className="w-full mt-2 border border-gray-300 rounded-xl px-4 py-3 text-base focus:outline-none" />
                                     </label>
 
                                     <div className="flex gap-4">
                                         <label className="flex-1">
-                                            <span className="text-sm font-medium text-gray-700">Expiry</span>
+                                            <span className="block text-[16px] font-semibold">Expiry</span>
                                             <input value={expiryDate} placeholder="MM/YY" maxLength={5} inputMode="numeric"
                                                 onChange={(e) => setExpiryDate(formatExpiry(e.target.value))}
-                                                className="w-full mt-1 border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-blue-400" />
+                                                className="w-full mt-2 border border-gray-300 rounded-xl px-4 py-3 text-base focus:outline-none" />
                                         </label>
                                         <label className="flex-1">
-                                            <span className="text-sm font-medium text-gray-700">CVC</span>
+                                            <span className="block text-[16px] font-semibold">CVC</span>
                                             <input value={cvc} placeholder="CVC" maxLength={4} inputMode="numeric"
                                                 onChange={(e) => setCvc(e.target.value.replace(/\D/g, "").slice(0, 4))}
-                                                className="w-full mt-1 border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-blue-400" />
+                                                className="w-full mt-2 border border-gray-300 rounded-xl px-4 py-3 text-base focus:outline-none" />
                                         </label>
                                     </div>
 
                                     <label className="block">
-                                        <span className="text-sm font-medium text-gray-700">Country</span>
-                                        <input value={checkoutCountry}
-                                            onChange={(e) => setCheckoutCountry(e.target.value)}
-                                            className="w-full mt-1 border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-blue-400" />
+                                        <span className="block text-[16px] font-semibold">Country</span>
+                                        <Select options={[
+                                            { value: "United Kingdom", label: "United Kingdom" },
+                                            { value: "United States", label: "United States" },
+                                            { value: "Ireland", label: "Ireland" },
+                                            { value: "Australia", label: "Australia" },
+                                            { value: "Canada", label: "Canada" },
+                                        ]} classNamePrefix="react-select"
+                                            value={{ value: checkoutCountry, label: checkoutCountry }}
+                                            onChange={(o) => setCheckoutCountry(o.value)}
+                                            styles={ss("checkoutCountry", fe)} />
                                     </label>
 
                                     <label className="block">
-                                        <span className="text-sm font-medium text-gray-700">Postal Code</span>
+                                        <span className="block text-[16px] font-semibold">Postal Code</span>
                                         <input value={zipCode}
                                             onChange={(e) => setZipCode(e.target.value)}
-                                            className="w-full mt-1 border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-blue-400" />
+                                            className="w-full mt-2 border border-gray-300 rounded-xl px-4 py-3 text-base focus:outline-none" />
                                     </label>
 
                                     <div className="flex justify-between font-semibold text-base border-t pt-3">

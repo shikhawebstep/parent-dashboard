@@ -64,7 +64,7 @@ const BookingCard = ({ booking, onSeeDetails }) => {
     // Formats a price safely; skips if value is null/undefined
     const safePrice = (price) => {
         if (price === undefined || price === null) return "-";
-        return `£${price}.00`;
+        return `£${price}`;
     };
 
     // Formats amount with £ prefix; handles null/undefined
