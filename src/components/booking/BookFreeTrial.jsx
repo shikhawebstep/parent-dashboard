@@ -314,10 +314,10 @@ const BookFreeTrial = () => {
                 const updated = { ...s, [field]: value };
                 if (field === "selectedClassId") {
                     const foundClass = availableClasses.find((c) => String(c.id) === String(value)) || null;
-                    
+
                     const alreadySelectedCount = prev.filter((st, idx) => idx !== index && String(st.selectedClassId) === String(value)).length;
                     const remainingCapacity = (foundClass?.capacity || 0) - alreadySelectedCount;
-                    
+
                     if (foundClass?.capacity === 0) {
                         updated.error = "This class has no capacity. Please select another.";
                         classError = updated.error;
@@ -327,7 +327,7 @@ const BookFreeTrial = () => {
                     } else {
                         updated.error = null;
                     }
-                    
+
                     updated.selectedClassData = foundClass;
                 }
                 return updated;
@@ -335,7 +335,7 @@ const BookFreeTrial = () => {
         );
         clearErr(`s${index}_${field}`);
         if (classError) {
-             setErrors(prev => ({ ...prev, [`s${index}_selectedClassId`]: classError }));
+            setErrors(prev => ({ ...prev, [`s${index}_selectedClassId`]: classError }));
         }
     };
 
@@ -449,7 +449,7 @@ const BookFreeTrial = () => {
                 }
             } if (!s.gender) errs[`s${i}_gender`] = "Required";
             if (!s.medicalInfo?.trim()) errs[`s${i}_medicalInfo`] = "Required (write 'None')";
-            
+
             if (!s.selectedClassId) {
                 errs[`s${i}_selectedClassId`] = "Required";
             } else {

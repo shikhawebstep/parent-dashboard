@@ -1,48 +1,33 @@
-import { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { X, ChevronLeft, ChevronRight, ChevronDown } from "lucide-react";
+import {
+    X,
+    ChevronLeft,
+    ChevronRight,
+    ChevronDown,
+    MapPin,
+    Truck,
+    AlertTriangle,
+    Check,
+    Star,
+    ArrowUp,
+    Calendar as CalendarIcon,
+    Mail,
+    User,
+    PartyPopper,
+    Loader2,
+} from "lucide-react";
 import { showErrorToast, showError, showSuccess } from "../../../utils/swalHelper";
 import { motion, AnimatePresence } from "framer-motion";
 import Select from "react-select";
 import PhoneNumberInput from "../../commom/PhoneNumberInput";
 import { useCommon } from "../../context/CommonContext";
 import { useProfile } from "../../context/ProfileContext";
-
-// ── Options ───────────────────────────────────────────────
-const genderOptions = [
-    { value: "male", label: "Male" },
-    { value: "female", label: "Female" },
-];
-const relationOptions = [
-    { value: "Mother", label: "Mother" },
-    { value: "Father", label: "Father" },
-    { value: "Guardian", label: "Guardian" },
-];
-const interestReasonOptions = [
-    { value: "To build my child's confidence", label: "To build my child's confidence" },
-    { value: "To improve their technical football skills", label: "To improve their technical football skills" },
-    { value: "Because my child loves football", label: "Because my child loves football" },
-    { value: "To help my child make friends and build social skills", label: "To help my child make friends and build social skills" },
-    { value: "To keep my child active and healthy", label: "To keep my child active and healthy" },
-    { value: "High-quality coaching in a fun, positive environment", label: "High-quality coaching in a fun, positive environment" },
-    { value: "Other", label: "Other" },
-];
-const hearOptions = [
-    { value: "Google", label: "Google" },
-    { value: "Facebook", label: "Facebook" },
-    { value: "Instagram", label: "Instagram" },
-    { value: "Friend", label: "Friend" },
-    { value: "Flyer", label: "Flyer" },
-];
-const sizeOptions = [
-    { value: "Small", label: "Small" },
-    { value: "Medium", label: "Medium" },
-    { value: "Large", label: "Large" },
-    { value: "XL", label: "Extra Large" },
-];
+import { getAddressesByPostcode } from "../../commom/getAddressesByPostcode";
 
 // ── Inits ─────────────────────────────────────────────────
 const INIT_STUDENT = () => ({
+    _tmpId: Date.now() + Math.random(),
     studentFirstName: "",
     studentLastName: "",
     dateOfBirth: "",
@@ -70,177 +55,234 @@ const INIT_PARENT = () => ({
     emailStatus: "",
 });
 
-const INIT_EMERGENCY = {
+const INIT_EMERGENCY = () => ({
     sameAsAbove: false,
     emergencyFirstName: "",
     emergencyLastName: "",
     emergencyPhoneNumber: "",
     emergencyRelation: "",
-};
-
-const INIT_PAYMENT = {
-    email: "", account_holder_name: "", firstName: "", lastName: "",
-    branch_code: "", account_number: "", line1: "", city: "",
-    postalCode: "", authorise: false,
-};
-
-// ── Small helpers ─────────────────────────────────────────
-const Err = ({ k, e }) => e[k] ? <p className="text-red-500 text-sm mt-1 ml-1 font-medium">{e[k]}</p> : null;
-
-const fc = (k, e) =>
-    `w-full mt-2 border rounded-xl px-4 py-3 text-base focus:outline-none ${e[k] ? "border-red-500 bg-red-50" : "border-gray-300"}`;
-
-const ss = (k, e) => ({
-    control: (b, s) => ({
-        ...b, borderRadius: "0.75rem", minHeight: "48px", marginTop: "8px",
-        borderColor: e[k] ? "#ef4444" : b.borderColor,
-        "&:hover": { borderColor: e[k] ? "#ef4444" : b.borderColor },
-        boxShadow: s.isFocused && e[k] ? "0 0 0 1px #ef4444" : b.boxShadow,
-    }),
 });
 
+const INIT_PAYMENT = () => ({
+    email: "",
+    account_holder_name: "",
+    firstName: "",
+    lastName: "",
+    branch_code: "",
+    account_number: "",
+    line1: "",
+    city: "",
+    postalCode: "",
+    authorise: false,
+    nameOnCard: "",
+    cardNumber: "",
+    expiryDate: "",
+    cvc: "",
+    country: "United Kingdom",
+    zipCode: "",
+});
+
+// ── Small helpers ─────────────────────────────────────────
 const toDateOnly = (str) => {
-    if (!str) return null;
-    // handle both DD/MM/YYYY and YYYY-MM-DD
+    if (!str || typeof str !== "string") return null;
     if (str.includes("/")) {
-        const [d, m, y] = str.split("/").map(Number);
-        if (!d || !m || !y) return null;
+        const parts = str.split("/").map(Number);
+        const [d, m, y] = parts;
+        if (!d || !m || !y || Number.isNaN(d) || Number.isNaN(m) || Number.isNaN(y)) return null;
         return `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
     }
     return str;
 };
 
 const formatLocalDate = (date) => {
+    if (!(date instanceof Date) || Number.isNaN(date.getTime())) return "";
     const y = date.getFullYear();
     const m = String(date.getMonth() + 1).padStart(2, "0");
     const d = String(date.getDate()).padStart(2, "0");
     return `${y}-${m}-${d}`;
 };
 
+// ── Payment field formatters ──────────────────────────────
+const formatCardNumber = (raw = "") => {
+    const digits = (raw || "").replace(/\D/g, "").slice(0, 16);
+    return digits.replace(/(.{4})/g, "$1 ").trim();
+};
+
+const formatExpiry = (raw = "", prev = "") => {
+    const safeRaw = raw || "";
+    const safePrev = prev || "";
+    const digits = safeRaw.replace(/\D/g, "").slice(0, 4);
+    if (digits.length === 0) return "";
+    if (digits.length >= 2) {
+        const mm = parseInt(digits.slice(0, 2), 10);
+        if (mm > 12) return safePrev;
+    }
+    if (digits.length <= 2) {
+        if (safePrev.endsWith(" / ") && safeRaw.length < safePrev.length) {
+            return digits.slice(0, 1);
+        }
+        return digits.length === 2 ? digits + " / " : digits;
+    }
+    return digits.slice(0, 2) + " / " + digits.slice(2);
+};
+
+const formatSortCode = (raw = "") => {
+    const digits = (raw || "").replace(/\D/g, "").slice(0, 6);
+    if (digits.length <= 2) return digits;
+    if (digits.length <= 4) return digits.slice(0, 2) + "-" + digits.slice(2);
+    return digits.slice(0, 2) + "-" + digits.slice(2, 4) + "-" + digits.slice(4);
+};
+
+const formatCVC = (raw = "") => (raw || "").replace(/\D/g, "").slice(0, 4);
+const formatAccountNumber = (raw = "") => (raw || "").replace(/\D/g, "").slice(0, 8);
+
+// ── Validation helpers ────────────────────────────────────
+const isValidExpiry = (val = "") => {
+    const digits = (val || "").replace(/\D/g, "");
+    if (digits.length < 4) return false;
+    const mm = parseInt(digits.slice(0, 2), 10);
+    const yy = parseInt(digits.slice(2, 4), 10);
+    if (Number.isNaN(mm) || Number.isNaN(yy)) return false;
+    if (mm < 1 || mm > 12) return false;
+    const now = new Date();
+    const expDate = new Date(2000 + yy, mm - 1, 1);
+    return expDate >= new Date(now.getFullYear(), now.getMonth(), 1);
+};
+
+const isValidCardNumber = (val = "") => (val || "").replace(/\s/g, "").length === 16;
+const isValidCVC = (val = "") => (val || "").length >= 3;
+const isValidSortCode = (val = "") => (val || "").replace(/\D/g, "").length === 6;
+const isValidAccountNumber = (val = "") => (val || "").replace(/\D/g, "").length === 8;
+
+// ── Size options ──────────────────────────────────────────
+const sizeOptions = [
+    { value: "Small", label: "Small" },
+    { value: "Medium", label: "Medium" },
+    { value: "Large", label: "Large" },
+    { value: "XL", label: "Extra Large" },
+];
+
 // ── Component ─────────────────────────────────────────────
 const BookMembership = () => {
-    const token = localStorage.getItem("parentToken");
-    const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+    const token = typeof window !== "undefined" ? localStorage.getItem("parentToken") : null;
+    const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "";
+    const [addressList, setAddressList] = useState([]);
+    const [addressLoading, setAddressLoading] = useState(false);
+    const [addressError, setAddressError] = useState("");
 
     const { fetchVenues, venues } = useCommon();
     const { profile, fetchProfileData } = useProfile();
     const location = useLocation();
-    const booking = location.state?.booking;
+    const booking = location?.state?.booking;
     const navigate = useNavigate();
 
-    // ── State ─────────────────────────────────────────────
-    const [fe, setFe] = useState({});
+    // form
+    const [students, setStudents] = useState([INIT_STUDENT()]);
+    const [parents, setParents] = useState([INIT_PARENT()]);
+    const [emergency, setEmergency] = useState(INIT_EMERGENCY());
+    const [payment, setPayment] = useState(INIT_PAYMENT());
+
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [showPopup, setShowPopup] = useState(false);
-    const [step, setStep] = useState(1);
-    const [isSizeChartOpen, setIsSizeChartOpen] = useState(false);
-    const [isBooked, setIsBooked] = useState(false);
-    const [isOpenMembership, setIsOpenMembership] = useState(false);
+
+    // Wizard State
+    const [flowStep, setFlowStep] = useState("B");
+    const [demoMode, setDemoMode] = useState("single");
+    const [selectedStudentIds, setSelectedStudentIds] = useState([]);
+
+    // Delivery address state
+    const [postcode, setPostcode] = useState("");
+    const [showAddrSelect, setShowAddrSelect] = useState(false);
+    const [selectedAddress, setSelectedAddress] = useState("");
+    const [isChangingVenue, setIsChangingVenue] = useState(false);
 
     // info
     const [selectedVenue, setSelectedVenue] = useState(null);
     const [numberOfStudents, setNumberOfStudents] = useState(1);
     const [membershipPlan, setMembershipPlan] = useState(null);
     const [selectedDate, setSelectedDate] = useState(null);
+    const [currentDate, setCurrentDate] = useState(new Date());
+
+    // Discount state (ported from file 2)
     const [discountCode, setDiscountCode] = useState("");
     const [appliedDiscount, setAppliedDiscount] = useState(null);
     const [isApplied, setIsApplied] = useState(false);
     const [isChecked, setIsChecked] = useState(false);
     const [isDiscountLoading, setIsDiscountLoading] = useState(false);
-    const [currentDate, setCurrentDate] = useState(new Date());
+
+    // Size chart modal
+    const [isSizeChartOpen, setIsSizeChartOpen] = useState(false);
 
     // pricing
     const [pricingBreakdown, setPricingBreakdown] = useState({
-        pricePerClassPerChild: 0, numberOfLessonsProRated: 0, finalProRataCost: 0,
-        starterPack: 0, totalAmountToday: 0, isFullMonthCharge: false,
-        stripeAmount: 0, nextMonthPayment: 0,
+        pricePerClassPerChild: 0,
+        numberOfLessonsProRated: 0,
+        finalProRataCost: 0,
+        starterPack: 0,
+        totalAmountToday: 0,
+        isFullMonthCharge: false,
+        stripeAmount: 0,
+        nextMonthPayment: 0,
     });
 
-    // form
-    const [students, setStudents] = useState([INIT_STUDENT()]);
-    const [parents, setParents] = useState([INIT_PARENT()]);
-    const [emergency, setEmergency] = useState(INIT_EMERGENCY);
-    const [payment, setPayment] = useState(INIT_PAYMENT);
+    // Field-level errors for payment screens
+    const [cardErrors, setCardErrors] = useState({});
+    const [ddErrors, setDdErrors] = useState({});
 
-    // card (step 2)
-    const [nameOnCard, setNameOnCard] = useState("");
-    const [cardNumber, setCardNumber] = useState("");
-    const [expiryDate, setExpiryDate] = useState("");
-    const [cvc, setCvc] = useState("");
-    const [checkoutCountry, setCheckoutCountry] = useState("United Kingdom");
-    const [zipCode, setZipCode] = useState("");
-
-    const infoRef = useRef(null);
-    const studentRefs = useRef([]);
-    const parentRefs = useRef([]);
-    const emergencyRef = useRef(null);
     const hasInitialized = useRef(false);
 
     // ── Derived ───────────────────────────────────────────
     const month = currentDate.getMonth();
     const year = currentDate.getFullYear();
-    const adminInfo = JSON.parse(localStorage.getItem("adminInfo") || "{}");
+
+    let adminInfo = {};
+    try {
+        adminInfo = JSON.parse(localStorage.getItem("adminInfo") || "{}") || {};
+    } catch {
+        adminInfo = {};
+    }
     const isFranchisee = adminInfo?.role?.role === "Franchisee";
 
     const venueData = selectedVenue?.all || null;
 
-    const allPaymentPlans = venueData?.paymentGroups?.[0]?.paymentPlans?.map((p) => ({
-        label: `${p.title} (${p.students} student${p.students > 1 ? "s" : ""})`,
-        value: p.id,
-        starterPackPrice: p.starterPackPrice || 0,
-        all: p,
-    })) || [];
+    const allPaymentPlans =
+        venueData?.paymentGroups?.[0]?.paymentPlans?.map((p) => ({
+            label: `${p?.title || "Plan"} (${p?.students || 0} student${p?.students > 1 ? "s" : ""})`,
+            value: p?.id,
+            starterPackPrice: p?.starterPackPrice || 0,
+            all: p,
+        })) || [];
 
     const paymentPlanOptions = numberOfStudents
-        ? allPaymentPlans.filter((p) => p.all?.students === Number(numberOfStudents))
+        ? allPaymentPlans.filter((p) => Number(p?.all?.students) === Number(numberOfStudents))
         : allPaymentPlans;
 
-    const allClasses = venueData
-        ? Object.entries(venueData.classes || {}).flatMap(([, classes]) =>
-            classes.map((c) => ({
-                id: c.classId,
-                className: c.className,
-                startTime: c.time?.split(" - ")[0] || "",
-                endTime: c.time?.split(" - ")[1] || "",
-                capacity: c.capacity,
-                level: c.level,
-            }))
-        )
-        : [];
+    const sessionDates =
+        venueData?.terms?.flatMap((t) =>
+            (t?.sessionsMap || [])
+                .map((s) => s?.sessionDate?.split?.("T")?.[0])
+                .filter(Boolean)
+        ) || [];
 
-    const classesWithCapacity = allClasses.filter((c) => c.capacity > 0);
+    const availableDatesSet = new Set(sessionDates);
 
-    const venueClassOptions = classesWithCapacity.map((cls) => ({
-        value: cls.id,
-        label: `${cls.className}${cls.level ? ` (${cls.level})` : ""}`,
-    }));
-
-    const sessionDates = venueData?.terms?.flatMap((t) =>
-        t.sessionsMap.map((s) => s.sessionDate)
-    ) || [];
-    const sessionDatesSet = new Set(sessionDates);
-
-    // starter pack — driven by selected plan's starterPackPrice
-    console.log('selectedVenue', selectedVenue)
-    const showStarterPack = selectedVenue?.all?.starterPack;
-    const starterPackPrice = selectedVenue?.all?.starterPacks[0]?.price || 0;
-
+    const showStarterPack = Boolean(selectedVenue?.all?.starterPack);
+    const starterPackPrice = Number(selectedVenue?.all?.starterPacks?.[0]?.price) || 0;
 
     const formatDOBForDisplay = (isoDate) => {
-        if (!isoDate) return "";
+        if (!isoDate || typeof isoDate !== "string") return "";
         const [y, m, d] = isoDate.split("-");
         if (!y || !m || !d) return "";
         return `${d}/${m}/${y}`;
     };
 
+    // ── Effects ───────────────────────────────────────────
     useEffect(() => {
-        if (!profile) {
-            setParents([INIT_PARENT()]);
-            setStudents([INIT_STUDENT()]);
-            setEmergency(INIT_EMERGENCY);
-            return;
-        }
+        fetchVenues?.();
+        fetchProfileData?.();
+    }, [fetchVenues]);
 
+    useEffect(() => {
+        if (!profile) return;
         const rawParents = profile?.adminMeta?.parents || [];
         const rawStudents = profile?.adminMeta?.students || [];
 
@@ -250,394 +292,160 @@ const BookMembership = () => {
         };
 
         const normalizedParents = rawParents.map((p) => ({
-            id: p.id ?? Date.now() + Math.random(),
-            parentFirstName: p.parentFirstName || "",
-            parentLastName: p.parentLastName || "",
-            parentEmail: p.parentEmail || "",
-            parentPhoneNumber: p.parentPhoneNumber || p.phoneNumber || "",
-            interestReason: p.interestReason || "",
-            interestReasonOther: p.interestReasonOther || "",
-            relationToChild: p.relationToChild || "",
-            howDidYouHear: p.howDidYouHear || "",
-            isCustomReason: p.isCustomReason || false,
-            starterPackSize: p.starterPackSize || "",
-            emailMessage: "",
-            emailStatus: "",
+            id: p?.id ?? Date.now() + Math.random(),
+            parentFirstName: p?.parentFirstName || "",
+            parentLastName: p?.parentLastName || "",
+            parentEmail: p?.parentEmail || "",
+            parentPhoneNumber: p?.parentPhoneNumber || p?.phoneNumber || "",
+            interestReason: p?.interestReason || "",
+            interestReasonOther: p?.interestReasonOther || "",
+            relationToChild: p?.relationToChild || "",
+            howDidYouHear: p?.howDidYouHear || "",
+            isCustomReason: p?.isCustomReason || false,
+            starterPackSize: p?.starterPackSize || "",
         }));
 
-        const normalizedStudents = rawStudents.map((s) => ({
-            studentFirstName: s.studentFirstName || "",
-            studentLastName: s.studentLastName || "",
-            dateOfBirth: normalizeDOB(s.dateOfBirth || s.dob),
-            age: s.age ?? "",
-            gender: s.gender || "",
-            medicalInformation: s.medicalInformation || s.medicalInfo || "",
-            selectedClassId: s.selectedClassId || null,
-            selectedClassData: s.selectedClassData || null,
+        const normalizedStudents = rawStudents.map((s, index) => ({
+            _tmpId: s?.id ?? index,
+            studentFirstName: s?.studentFirstName || "",
+            studentLastName: s?.studentLastName || "",
+            dateOfBirth: normalizeDOB(s?.dateOfBirth || s?.dob),
+            age: s?.age ?? "",
+            gender: s?.gender || "",
+            medicalInformation: s?.medicalInformation || s?.medicalInfo || "",
+            selectedClassId: s?.selectedClassId || null,
+            selectedClassData: s?.selectedClassData || null,
         }));
 
         setParents(normalizedParents.length ? normalizedParents : [INIT_PARENT()]);
         setStudents(normalizedStudents.length ? normalizedStudents : [INIT_STUDENT()]);
 
-        setNumberOfStudents(normalizedStudents.length)
+        if (normalizedStudents.length === 1) {
+            setSelectedStudentIds([normalizedStudents[0]._tmpId]);
+        } else if (normalizedStudents.length > 1) {
+            setSelectedStudentIds(normalizedStudents.map((s) => s._tmpId));
+        }
 
         const emergencyContact = profile?.adminMeta?.emergency;
         if (emergencyContact) {
-            const activeParent = normalizedParents[0];
-            const isSame =
-                !!activeParent &&
-                activeParent.parentFirstName?.trim() === emergencyContact.emergencyFirstName?.trim() &&
-                activeParent.parentLastName?.trim() === emergencyContact.emergencyLastName?.trim() &&
-                activeParent.parentPhoneNumber?.trim() === emergencyContact.emergencyPhoneNumber?.trim();
-
             setEmergency({
-                sameAsAbove: isSame,
-                emergencyFirstName: emergencyContact.emergencyFirstName || "",
-                emergencyLastName: emergencyContact.emergencyLastName || "",
-                emergencyPhoneNumber: emergencyContact.emergencyPhoneNumber || "",
-                emergencyRelation: emergencyContact.emergencyRelation || "",
-                id: emergencyContact.id || "",
+                sameAsAbove: false,
+                emergencyFirstName: emergencyContact?.emergencyFirstName || "",
+                emergencyLastName: emergencyContact?.emergencyLastName || "",
+                emergencyPhoneNumber: emergencyContact?.emergencyPhoneNumber || "",
+                emergencyRelation: emergencyContact?.emergencyRelation || "",
+                id: emergencyContact?.id || "",
             });
-        } else {
-            setEmergency(INIT_EMERGENCY);
         }
     }, [profile]);
 
-
-    // ── Effects ───────────────────────────────────────────
-
     useEffect(() => {
-        fetchVenues();
-        fetchProfileData();
-    }, [fetchVenues]);
-
-    useEffect(() => {
-        const fetchDetails = async () => {
-            if (!booking?.serviceType || !booking?.id) return;
-            try {
-                const parentToken = localStorage.getItem("parentToken");
-                const serviceType = (booking.serviceType.trim() || "")
-                    .replace(/\s+/g, "")
-                    .toLowerCase();
-
-                const formattedServices = (service) => {
-                    const serviceMap = {
-                        "weeklyclassmembership": "weekly",
-                        "weeklyclasstrial": "weekly",
-                        "onetoone": "onetoone",
-                        "birthdayparty": "birthday",
-                        "holidaycamp": "holiday",
-                    };
-                    return serviceMap[service] || service;
-                };
-
-                const response = await fetch(
-                    `${API_BASE_URL}api/parent/account-profile/preview?serviceType=${formattedServices(serviceType)}&bookingId=${booking.id}`,
-                    {
-                        method: "GET",
-                        headers: {
-                            "Authorization": `Bearer ${parentToken}`,
-                            "Content-Type": "application/json"
-                        }
-                    }
-                );
-
-                const data = await response.json();
-                if (response.ok) {
-                    const details = data?.data || data;
-
-                    const rawParents = details?.parents || (details?.parent ? [details.parent] : []);
-                    const rawStudents = details?.students || (details?.student ? [details.student] : []);
-
-                    const normalizeDOB = (raw) => {
-                        if (!raw) return "";
-                        return raw.includes("-") ? formatDOBForDisplay(raw) : raw;
-                    };
-
-                    const normalizedParents = rawParents.map((p) => ({
-                        id: p.id ?? Date.now() + Math.random(),
-                        parentFirstName: p.parentFirstName || p.firstName || "",
-                        parentLastName: p.parentLastName || p.lastName || "",
-                        parentEmail: p.parentEmail || p.email || "",
-                        parentPhoneNumber: p.parentPhoneNumber || p.phoneNumber || "",
-                        interestReason: p.interestReason || "",
-                        interestReasonOther: p.interestReasonOther || "",
-                        relationToChild: p.relationToChild || p.relationChild || "",
-                        howDidYouHear: p.howDidYouHear || p.howDidHear || "",
-                        isCustomReason: p.isCustomReason || false,
-                        starterPackSize: p.starterPackSize || "",
-                        emailMessage: "",
-                        emailStatus: "",
-                    }));
-
-                    const normalizedStudents = rawStudents.map((s) => ({
-                        studentFirstName: s.studentFirstName || s.firstName || "",
-                        studentLastName: s.studentLastName || s.lastName || "",
-                        dateOfBirth: normalizeDOB(s.dateOfBirth || s.dob),
-                        age: s.age ?? "",
-                        gender: s.gender || "",
-                        medicalInformation: s.medicalInformation || s.medicalInfo || "",
-                        selectedClassId: s.selectedClassId || s?.classSchedule?.id || null,
-                        selectedClassData: s.selectedClassData || s?.classSchedule || null,
-                    }));
-
-                    if (normalizedParents.length) setParents(normalizedParents);
-                    if (normalizedStudents.length) {
-                        setStudents(normalizedStudents);
-                        setNumberOfStudents(normalizedStudents.length);
-                    }
-
-                    const emergencyContact = details?.emergency;
-                    if (emergencyContact) {
-                        const activeParent = normalizedParents[0];
-                        const isSame =
-                            !!activeParent &&
-                            activeParent.parentFirstName?.trim() === emergencyContact.emergencyFirstName?.trim() &&
-                            activeParent.parentLastName?.trim() === emergencyContact.emergencyLastName?.trim() &&
-                            activeParent.parentPhoneNumber?.trim() === emergencyContact.emergencyPhoneNumber?.trim();
-
-                        setEmergency({
-                            sameAsAbove: isSame,
-                            emergencyFirstName: emergencyContact.emergencyFirstName || "",
-                            emergencyLastName: emergencyContact.emergencyLastName || "",
-                            emergencyPhoneNumber: emergencyContact.emergencyPhoneNumber || "",
-                            emergencyRelation: emergencyContact.emergencyRelation || "",
-                        });
-                    }
-
-                    if (details?.venue) {
-                        const vId = details.venue.id || details.venue.venueId;
-                        const vOption = venues?.capacityVenues?.find(v => v.venueId === vId);
-                        if (vOption) {
-                            setSelectedVenue({
-                                value: vOption.venueId,
-                                label: vOption.venueName,
-                                all: vOption,
-                            });
-                        }
-                    }
-                }
-            } catch (error) {
-                console.error("Error fetching preview details:", error);
-            }
-        };
-
-        if (venues?.capacityVenues?.length > 0) {
-            fetchDetails();
-        }
-    }, [booking, venues, API_BASE_URL]);
-
-
-    useEffect(() => {
-        if (emergency.sameAsAbove && parents[0]) {
-            const p = parents[0];
-            setEmergency((prev) => ({
-                ...prev,
-                emergencyFirstName: p.parentFirstName || "",
-                emergencyLastName: p.parentLastName || "",
-                emergencyPhoneNumber: p.parentPhoneNumber || "",
-                emergencyRelation: p.relationToChild || "",
-            }));
-        }
-    }, [emergency.sameAsAbove, parents]);
-
-
-    useEffect(() => {
-        if (hasInitialized.current || !sessionDatesSet.size) return;
-        const today = new Date(); today.setHours(0, 0, 0, 0);
-        const future = Array.from(sessionDatesSet)
+        if (hasInitialized.current || !availableDatesSet.size) return;
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const future = Array.from(availableDatesSet)
             .map((d) => new Date(d))
-            .filter((d) => { const x = new Date(d); x.setHours(0, 0, 0, 0); return x >= today; })
+            .filter((d) => !Number.isNaN(d.getTime()))
+            .filter((d) => {
+                const x = new Date(d);
+                x.setHours(0, 0, 0, 0);
+                return x >= today;
+            })
             .sort((a, b) => a - b);
         if (!future.length) return;
         setCurrentDate(new Date(future[0].getFullYear(), future[0].getMonth(), 1));
         hasInitialized.current = true;
-    }, [sessionDatesSet.size]);
+    }, [availableDatesSet.size]);
 
     useEffect(() => {
         if (selectedDate && membershipPlan) calculateAmount(selectedDate);
     }, [numberOfStudents, membershipPlan, selectedDate, isApplied, appliedDiscount]);
 
-    // ── Calendar ──────────────────────────────────────────
-    const getDaysArray = () => {
-        const startDay = new Date(year, month, 1).getDay();
-        const daysInMonth = new Date(year, month + 1, 0).getDate();
-        const days = [];
-        const offset = startDay === 0 ? 6 : startDay - 1;
-        for (let i = 0; i < offset; i++) days.push(null);
-        for (let i = 1; i <= daysInMonth; i++) days.push(new Date(year, month, i));
-        return days;
-    };
-    const calendarDays = getDaysArray();
+    // Derived selected students
+    const isMulti = demoMode === "multi";
+    const activeStudents = isMulti
+        ? students.filter((s) => selectedStudentIds.includes(s._tmpId))
+        : students.slice(0, 1);
 
-    const isSameDate = (d1, d2) => {
-        const a = typeof d1 === "string" ? new Date(d1) : d1;
-        const b = typeof d2 === "string" ? new Date(d2) : d2;
-        return a && b && a.getDate() === b.getDate() && a.getMonth() === b.getMonth() && a.getFullYear() === b.getFullYear();
-    };
+    useEffect(() => {
+        setNumberOfStudents(activeStudents.length || 1);
+    }, [selectedStudentIds, activeStudents.length]);
 
-    // ── Helpers ───────────────────────────────────────────
-    const clearErr = (k) => setFe((p) => { const n = { ...p }; delete n[k]; return n; });
+    // ── Pricing (ported from file 2) ──────────────────────
+    const calculateAmount = (startDate) => {
+        if (!membershipPlan || !startDate) return;
+        const monthlyPrice = Number(membershipPlan?.all?.price) || 0;
+        const starterPack = showStarterPack ? Number(starterPackPrice) : 0;
 
-    const handleNumberChange = (e) => {
-        const val = e.target.value === "" ? "" : Number(e.target.value);
-        if (val === "" || [1, 2, 3, 4].includes(val)) {
-            setNumberOfStudents(val);
-            setStudents((prev) => {
-                if (val === "") return [];
-                if (val > prev.length) {
-                    // profile se students lo agar available hain
-                    const profileStudents = profile?.adminMeta?.students || [];
-                    const extra = Array.from({ length: val - prev.length }, (_, i) => {
-                        const profileStudent = profileStudents[prev.length + i];
-                        if (profileStudent) {
-                            return {
-                                studentFirstName: profileStudent.studentFirstName || "",
-                                studentLastName: profileStudent.studentLastName || "",
-                                dateOfBirth: profileStudent.dateOfBirth
-                                    ? profileStudent.dateOfBirth.includes("-")
-                                        ? formatDOBForDisplay(profileStudent.dateOfBirth)
-                                        : profileStudent.dateOfBirth
-                                    : "",
-                                age: profileStudent.age ?? "",
-                                gender: profileStudent.gender || "",
-                                medicalInformation: profileStudent.medicalInformation || profileStudent.medicalInfo || "",
-                                selectedClassId: profileStudent.selectedClassId || null,
-                                selectedClassData: profileStudent.selectedClassData || null,
-                                error: null,
-                            };
-                        }
-                        return INIT_STUDENT();
-                    });
-                    return [...prev, ...extra];
-                }
-                return prev.slice(0, val);
-            });
-            if (membershipPlan && membershipPlan.all?.students !== val) {
-                setMembershipPlan(paymentPlanOptions.find((p) => p.all?.students === val) || null);
-            }
+        const parse = (s) => {
+            if (!s || typeof s !== "string") return null;
+            const [y, m, d] = s.split("-").map(Number);
+            if (!y || !m || !d) return null;
+            return new Date(y, m - 1, d);
+        };
+
+        const selected = parse(startDate);
+        if (!selected) return;
+        selected.setHours(0, 0, 0, 0);
+
+        const allS = Array.from(availableDatesSet)
+            .map((d) => {
+                const x = parse(d);
+                if (x) x.setHours(0, 0, 0, 0);
+                return x;
+            })
+            .filter(Boolean);
+
+        const inMonth = allS
+            .filter((d) => d.getMonth() === selected.getMonth() && d.getFullYear() === selected.getFullYear())
+            .sort((a, b) => a - b);
+
+        const first = inMonth[0];
+        const isFirstSelected = first && selected.getTime() === first.getTime();
+        const remaining = inMonth.filter((d) => d.getTime() >= selected.getTime());
+        const proRataLessons = remaining.length;
+        const ppl = (Number(membershipPlan?.all?.priceLesson) || 0);
+        const proRataCost = Math.min(Number((proRataLessons * ppl).toFixed(2)) || 0, monthlyPrice || 0);
+        const isFullMonth = (isFirstSelected && proRataLessons >= 3) || proRataCost >= monthlyPrice;
+
+        // Discount logic (matches file 2 exactly)
+        let starterDiscount = 0;
+        if (isApplied && appliedDiscount?.data) {
+            starterDiscount = appliedDiscount.data.type === "percentage"
+                ? (starterPack * Number(appliedDiscount.data.value)) / 100
+                : Number(appliedDiscount.data.discountAmount || 0);
         }
+
+        // total today = starterPack + 3.99 delivery - discount (file 2 formula)
+        const totalToday = showStarterPack
+            ? Number((Math.max(starterPack + 3.99 - starterDiscount, 0)).toFixed(2))
+            : proRataCost;
+
+        const stripeAmount = showStarterPack
+            ? Math.max(starterPack - starterDiscount, 0) + 3.99
+            : proRataCost;
+
+        const breakdown = {
+            pricePerClassPerChild: ppl,
+            numberOfLessonsProRated: proRataLessons,
+            finalProRataCost: proRataCost,
+            starterPack,
+            starterDiscount,
+            totalAmountToday: totalToday,
+            nextMonthPayment: Number(monthlyPrice.toFixed(2)) || 0,
+            isFullMonthCharge: isFullMonth,
+            stripeAmount,
+        };
+        setPricingBreakdown(breakdown);
+        return { totalToday, breakdown };
     };
 
-    const handlePlanChange = (plan) => {
-        setMembershipPlan(plan);
-        if (!plan) return;
-        const val = Number(plan.all?.students);
-        setNumberOfStudents(val);
-        setStudents((prev) => {
-            if (val > prev.length) {
-                const profileStudents = profile?.adminMeta?.students || [];
-                const extra = Array.from({ length: val - prev.length }, (_, i) => {
-                    const profileStudent = profileStudents[prev.length + i];
-                    if (profileStudent) {
-                        return {
-                            studentFirstName: profileStudent.studentFirstName || "",
-                            studentLastName: profileStudent.studentLastName || "",
-                            dateOfBirth: profileStudent.dateOfBirth
-                                ? profileStudent.dateOfBirth.includes("-")
-                                    ? formatDOBForDisplay(profileStudent.dateOfBirth)
-                                    : profileStudent.dateOfBirth
-                                : "",
-                            age: profileStudent.age ?? "",
-                            gender: profileStudent.gender || "",
-                            medicalInformation: profileStudent.medicalInformation || profileStudent.medicalInfo || "",
-                            selectedClassId: profileStudent.selectedClassId || null,
-                            selectedClassData: profileStudent.selectedClassData || null,
-                            error: null,
-                        };
-                    }
-                    return INIT_STUDENT();
-                });
-                return [...prev, ...extra];
-            }
-            return prev.slice(0, val);
-        });
-    };
-
-    const handleDOBChange = (index, value) => {
-        let c = value.replace(/[^\d]/g, "");
-        if (c.length > 2 && c.length <= 4) c = `${c.slice(0, 2)}/${c.slice(2)}`;
-        else if (c.length > 4) c = `${c.slice(0, 2)}/${c.slice(2, 4)}/${c.slice(4, 8)}`;
-        const updated = [...students];
-        updated[index].dateOfBirth = c;
-        if (c.length === 10) {
-            const [d, m, y] = c.split("/").map(Number);
-            const date = new Date(y, m - 1, d);
-            if (date.getDate() === d && date.getMonth() === m - 1 && date.getFullYear() === y) {
-                const today = new Date();
-                let age = today.getFullYear() - y;
-                const mo = today.getMonth() - (m - 1);
-                if (mo < 0 || (mo === 0 && today.getDate() < d)) age--;
-                updated[index].age = age >= 3 && age <= 100 ? age : "";
-            } else updated[index].age = "";
-        } else updated[index].age = "";
-        setStudents(updated);
-    };
-
-    const handleStudentChange = (index, field, value) => {
-        const u = [...students]; u[index][field] = value; setStudents(u);
-    };
-
-    const handleStudentClassChange = (index, option) => {
-        const u = [...students];
-        if (!option) {
-            u[index].selectedClassId = null;
-            u[index].selectedClassData = null;
-            u[index].error = null;
-        } else {
-            const cls = allClasses.find((c) => c.id === option.value);
-
-            const alreadySelectedCount = u.filter((s, i) => i !== index && s.selectedClassId === option.value).length;
-            const remainingCapacity = (cls?.capacity || 0) - alreadySelectedCount;
-
-            u[index].selectedClassId = option.value;
-            u[index].selectedClassData = cls || null;
-
-            if (cls?.capacity === 0) {
-                u[index].error = "This class has no capacity. Please select another.";
-            } else if (remainingCapacity <= 0) {
-                u[index].error = "Not enough space in this class for another student. Please select another.";
-            } else {
-                u[index].error = null;
-            }
-        }
-        setStudents(u);
-    };
-
-    const handleRemoveStudent = (index) => {
-        setStudents((prev) => {
-            const next = prev.filter((_, i) => i !== index);
-            setNumberOfStudents(next.length);
-            return next;
-        });
-    };
-
-    const handleParentChange = (index, field, value) => {
-        const u = [...parents]; u[index][field] = value; setParents(u);
-    };
-
-    const handleEmailBlur = async (index, email) => {
-        if (!email) return;
-        try {
-            const res = await fetch(`${API_BASE_URL}/api/check-parent-email`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-                body: JSON.stringify({ email }),
-            });
-            const result = await res.json();
-            handleParentChange(index, "emailMessage", result.message || "");
-            handleParentChange(index, "emailStatus", res.ok ? "success" : "error");
-        } catch {
-            handleParentChange(index, "emailMessage", "Error checking email");
-            handleParentChange(index, "emailStatus", "error");
-        }
-    };
-
+    // ── Discount handler (ported from file 2) ─────────────
     const handleApplyDiscount = async () => {
         if (!discountCode.trim()) { setIsChecked(true); setIsApplied(false); return; }
         setIsChecked(true); setIsDiscountLoading(true);
         try {
-            const res = await fetch(`${API_BASE_URL}/api/admin/book-membership/apply-discount`, {
+            const res = await fetch(`${API_BASE_URL}api/admin/book-membership/apply-discount`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
                 body: JSON.stringify({ starterPack: starterPackPrice, code: discountCode }),
@@ -649,988 +457,1096 @@ const BookMembership = () => {
         finally { setIsDiscountLoading(false); }
     };
 
-    // ── Pricing ───────────────────────────────────────────
-    const calculateAmount = (startDate) => {
-        if (!membershipPlan || !startDate) return;
-        const monthlyPrice = Number(membershipPlan?.all?.price ?? 0);
-        const starterPack = showStarterPack ? Number(starterPackPrice) : 0;
-        const parse = (s) => { const [y, m, d] = s.split("-").map(Number); return new Date(y, m - 1, d); };
-        const selected = parse(startDate); selected.setHours(0, 0, 0, 0);
-        const allS = Array.from(sessionDatesSet).map((d) => { const x = parse(d); x.setHours(0, 0, 0, 0); return x; });
-        const inMonth = allS.filter((d) => d.getMonth() === selected.getMonth() && d.getFullYear() === selected.getFullYear()).sort((a, b) => a - b);
-        const first = inMonth[0];
-        const isFirstSelected = first && selected.getTime() === first.getTime();
-        const remaining = inMonth.filter((d) => d.getTime() >= selected.getTime());
-        const proRataLessons = remaining.length;
-        const ppl = membershipPlan?.all?.priceLesson || 0;
-        const proRataCost = Math.min(Number((proRataLessons * ppl).toFixed(2)), monthlyPrice);
-        const isFullMonth = (isFirstSelected && proRataLessons >= 3) || proRataCost >= monthlyPrice;
-        let starterDiscount = 0;
-        if (isApplied && appliedDiscount?.data) {
-            starterDiscount = appliedDiscount.data.type === "percentage"
-                ? (starterPack * Number(appliedDiscount.data.value)) / 100
-                : Number(appliedDiscount.data.discountAmount || 0);
-        }
-        const totalToday = showStarterPack
-            ? Number((Math.max(starterPack + 3.99 - starterDiscount, 0)).toFixed(2))
-            : 0;
-
-        const breakdown = {
-            pricePerClassPerChild: ppl,
-            numberOfLessonsProRated: proRataLessons,
-            finalProRataCost: proRataCost,
-            starterPack,
-            totalAmountToday: totalToday,
-            nextMonthPayment: Number(monthlyPrice.toFixed(2)),
-            isFullMonthCharge: isFullMonth,
-            stripeAmount: showStarterPack ? Math.max(starterPack - starterDiscount, 0) + 3.99 : 0,
-        };
-        setPricingBreakdown(breakdown);
-        return { totalToday, breakdown };
+    const toggleStudent = (id) => {
+        if (id === undefined || id === null) return;
+        setSelectedStudentIds((prev) =>
+            prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+        );
     };
 
-    // ── Validation ────────────────────────────────────────
-    const validate = () => {
-        if (parents.some((p) => p.emailStatus === "error")) return false;
+    // ── Payment field handlers ────────────────────────────
+    const handleCardNumberChange = (e) => {
+        const formatted = formatCardNumber(e?.target?.value);
+        setPayment((p) => ({ ...p, cardNumber: formatted }));
+        if (cardErrors.cardNumber) setCardErrors((errs) => ({ ...errs, cardNumber: "" }));
+    };
+
+    const handleExpiryChange = (e) => {
+        const formatted = formatExpiry(e?.target?.value, payment.expiryDate);
+        setPayment((p) => ({ ...p, expiryDate: formatted }));
+        if (cardErrors.expiryDate) setCardErrors((errs) => ({ ...errs, expiryDate: "" }));
+    };
+
+    const handleCVCChange = (e) => {
+        const formatted = formatCVC(e?.target?.value);
+        setPayment((p) => ({ ...p, cvc: formatted }));
+        if (cardErrors.cvc) setCardErrors((errs) => ({ ...errs, cvc: "" }));
+    };
+
+    const handleSortCodeChange = (e) => {
+        const formatted = formatSortCode(e?.target?.value);
+        setPayment((p) => ({ ...p, branch_code: formatted }));
+        if (ddErrors.branch_code) setDdErrors((errs) => ({ ...errs, branch_code: "" }));
+    };
+
+    const handleAccountNumberChange = (e) => {
+        const formatted = formatAccountNumber(e?.target?.value);
+        setPayment((p) => ({ ...p, account_number: formatted }));
+        if (ddErrors.account_number) setDdErrors((errs) => ({ ...errs, account_number: "" }));
+    };
+
+    // ── DD validation ─────────────────────────────────────
+    const validateDD = () => {
         const errs = {};
-        if (!membershipPlan) errs.membershipPlan = "Membership plan is required";
-        if (!selectedDate) errs.selectedDate = "Start date is required";
-
-        const classSelections = {};
-        students.forEach((s, i) => {
-            if (!s.studentFirstName?.trim()) errs[`s${i}_firstName`] = "First name is required";
-            if (!s.studentLastName?.trim()) errs[`s${i}_lastName`] = "Last name is required";
-            if (!s.dateOfBirth) errs[`s${i}_dob`] = "Date of birth is required";
-            if (!s.gender) errs[`s${i}_gender`] = "Gender is required";
-            if (!s.medicalInformation?.trim()) errs[`s${i}_medical`] = "Required — write 'None' if not applicable";
-
-            if (!s.selectedClassId) {
-                errs[`s${i}_class`] = "Please select a class";
-            } else {
-                const clsId = s.selectedClassId;
-                classSelections[clsId] = (classSelections[clsId] || 0) + 1;
-                if (s.selectedClassData && classSelections[clsId] > s.selectedClassData.capacity) {
-                    errs[`s${i}_class`] = "Not enough space in this class for all selected students.";
-                } else if (s.selectedClassData?.capacity === 0) {
-                    errs[`s${i}_class`] = "This class has no capacity";
-                } else if (s.error) {
-                    errs[`s${i}_class`] = s.error;
-                }
-            }
-        });
-
-        parents.forEach((p, i) => {
-            if (!p.parentFirstName?.trim()) errs[`p${i}_firstName`] = "First name is required";
-            if (!p.parentLastName?.trim()) errs[`p${i}_lastName`] = "Last name is required";
-            if (!p.parentEmail?.trim()) errs[`p${i}_email`] = "Email is required";
-            else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(p.parentEmail)) errs[`p${i}_email`] = "Enter a valid email";
-            if (!p.parentPhoneNumber?.trim()) errs[`p${i}_phone`] = "Phone number is required";
-            if (!p.interestReason) errs[`p${i}_reason`] = "Selection required";
-            if (!p.relationToChild) errs[`p${i}_relation`] = "Relation is required";
-            if (!p.howDidYouHear) errs[`p${i}_hear`] = "Please select how you heard about us";
-            if (i === 0 && showStarterPack && !p.starterPackSize) errs[`p${i}_size`] = "Size is required";
-        });
-
-        if (!emergency.emergencyFirstName?.trim()) errs.e_firstName = "First name is required";
-        if (!emergency.emergencyLastName?.trim()) errs.e_lastName = "Last name is required";
-        if (!emergency.emergencyPhoneNumber?.trim()) errs.e_phone = "Phone number is required";
-        if (!emergency.emergencyRelation) errs.e_relation = "Relation is required";
-
-        setFe(errs);
-
-        if (Object.keys(errs).length) {
-            showErrorToast("Validation Error", "Please fill in all required fields highlighted in red.");
-            const first = Object.keys(errs)[0];
-            setTimeout(() => {
-                if (errs.membershipPlan || errs.selectedDate || errs.venue) infoRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
-                else if (first.startsWith("s")) studentRefs.current[Number(first[1])]?.scrollIntoView({ behavior: "smooth", block: "center" });
-                else if (first.startsWith("p")) parentRefs.current[Number(first[1])]?.scrollIntoView({ behavior: "smooth", block: "center" });
-                else if (first.startsWith("e")) emergencyRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
-            }, 100);
-            return false;
-        }
-        return true;
+        if (!(payment.account_holder_name || "").trim()) errs.account_holder_name = "Account holder name is required";
+        if (!isValidSortCode(payment.branch_code || "")) errs.branch_code = "Enter a valid 6-digit sort code";
+        if (!isValidAccountNumber(payment.account_number || "")) errs.account_number = "Enter a valid 8-digit account number";
+        if (!payment.authorise) errs.authorise = "You must agree to the Direct Debit Guarantee";
+        setDdErrors(errs);
+        return Object.keys(errs).length === 0;
     };
 
+    // ── Card validation ───────────────────────────────────
+    const validateCard = () => {
+        const errs = {};
+        if (!isValidCardNumber(payment.cardNumber || "")) errs.cardNumber = "Enter a valid 16-digit card number";
+        if (!isValidExpiry(payment.expiryDate || "")) errs.expiryDate = "Enter a valid expiry date (MM / YY)";
+        if (!isValidCVC(payment.cvc || "")) errs.cvc = "Enter a valid CVC (3–4 digits)";
+        if (!(payment.nameOnCard || "").trim()) errs.nameOnCard = "Name on card is required";
+        setCardErrors(errs);
+        return Object.keys(errs).length === 0;
+    };
 
-    console.log('students', students)
-    // ── Submit ────────────────────────────────────────────
+    const handleDDContinue = () => {
+        if (validateDD()) setFlowStep("E");
+    };
+
     const handleSubmit = async () => {
+        if (!validateCard()) return;
         setIsSubmitting(true);
         try {
-            const API_URL = import.meta.env.VITE_API_BASE_URL;
-            const parentData = JSON.parse(localStorage.getItem("parentData"));
-            const parentId = parentData?.id;
-
-            let overridePaymentType = "bank";
-            const allBookings = profile?.bookings ? (Array.isArray(profile.bookings) ? profile.bookings : Object.values(profile.bookings).flat()) : [];
-            const weeklyMembershipBooking = allBookings.find(b => b?.serviceType?.toLowerCase() === "weekly class membership");
-
-            if (weeklyMembershipBooking) {
-                const usesAccessPaySuite = weeklyMembershipBooking?.payments?.some(p => p?.paymentType?.toLowerCase() === "accesspaysuite");
-                if (usesAccessPaySuite) {
-                    overridePaymentType = "accesspaysuite";
-                }
+            let parentData = {};
+            try {
+                parentData = JSON.parse(localStorage.getItem("parentData") || "{}") || {};
+            } catch {
+                parentData = {};
             }
-
+            const parentId = parentData?.id;
+            const holderParts = (payment.account_holder_name || "").trim().split(" ").filter(Boolean);
             const payload = {
                 venueId: selectedVenue?.value,
                 startDate: selectedDate,
-                totalStudents: students.length,
-
-                students: students.map((student) => ({
-                    studentFirstName: student.studentFirstName,
-                    studentLastName: student.studentLastName,
-                    dateOfBirth: toDateOnly(student.dateOfBirth),
-                    age: Number(student.age),
-                    gender: student.gender,
-                    medicalInformation: student.medicalInformation || "NA",
-                    selectedClassId: Number(student.selectedClassId),
-                    initialClassId: student.initialClassId || null,
-                    classScheduleId: student.selectedClassData?.id || student.selectedClassData?.classScheduleId
-                        ? Number(student.selectedClassData.classScheduleId || student.selectedClassData?.id)
-                        : null,
-                    ...(booking && { id: student.id || student?.studentId || "" }),
+                totalStudents: activeStudents.length,
+                students: activeStudents.map((student) => ({
+                    studentFirstName: student?.studentFirstName || "",
+                    studentLastName: student?.studentLastName || "",
+                    dateOfBirth: toDateOnly(student?.dateOfBirth),
+                    age: Number(student?.age) || 0,
+                    gender: student?.gender || "",
+                    medicalInformation: student?.medicalInformation || "NA",
+                    classScheduleId: Number(student?.selectedClassId) || 1,
+                    initialClassId: student?.initialClassId || null,
                 })),
-
                 parents: parents.map((parent) => ({
-                    parentFirstName: parent.parentFirstName,
-                    parentLastName: parent.parentLastName,
-                    parentEmail: parent.parentEmail,
-                    parentPhoneNumber: parent.parentPhoneNumber,
-                    interestReason: parent.interestReason,
-                    interestReasonOther: parent.interestReasonOther || "NA",
-                    relationToChild: parent.relationToChild,
-                    howDidYouHear: parent.howDidYouHear,
-                    isCustomReason: parent.isCustomReason || false,
-                    starterPackSize: parent.starterPackSize || null,
-                    ...(booking && { id: parent.id || parent?.parentId || "" }),
+                    parentFirstName: parent?.parentFirstName || "NA",
+                    parentLastName: parent?.parentLastName || "NA",
+                    parentEmail: parent?.parentEmail || "na@na.com",
+                    parentPhoneNumber: parent?.parentPhoneNumber || "00000000000",
+                    interestReason: parent?.interestReason || "Other",
+                    interestReasonOther: parent?.interestReasonOther || "NA",
+                    relationToChild: parent?.relationToChild || "Parent",
+                    howDidYouHear: parent?.howDidYouHear || "Google",
+                    isCustomReason: parent?.isCustomReason || false,
+                    starterPackSize: parent?.starterPackSize || null,
                 })),
-
-                starterPack: showStarterPack ? Number(starterPackPrice) : 0,
+                starterPack: showStarterPack ? starterPackPrice : 0,
                 discountId: isApplied && appliedDiscount?.data?.id ? appliedDiscount.data.id : null,
-                size: showStarterPack ? (parents[0]?.starterPackSize || null) : null,
-
+                size: showStarterPack ? (parents?.[0]?.starterPackSize || null) : null,
                 emergency: {
-                    sameAsAbove: emergency.sameAsAbove,
-                    emergencyFirstName: emergency.emergencyFirstName,
-                    emergencyLastName: emergency.emergencyLastName,
-                    emergencyPhoneNumber: emergency.emergencyPhoneNumber,
-                    emergencyRelation: emergency.emergencyRelation,
-                    ...(booking && { id: emergency.id || "" }),
+                    sameAsAbove: true,
+                    emergencyFirstName: "NA",
+                    emergencyLastName: "NA",
+                    emergencyPhoneNumber: "00000000000",
+                    emergencyRelation: "Parent",
                 },
-
-                paymentPlanId: Number(membershipPlan?.value),
-
+                paymentPlanId: Number(membershipPlan?.value) || 1,
                 payment: {
-                    paymentType: overridePaymentType,
-                    firstName: payment.firstName,
-                    lastName: payment.lastName,
-                    account_number: payment.account_number,
-                    branch_code: payment.branch_code,
-                    account_holder_name: payment.account_holder_name,
-                    authorise: payment.authorise,
-                    price: Number(pricingBreakdown.nextMonthPayment),
-                    proRataAmount: Number(pricingBreakdown.finalProRataCost),
-                    line1: payment.line1,
-                    city: payment.city,
-                    postCode: payment.postalCode,
-                    nameOnCard,
-                    cardNumber: cardNumber.replace(/\s/g, ""),
-                    expiryDate,
-                    cvc,
-                    country: checkoutCountry,
-                    zipCode,
+                    paymentType: "bank",
+                    firstName: payment.firstName || holderParts[0] || "NA",
+                    lastName: payment.lastName || holderParts.slice(1).join(" ") || "NA",
+                    account_number: payment.account_number || "",
+                    branch_code: (payment.branch_code || "").replace(/\D/g, ""),
+                    account_holder_name: payment.account_holder_name || "",
+                    authorise: payment.authorise || false,
+                    price: Number(pricingBreakdown.nextMonthPayment) || 0,
+                    proRataAmount: Number(pricingBreakdown.finalProRataCost) || 0,
+                    line1: selectedAddress || payment.line1 || "NA",
+                    city: payment.city || "NA",
+                    postCode: postcode || payment.postalCode || "NA",
+                    nameOnCard: payment.nameOnCard || "",
+                    cardNumber: (payment.cardNumber || "").replace(/\s/g, ""),
+                    expiryDate: payment.expiryDate || "",
+                    cvc: payment.cvc || "",
+                    country: payment.country || "United Kingdom",
+                    zipCode: payment.zipCode || "",
                 },
             };
 
-       
-            const APIURL = booking
-                ? `${API_URL}api/parent/booking/start-membership/${booking?.id}`
-                : `${API_URL}api/parent/booking/membership/create/${parentId}`;
-
+            const APIURL = `${API_BASE_URL}api/parent/booking/membership/create/${parentId}`;
             const response = await fetch(APIURL, {
-                method: booking ? "PUT" : "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`,
-                },
+                method: "POST",
+                headers: { "Content-Type": "application/json", Authorization: `Bearer ${token || ""}` },
                 body: JSON.stringify(payload),
             });
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok) throw new Error(data?.message || data?.error || "Something went wrong.");
 
-            const data = await response.json();
-
-            if (!response.ok) {
-                throw new Error(data?.message || data?.error || "Something went wrong.");
-            }
-
-            setIsBooked(true);
-
-            setShowPopup(false);
-            showSuccess("Success", data?.message || "Membership created successfully.");
-            navigate('/bookings')
+            setFlowStep("D");
         } catch (err) {
-            console.error(err);
-            showErrorToast("Error", err.message || "Something went wrong.");
+            showErrorToast("Error", err?.message || "Something went wrong.");
         } finally {
             setIsSubmitting(false);
         }
     };
 
-    const isBankValid =
-        payment.account_holder_name && payment.account_number && payment.branch_code &&
-        payment.line1 && payment.city && payment.postalCode && payment.authorise;
+    // UI Flow Config
+    const fullFlowStates = ["A", "B", "C", "E", "D"];
+    const singleFlowStates = ["B", "C", "E", "D"];
+    const flowStates = isMulti ? fullFlowStates : singleFlowStates;
+    const stepsLabels = isMulti
+        ? ["Children", "Confirm & choose", "Direct Debit", "Card payment", "Done"]
+        : ["Confirm & choose", "Direct Debit", "Card payment", "Done"];
+    const currentStepIndex = flowStates.indexOf(flowStep);
+    const activeNames = activeStudents.map((s) => s?.studentFirstName || "Child").join(" & ") || "your child";
 
+    // ── DD button enabled check ───────────────────────────
+    const isDDValid =
+        (payment.account_holder_name || "").trim() &&
+        isValidSortCode(payment.branch_code || "") &&
+        isValidAccountNumber(payment.account_number || "") &&
+        payment.authorise;
+
+    // ── Card button enabled check ─────────────────────────
     const isCardValid =
-        nameOnCard.trim() && cardNumber.replace(/\s/g, "").length === 16 &&
-        expiryDate.length === 5 && cvc.length >= 3 && checkoutCountry && zipCode;
+        isValidCardNumber(payment.cardNumber || "") &&
+        isValidExpiry(payment.expiryDate || "") &&
+        isValidCVC(payment.cvc || "") &&
+        (payment.nameOnCard || "").trim();
 
-    const formatCard = (v) => v.replace(/\D/g, "").slice(0, 16).replace(/(.{4})/g, "$1 ").trim();
-    const formatExpiry = (v) => { const d = v.replace(/\D/g, "").slice(0, 4); return d.length >= 3 ? `${d.slice(0, 2)}/${d.slice(2)}` : d; };
+    // ── Input class helper ────────────────────────────────
+    const inputClass = (hasErr) =>
+        `w-full font-inherit text-[14px] border rounded-[10px] px-3.5 py-3 focus:outline-none focus:ring-2 transition-colors ${
+            hasErr
+                ? "border-[#e53e3e] focus:ring-[#e53e3e]/30 bg-[#fff5f5]"
+                : "border-[#e7ebf1] focus:ring-[#3b7df6]"
+        }`;
 
-    // ── Render ────────────────────────────────────────────
     return (
-        <div className="md:p-7 bg-gray-50 min-h-screen booking-page">
-            <div className="flex px-4 items-center mb-4">
-                <h2 className="text-xl md:text-2xl font-semibold">Book a Membership</h2>
-            </div>
-
-            <div className="md:flex w-full gap-4 px-4">
-                {/* ── LEFT ── */}
-                <div className="md:min-w-[508px] md:max-w-[508px] space-y-5" ref={infoRef}>
-                    <div className="bg-white p-6 rounded-3xl shadow-sm space-y-5">
-                        <h2 className="text-[24px] font-semibold">Information</h2>
-
-                        {/* Venue */}
-                        <div>
-                            <label className="text-base font-semibold">Venue</label>
-                            <Select
-                                options={venues?.capacityVenues?.map((v) => ({
-                                    value: v.venueId,
-                                    label: v.venueName,
-                                    all: v,
-                                })) || []}
-                                value={selectedVenue}
-                                onChange={(opt) => {
-                                    setSelectedVenue(opt);
-                                    setMembershipPlan(null);
-                                    setSelectedDate(null);
-                                    setStudents(prev => prev.map(s => ({ ...s, selectedClassId: null, selectedClassData: null, error: null })));
-                                    hasInitialized.current = false;
-                                }}
-                                placeholder="Select venue"
-                                className="mt-2"
-                                classNamePrefix="react-select"
-                                isClearable
-                                styles={ss("venue", fe)}
-                            />
-                        </div>
-
-                        {/* Number of students */}
-                        <div>
-                            <label className="text-base font-semibold">Number of students</label>
-                            <input type="number" value={numberOfStudents || ""} onChange={handleNumberChange}
-                                min={1} max={4} placeholder="Choose number of students"
-                                className="w-full border border-gray-300 rounded-xl px-3 py-3 mt-2 focus:outline-none" />
-                        </div>
-
-                        {/* Membership Plan */}
-                        <div>
-                            <label className="text-base font-semibold">Membership Plan</label>
-                            <Select options={paymentPlanOptions} value={membershipPlan}
-                                onChange={(p) => { handlePlanChange(p); clearErr("membershipPlan"); }}
-                                placeholder="Choose Plan" className="mt-2" classNamePrefix="react-select"
-                                isClearable isDisabled={!numberOfStudents || !selectedVenue}
-                                styles={ss("membershipPlan", fe)}
-                            />
-                            <Err k="membershipPlan" e={fe} />
-                        </div>
-
-                        {/* Starter Pack */}
-                        {showStarterPack && (
-                            <div>
-                                <label className="text-base font-semibold">Starter Pack</label>
-                                <input readOnly value={`£${starterPackPrice}`}
-                                    className="w-full border border-gray-300 rounded-xl px-3 py-3 mt-2 focus:outline-none bg-gray-50" />
-                            </div>
-                        )}
-
-                        {/* Discount */}
-                        {showStarterPack && (
-                            <div>
-                                <label className="text-base font-semibold">Discount Code</label>
-                                <div className="relative mt-2">
-                                    <input value={discountCode} placeholder="Enter Discount Code"
-                                        onChange={(e) => { setDiscountCode(e.target.value); setIsApplied(false); setAppliedDiscount(null); setIsChecked(false); }}
-                                        className="w-full border border-gray-300 rounded-xl px-3 py-3 pr-24" />
-                                    <button onClick={handleApplyDiscount} disabled={isDiscountLoading}
-                                        className="absolute top-1 right-1 px-4 py-2 rounded-xl bg-[#003997] text-white font-medium hover:bg-gray-900 disabled:opacity-60">
-                                        {isDiscountLoading ? "Applying..." : "Apply"}
-                                    </button>
-                                </div>
-                                {isChecked && !isDiscountLoading && (
-                                    isApplied
-                                        ? <p className="text-green-600 text-sm mt-1">✅ {appliedDiscount?.message}</p>
-                                        : <p className="text-red-500 text-sm mt-1">❌ Invalid discount code</p>
-                                )}
-                            </div>
-                        )}
+        <div className="min-h-screen bg-[#f4f6f9] text-[#1f2733] font-['Poppins',sans-serif] pb-16">
+            {/* Topbar */}
+            <div className="bg-white border-b border-[#e7ebf1] flex items-center justify-between px-7 py-4">
+                <div>
+                    <div className="text-[13px] text-[#6b7685] font-medium">
+                        Hi {profile?.adminMeta?.parents?.[0]?.parentFirstName || "Parent"}!
                     </div>
-
-                    {/* Calendar */}
-                    <div className={`bg-white p-6 rounded-3xl shadow-sm ${fe.selectedDate ? "border-2 border-red-500" : ""}`}>
-                        <h2 className="text-[24px] font-semibold mb-4">Select start date</h2>
-                        <div className="text-center">
-                            <div className="flex justify-center gap-5 items-center mb-3">
-                                <button onClick={() => membershipPlan && setCurrentDate(new Date(year, month - 1, 1))}
-                                    className={`w-8 h-8 rounded-full border border-black flex items-center justify-center ${!membershipPlan ? "opacity-40 cursor-not-allowed" : "hover:bg-black hover:text-white"}`}>
-                                    <ChevronLeft className="w-5 h-5" />
-                                </button>
-                                <p className="font-semibold text-[20px]">
-                                    {currentDate.toLocaleString("default", { month: "long" })} {year}
-                                </p>
-                                <button onClick={() => membershipPlan && setCurrentDate(new Date(year, month + 1, 1))}
-                                    className={`w-8 h-8 rounded-full border border-black flex items-center justify-center ${!membershipPlan ? "opacity-40 cursor-not-allowed" : "hover:bg-black hover:text-white"}`}>
-                                    <ChevronRight className="w-5 h-5" />
-                                </button>
-                            </div>
-                            <div className="grid grid-cols-7 text-sm text-gray-500 mb-1">
-                                {["M", "T", "W", "T", "F", "S", "S"].map((d, i) => (
-                                    <div key={i} className="font-medium text-center">{d}</div>
-                                ))}
-                            </div>
-                            <div className="flex flex-col gap-1">
-                                {Array.from({ length: Math.ceil(calendarDays.length / 7) }).map((_, wi) => (
-                                    <div key={wi} className="grid grid-cols-7 gap-1">
-                                        {calendarDays.slice(wi * 7, wi * 7 + 7).map((date, i) => {
-                                            if (!date) return <div key={i} />;
-                                            const fd = formatLocalDate(date);
-                                            const isAvailable = membershipPlan && sessionDatesSet.has(fd);
-                                            const isSelected = isSameDate(date, selectedDate);
-                                            const today = new Date(); today.setHours(0, 0, 0, 0);
-                                            const cur = new Date(date); cur.setHours(0, 0, 0, 0);
-                                            const isPast = isAvailable && cur < today;
-                                            return (
-                                                <div key={i}
-                                                    onClick={() => {
-                                                        if (isAvailable && !isPast) {
-                                                            setSelectedDate(isSameDate(date, selectedDate) ? null : fd);
-                                                            clearErr("selectedDate");
-                                                        }
-                                                    }}
-                                                    className={`w-8 h-8 flex items-center justify-center mx-auto text-sm rounded-full
-                                                        ${!membershipPlan ? "opacity-40 cursor-not-allowed" :
-                                                            isPast ? "bg-red-200 text-red-700 cursor-not-allowed" :
-                                                                isAvailable ? "cursor-pointer bg-sky-200" : "opacity-40 cursor-not-allowed"}
-                                                        ${isSelected ? "!bg-blue-600 text-white font-bold" : ""}`}>
-                                                    {date.getDate()}
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                        <Err k="selectedDate" e={fe} />
-                    </div>
-
-                    {/* Breakdown */}
-                    <div>
-                        <button disabled={!membershipPlan} onClick={() => setIsOpenMembership(!isOpenMembership)}
-                            className={`w-full text-white text-[18px] font-semibold px-6 py-3 rounded-lg flex items-center justify-center gap-2
-                                ${membershipPlan ? "bg-[#237FEA]" : "bg-gray-400 cursor-not-allowed"}`}>
-                            Membership Plan Breakdown
-                            <ChevronDown className={`w-5 h-5 transition-transform ${isOpenMembership ? "rotate-180" : ""}`} />
-                        </button>
-                        {isOpenMembership && (
-                            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }}
-                                className="bg-white mt-3 rounded-2xl shadow p-6 space-y-3 text-[15px]">
-                                <div className="flex justify-between font-semibold">
-                                    <span>{membershipPlan?.all?.duration} {membershipPlan?.all?.interval} Plan</span>
-                                    <span>£{pricingBreakdown.nextMonthPayment?.toFixed(2)}/mo</span>
-                                </div>
-                                {showStarterPack && (
-                                    <>
-                                        <div className="flex justify-between">
-                                            <span>Starter Pack</span>
-                                            <span>£{pricingBreakdown.starterPack?.toFixed(2)}</span>
-                                        </div>
-                                        <div className="flex justify-between">
-                                            <span>Delivery Fee</span>
-                                            <span>£3.99</span>
-                                        </div>
-                                    </>
-                                )}
-                                <div className="flex justify-between text-sm text-gray-500">
-                                    <span>Price per lesson</span>
-                                    <span>£{pricingBreakdown.pricePerClassPerChild}</span>
-                                </div>
-                                {pricingBreakdown.isFullMonthCharge ? (
-                                    <div className="flex justify-between">
-                                        <span>Full monthly charge</span>
-                                        <span>£{pricingBreakdown.nextMonthPayment?.toFixed(2)}</span>
-                                    </div>
-                                ) : (
-                                    <>
-                                        <div className="flex justify-between">
-                                            <span>Pro-rata lessons</span>
-                                            <span>{pricingBreakdown.numberOfLessonsProRated}</span>
-                                        </div>
-                                        <div className="flex justify-between">
-                                            <span>Pro-rata cost</span>
-                                            <span>£{pricingBreakdown.finalProRataCost?.toFixed(2)}</span>
-                                        </div>
-                                    </>
-                                )}
-                                <div className="flex justify-between font-bold text-[17px] border-t pt-3">
-                                    <span>Total due today</span>
-                                    <span>£{pricingBreakdown.totalAmountToday?.toFixed(2)}</span>
-                                </div>
-                            </motion.div>
-                        )}
-                    </div>
+                    <h1 className="text-[22px] font-bold tracking-tight">Account Information</h1>
                 </div>
-
-                {/* ── RIGHT ── */}
-                <div className="flex-1 space-y-6 bg-[#f9f9f9] px-2">
-
-                    {/* Students */}
-                    {students.map((student, index) => (
-                        <motion.div key={index} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-                            ref={(el) => (studentRefs.current[index] = el)}
-                            className="bg-white p-6 rounded-3xl shadow-sm space-y-5 relative">
-                            {students.length > 1 && (
-                                <button onClick={() => handleRemoveStudent(index)}
-                                    className="absolute top-4 right-4 text-red-400 hover:text-red-600">
-                                    <X className="w-5 h-5" />
-                                </button>
-                            )}
-                            <h2 className="text-[20px] font-semibold">
-                                Student {students.length > 1 ? `${index + 1} ` : ""}Information
-                            </h2>
-
-                            <div className="md:flex gap-4">
-                                <div className="md:w-1/2">
-                                    <label className="block text-[16px] font-semibold">First name</label>
-                                    <input value={student.studentFirstName} placeholder="Enter first name"
-                                        className={fc(`s${index}_firstName`, fe)}
-                                        onChange={(e) => { handleStudentChange(index, "studentFirstName", e.target.value); clearErr(`s${index}_firstName`); }} />
-                                    <Err k={`s${index}_firstName`} e={fe} />
-                                </div>
-                                <div className="md:w-1/2">
-                                    <label className="block text-[16px] font-semibold">Last name</label>
-                                    <input value={student.studentLastName} placeholder="Enter last name"
-                                        className={fc(`s${index}_lastName`, fe)}
-                                        onChange={(e) => { handleStudentChange(index, "studentLastName", e.target.value); clearErr(`s${index}_lastName`); }} />
-                                    <Err k={`s${index}_lastName`} e={fe} />
-                                </div>
-                            </div>
-
-                            <div className="md:flex gap-4">
-                                <div className="md:w-1/2">
-                                    <label className="block text-[16px] font-semibold">Date of Birth</label>
-                                    <input value={student.dateOfBirth} placeholder="DD/MM/YYYY" maxLength={10}
-                                        className={fc(`s${index}_dob`, fe)}
-                                        onChange={(e) => { handleDOBChange(index, e.target.value); clearErr(`s${index}_dob`); }} />
-                                    <Err k={`s${index}_dob`} e={fe} />
-                                </div>
-                                <div className="md:w-1/2">
-                                    <label className="block text-[16px] font-semibold">Age</label>
-                                    <input readOnly value={student.age || ""} placeholder="Automatic entry"
-                                        className="w-full mt-2 border border-gray-300 rounded-xl px-4 py-3 text-base bg-gray-50" />
-                                </div>
-                            </div>
-
-                            <div className="md:flex gap-4">
-                                <div className="md:w-1/2">
-                                    <label className="block text-[16px] font-semibold">Gender</label>
-                                    <Select options={genderOptions} classNamePrefix="react-select"
-                                        placeholder="Select gender"
-                                        value={genderOptions.find((o) => o.value === student.gender) || null}
-                                        onChange={(o) => { handleStudentChange(index, "gender", o?.value || ""); clearErr(`s${index}_gender`); }}
-                                        styles={ss(`s${index}_gender`, fe)} />
-                                    <Err k={`s${index}_gender`} e={fe} />
-                                </div>
-                                <div className="md:w-1/2">
-                                    <label className="block text-[16px] font-semibold">Medical information</label>
-                                    <input value={student.medicalInformation} placeholder="Enter medical info"
-                                        className={fc(`s${index}_medical`, fe)}
-                                        onChange={(e) => { handleStudentChange(index, "medicalInformation", e.target.value); clearErr(`s${index}_medical`); }} />
-                                    <Err k={`s${index}_medical`} e={fe} />
-                                </div>
-                            </div>
-
-                            <div className="md:flex gap-4">
-                                <div className="md:w-1/2">
-                                    <label className="block text-[16px] font-semibold">Class / Level</label>
-                                    <Select options={venueClassOptions} classNamePrefix="react-select"
-                                        placeholder="Select class"
-                                        value={venueClassOptions.find((o) => o.value === student.selectedClassId) || null}
-                                        onChange={(o) => { handleStudentClassChange(index, o); clearErr(`s${index}_class`); }}
-                                        styles={ss(`s${index}_class`, fe)} />
-                                    {student.error && !fe[`s${index}_class`] && <p className="text-red-500 text-sm mt-1 ml-1 font-medium">{student.error}</p>}
-                                    <Err k={`s${index}_class`} e={fe} />
-                                </div>
-                                <div className="md:w-1/2">
-                                    <label className="block text-[16px] font-semibold">Time</label>
-                                    <input readOnly
-                                        value={student.selectedClassData ? `${student.selectedClassData.startTime} - ${student.selectedClassData.endTime}` : ""}
-                                        placeholder="Automatic entry"
-                                        className="w-full mt-2 border border-gray-300 rounded-xl px-4 py-3 bg-gray-50" />
-                                </div>
-                            </div>
-                        </motion.div>
-                    ))}
-
-                    {/* Parents */}
-                    {parents.map((parent, index) => (
-                        <motion.div key={parent.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-                            ref={(el) => (parentRefs.current[index] = el)}
-                            className="bg-white p-6 rounded-3xl shadow-sm space-y-5">
-                            <div className="flex justify-between items-center">
-                                <h2 className="text-[20px] font-semibold">
-                                    {index === 0 ? "Parent information" : `Parent ${index + 1} information`}
-                                </h2>
-                                <div className="flex gap-2">
-                                    {index === 0 && (
-                                        <button onClick={() => { if (parents.length < 3) setParents((p) => [...p, INIT_PARENT()]); }}
-                                            disabled={parents.length >= 3}
-                                            className="text-white text-sm px-4 py-2 bg-blue-600 rounded-xl hover:bg-blue-700 disabled:opacity-50">
-                                            Add Parent
-                                        </button>
-                                    )}
-                                    {index > 0 && (
-                                        <button onClick={() => setParents((p) => p.filter((x) => x.id !== parent.id))}>
-                                            <X className="w-5 h-5 text-gray-400 hover:text-red-500" />
-                                        </button>
-                                    )}
-                                </div>
-                            </div>
-
-                            <div className="md:flex gap-4">
-                                <div className="md:w-1/2">
-                                    <label className="block text-[16px] font-semibold">First name</label>
-                                    <input value={parent.parentFirstName} placeholder="Enter first name"
-                                        className={fc(`p${index}_firstName`, fe)}
-                                        onChange={(e) => { handleParentChange(index, "parentFirstName", e.target.value.replace(/[^A-Za-z\s]/g, "")); clearErr(`p${index}_firstName`); }} />
-                                    <Err k={`p${index}_firstName`} e={fe} />
-                                </div>
-                                <div className="md:w-1/2">
-                                    <label className="block text-[16px] font-semibold">Last name</label>
-                                    <input value={parent.parentLastName} placeholder="Enter last name"
-                                        className={fc(`p${index}_lastName`, fe)}
-                                        onChange={(e) => { handleParentChange(index, "parentLastName", e.target.value.replace(/[^A-Za-z\s]/g, "")); clearErr(`p${index}_lastName`); }} />
-                                    <Err k={`p${index}_lastName`} e={fe} />
-                                </div>
-                            </div>
-
-                            <div className="md:flex gap-4">
-                                <div className="md:w-1/2">
-                                    <label className="block text-[16px] font-semibold">Email</label>
-                                    <input type="email" value={parent.parentEmail} placeholder="Enter email"
-                                        className={fc(`p${index}_email`, fe)}
-                                        onBlur={(e) => handleEmailBlur(index, e.target.value)}
-                                        onChange={(e) => { handleParentChange(index, "parentEmail", e.target.value); clearErr(`p${index}_email`); }} />
-                                    <Err k={`p${index}_email`} e={fe} />
-                                    {parent.emailMessage && (
-                                        <p className={`text-sm mt-1 ${parent.emailStatus === "success" ? "text-green-600" : "text-red-500"}`}>
-                                            {parent.emailMessage}
-                                        </p>
-                                    )}
-                                </div>
-                                <div className="md:w-1/2">
-                                    <label className="block text-[16px] font-semibold">Phone number</label>
-                                    <div className={fe[`p${index}_phone`] ? "border border-red-500 rounded-xl bg-red-50 mt-2" : "mt-2"}>
-                                        <PhoneNumberInput value={parent.parentPhoneNumber}
-                                            onChange={(v) => { handleParentChange(index, "parentPhoneNumber", v); clearErr(`p${index}_phone`); }}
-                                            placeholder="Enter phone number" />
-                                    </div>
-                                    <Err k={`p${index}_phone`} e={fe} />
-                                </div>
-                            </div>
-
-                            <div>
-                                <label className="block text-[16px] font-semibold">What's the main reason you're interested in Samba Soccer Schools?</label>
-                                {parent.isCustomReason ? (
-                                    <div className="relative">
-                                        <input value={parent.interestReason} placeholder="Please specify"
-                                            className={fc(`p${index}_reason`, fe)}
-                                            onChange={(e) => { handleParentChange(index, "interestReason", e.target.value); clearErr(`p${index}_reason`); }} />
-                                        <button type="button" onClick={() => { handleParentChange(index, "interestReason", ""); handleParentChange(index, "isCustomReason", false); }}
-                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-blue-600">
-                                            ← Select
-                                        </button>
-                                    </div>
-                                ) : (
-                                    <Select options={interestReasonOptions} classNamePrefix="react-select"
-                                        placeholder="Select a reason"
-                                        value={interestReasonOptions.find((o) => o.value === parent.interestReason) || null}
-                                        onChange={(o) => {
-                                            clearErr(`p${index}_reason`);
-                                            if (o?.value === "Other") { handleParentChange(index, "interestReason", ""); handleParentChange(index, "isCustomReason", true); }
-                                            else { handleParentChange(index, "interestReason", o?.value || ""); handleParentChange(index, "isCustomReason", false); }
-                                        }}
-                                        styles={ss(`p${index}_reason`, fe)} />
-                                )}
-                                <Err k={`p${index}_reason`} e={fe} />
-                            </div>
-
-                            <div>
-                                <label className="block text-[16px] font-semibold">Tell us a bit more (optional)</label>
-                                <input value={parent.interestReasonOther} placeholder="Anything else you'd like to share?"
-                                    className="w-full mt-2 border border-gray-300 rounded-xl px-4 py-3 text-base focus:outline-none"
-                                    onChange={(e) => handleParentChange(index, "interestReasonOther", e.target.value)} />
-                            </div>
-
-                            <div className="md:flex gap-4">
-                                <div className="md:w-1/2">
-                                    <label className="block text-[16px] font-semibold">Relation to child</label>
-                                    <Select options={relationOptions} classNamePrefix="react-select"
-                                        placeholder="Select Relation"
-                                        value={relationOptions.find((o) => o.value === parent.relationToChild) || null}
-                                        onChange={(o) => { handleParentChange(index, "relationToChild", o?.value || ""); clearErr(`p${index}_relation`); }}
-                                        styles={ss(`p${index}_relation`, fe)} />
-                                    <Err k={`p${index}_relation`} e={fe} />
-                                </div>
-                                <div className="md:w-1/2">
-                                    <label className="block text-[16px] font-semibold">How did you hear about us?</label>
-                                    <Select options={hearOptions} classNamePrefix="react-select"
-                                        placeholder="Select"
-                                        value={hearOptions.find((o) => o.value === parent.howDidYouHear) || null}
-                                        onChange={(o) => { handleParentChange(index, "howDidYouHear", o?.value || ""); clearErr(`p${index}_hear`); }}
-                                        styles={ss(`p${index}_hear`, fe)} />
-                                    <Err k={`p${index}_hear`} e={fe} />
-                                </div>
-                            </div>
-
-                            {index === 0 && showStarterPack && (
-                                <div>
-                                    <label className="block text-[16px] font-semibold">
-                                        Starter Pack Kit Size{" "}
-                                        <button type="button" onClick={() => setIsSizeChartOpen(true)}
-                                            className="text-[#237FEA] text-sm font-medium hover:underline ml-2">
-                                            Size Chart
-                                        </button>
-                                    </label>
-                                    <Select options={sizeOptions} classNamePrefix="react-select"
-                                        placeholder="Select Size"
-                                        value={sizeOptions.find((o) => o.value === parent.starterPackSize) || null}
-                                        onChange={(o) => { handleParentChange(index, "starterPackSize", o?.value || ""); clearErr(`p${index}_size`); }}
-                                        styles={ss(`p${index}_size`, fe)} />
-                                    <Err k={`p${index}_size`} e={fe} />
-                                </div>
-                            )}
-                        </motion.div>
-                    ))}
-
-                    {/* Emergency */}
-                    <div className="bg-white p-6 rounded-3xl shadow-sm space-y-5" ref={emergencyRef}>
-                        <h2 className="text-[20px] font-semibold">Emergency contact details</h2>
-                        <label className="flex items-center gap-2 cursor-pointer">
-                            <input type="checkbox" checked={emergency.sameAsAbove}
-                                onChange={() => setEmergency((p) => ({ ...p, sameAsAbove: !p.sameAsAbove }))}
-                                className="w-4 h-4 accent-blue-600" />
-                            <span className="text-base font-semibold text-[#34353B]">Fill same as above</span>
-                        </label>
-
-                        <div className="md:flex gap-4">
-                            <div className="md:w-1/2">
-                                <label className="block text-[16px] font-semibold">First name</label>
-                                <input value={emergency.emergencyFirstName} placeholder="Enter first name"
-                                    className={fc("e_firstName", fe)}
-                                    onChange={(e) => { setEmergency((p) => ({ ...p, emergencyFirstName: e.target.value })); clearErr("e_firstName"); }} />
-                                <Err k="e_firstName" e={fe} />
-                            </div>
-                            <div className="md:w-1/2">
-                                <label className="block text-[16px] font-semibold">Last name</label>
-                                <input value={emergency.emergencyLastName} placeholder="Enter last name"
-                                    className={fc("e_lastName", fe)}
-                                    onChange={(e) => { setEmergency((p) => ({ ...p, emergencyLastName: e.target.value })); clearErr("e_lastName"); }} />
-                                <Err k="e_lastName" e={fe} />
-                            </div>
-                        </div>
-
-                        <div className="md:flex gap-4">
-                            <div className="md:w-1/2">
-                                <label className="block text-[16px] font-semibold">Phone number</label>
-                                <div className={fe.e_phone ? "border border-red-500 rounded-xl bg-red-50 mt-2" : "mt-2"}>
-                                    <PhoneNumberInput value={emergency.emergencyPhoneNumber}
-                                        onChange={(v) => { setEmergency((p) => ({ ...p, emergencyPhoneNumber: v })); clearErr("e_phone"); }}
-                                        placeholder="Enter phone number" />
-                                </div>
-                                <Err k="e_phone" e={fe} />
-                            </div>
-                            <div className="md:w-1/2">
-                                <label className="block text-[16px] font-semibold">Relation to child</label>
-                                <Select options={relationOptions} classNamePrefix="react-select"
-                                    placeholder="Select Relation"
-                                    value={relationOptions.find((o) => o.value === emergency.emergencyRelation) || null}
-                                    onChange={(o) => { setEmergency((p) => ({ ...p, emergencyRelation: o?.value || "" })); clearErr("e_relation"); }}
-                                    styles={ss("e_relation", fe)} />
-                                <Err k="e_relation" e={fe} />
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Actions */}
-                    <div className="sm:flex justify-end gap-4 pb-6">
-                        <button type="button"
-                            className="border md:w-max w-full border-[#717073] text-[#717073] px-12 text-[18px] py-2 rounded-lg font-semibold">
-                            Cancel
-                        </button>
-                        <button type="button"
-                            disabled={isBooked || parents.some((p) => p.emailStatus === "error")}
-                            onClick={() => {
-                                if (validate()) {
-                                    setStep(1);
-                                    setShowPopup(true);
-                                }
-                            }}
-                            className={`text-white md:w-max mt-3 sm:mt-0 w-full font-semibold text-[18px] px-6 py-3 rounded-lg
-                                ${isBooked || parents.some((p) => p.emailStatus === "error")
-                                    ? "bg-gray-400 cursor-not-allowed"
-                                    : "bg-[#237FEA]"}`}>
-                            {isBooked ? "Booked" : "Setup Direct Debit"}
-                        </button>
+                <div className="hidden md:flex items-center gap-4">
+                    <button className="bg-[#4aa3e8] text-white rounded-[30px] px-5 py-2.5 font-semibold text-[13px]" onClick={() => navigate("/")}>
+                        Go back to the website
+                    </button>
+                    <div className="text-right text-[12px] text-[#6b7685] leading-snug">
+                        <b className="block text-[#1f2733] text-[13px]">
+                            {new Date().toLocaleDateString("en-GB", { weekday: "long" })}
+                        </b>
+                        {new Date().toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}
                     </div>
                 </div>
             </div>
 
-            {/* ── Payment Popup ── */}
-            <AnimatePresence>
-                {showPopup && (
-                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                        className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-                        <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} exit={{ scale: 0.95 }}
-                            className="bg-white rounded-2xl w-full max-w-3xl max-h-[90vh] overflow-auto flex gap-6 p-8">
+            {/* Band */}
+            <div className="bg-[#1e3a6e] text-white mx-6 mt-4 rounded-[14px] px-5 py-4 flex items-center gap-3 font-bold text-[18px]">
+                <span
+                    className="cursor-pointer opacity-90 flex items-center"
+                    onClick={() => {
+                        if (currentStepIndex > 0) setFlowStep(flowStates[currentStepIndex - 1]);
+                    }}
+                >
+                    <ChevronLeft size={20} />
+                </span>
+                Booking
+            </div>
 
-                            {/* Step 1 — Direct Debit */}
-                            {step === 1 && (
-                                <div className="flex-1 flex flex-col gap-4">
-                                    <div className="flex justify-between items-center">
-                                        <h2 className="text-xl font-semibold">Set up Direct Debit</h2>
-                                        <img src="/images/Directdebitlogo.png" className="h-10" alt="" />
+            <div className="max-w-[1040px] mx-auto px-6 pt-5">
+                {/* Steps */}
+                <div className="hidden md:flex items-center justify-center gap-2 mb-5 flex-wrap">
+                    {flowStates.map((fs, i) => {
+                        const isActive = fs === flowStep;
+                        const isDone = i < currentStepIndex;
+                        return (
+                            <React.Fragment key={fs}>
+                                <div className={`flex items-center gap-2 text-[13px] font-semibold ${isActive ? "text-[#1f2733]" : "text-[#6b7685]"}`}>
+                                    <span
+                                        className={`w-6 h-6 rounded-full border-[1.5px] flex items-center justify-center text-[12px] ${
+                                            isActive
+                                                ? "bg-[#21b573] border-[#21b573] text-white"
+                                                : isDone
+                                                ? "bg-[#cdeede] border-[#cdeede] text-[#21b573]"
+                                                : "bg-white border-[#e7ebf1]"
+                                        }`}
+                                    >
+                                        {isDone ? <Check size={13} /> : i + 1}
+                                    </span>
+                                    {stepsLabels[i]}
+                                </div>
+                                {i < flowStates.length - 1 && <span className="w-8 h-[2px] bg-[#e7ebf1] rounded-[2px]" />}
+                            </React.Fragment>
+                        );
+                    })}
+                </div>
+
+                {/* Screens */}
+                <div className="bg-white rounded-[16px] shadow-[0_8px_30px_rgba(20,40,80,0.08)] p-8 md:p-8">
+
+                    {/* SCREEN A */}
+                    {flowStep === "A" && (
+                        <div>
+                            <div className="text-center text-[24px] font-bold mb-1.5 tracking-tight">Who's this membership for?</div>
+                            <div className="text-center text-[#6b7685] text-[14px] mb-6">Select one or more children to enrol</div>
+
+                            <div className="flex justify-center gap-2 mb-5">
+                                <button className="font-semibold text-[13px] rounded-[30px] px-4 py-2.5 bg-[#eaf1fe] text-[#3b7df6] border border-[#eaf1fe]">Select an existing child</button>
+                                <button className="font-semibold text-[13px] rounded-[30px] px-4 py-2.5 bg-white text-[#6b7685] border border-[#e7ebf1]">Add a new child</button>
+                            </div>
+
+                            <div className="flex justify-center gap-4 flex-wrap mb-2">
+                                {students.map((s, i) => {
+                                    const isSel = selectedStudentIds.includes(s._tmpId);
+                                    return (
+                                        <div
+                                            key={s._tmpId ?? i}
+                                            onClick={() => toggleStudent(s._tmpId)}
+                                            className={`w-[230px] border-[1.5px] rounded-[14px] p-4 cursor-pointer transition-all relative ${
+                                                isSel ? "border-[#3b7df6] ring-4 ring-[#3b7df6]/10" : "border-[#e7ebf1] hover:border-[#bcd0f5]"
+                                            }`}
+                                        >
+                                            <div
+                                                className={`absolute top-3.5 right-3.5 w-[22px] h-[22px] rounded-full border-2 flex items-center justify-center text-white text-[12px] ${
+                                                    isSel ? "bg-[#3b7df6] border-[#3b7df6]" : "border-[#e7ebf1]"
+                                                }`}
+                                            >
+                                                {isSel && <Check size={13} />}
+                                            </div>
+                                            <div className="text-[#3b7df6] font-bold text-[16px] mb-3">{s.studentFirstName || `Child ${i + 1}`}</div>
+                                            <div className="grid grid-cols-2 gap-y-3 gap-x-2">
+                                                <div><div className="text-[11px] text-[#6b7685]">Date of birth</div><div className="text-[14px] font-semibold">{s.dateOfBirth || "-"}</div></div>
+                                                <div><div className="text-[11px] text-[#6b7685]">Age</div><div className="text-[14px] font-semibold">{s.age || "-"}</div></div>
+                                                <div><div className="text-[11px] text-[#6b7685]">Gender</div><div className="text-[14px] font-semibold">{s.gender || "-"}</div></div>
+                                                <div><div className="text-[11px] text-[#6b7685]">Class</div><div className="text-[14px] font-semibold">{s.selectedClassData?.className || "4-7 years"}</div></div>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+
+                            <div className="flex justify-center gap-3.5 mt-7">
+                                <button onClick={() => navigate(-1)} className="font-semibold text-[15px] rounded-[12px] px-8 py-3.5 border border-[#e7ebf1] text-[#1f2733] bg-white">Cancel</button>
+                                <button disabled={selectedStudentIds.length === 0} onClick={() => setFlowStep("B")} className="font-semibold text-[15px] rounded-[12px] px-8 py-3.5 border border-[#3b7df6] text-white bg-[#3b7df6] disabled:opacity-50 hover:bg-[#2f6ae0]">Next</button>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* SCREEN B */}
+                    {flowStep === "B" && (
+                        <div>
+                            <div className="text-center text-[24px] font-bold mb-1.5 tracking-tight">Book {activeNames}'s membership</div>
+                            <div className="text-center text-[#6b7685] text-[14px] mb-6">Confirm the details, choose a plan, and you're done</div>
+
+                            {/* Venue selector */}
+                            <div className="mb-6">
+                                <div style={{ background: "linear-gradient(120deg, #1e3a6e, #2f5aa0)" }} className="text-white px-5 py-4 rounded-t-[14px] flex items-center justify-between gap-3 flex-wrap">
+                                    <div className="flex items-center gap-2.5 font-semibold text-[15px]">
+                                        <MapPin size={16} /> {selectedVenue?.label || "Select a venue..."}
                                     </div>
-                                    <p className="text-gray-500 text-sm">
-                                        Payments collected via {isFranchisee ? "GoCardless" : "Access Pay Suite"} from the 1st of next month.
-                                    </p>
-
-                                    <label className="block">
-                                        <span className="block text-[16px] font-semibold">Email</span>
-                                        <input type="email"
-                                            value={payment.email || parents[0]?.parentEmail || ""}
-                                            placeholder="Email address"
-                                            onChange={(e) => setPayment({ ...payment, email: e.target.value })}
-                                            className="w-full mt-2 border border-gray-300 rounded-xl px-4 py-3 text-base focus:outline-none" />
-                                    </label>
-
-                                    <label className="block">
-                                        <span className="block text-[16px] font-semibold">Account Holder Name</span>
-                                        <input value={payment.account_holder_name} placeholder="Full name on account"
+                                    <button onClick={() => setIsChangingVenue(!isChangingVenue)} className="bg-white/15 border border-white/35 text-white rounded-[20px] px-3.5 py-1.5 text-[12px] font-semibold">Change venue</button>
+                                </div>
+                                {isChangingVenue && (
+                                    <div className="border border-t-0 border-[#e7ebf1] px-5 py-3.5 flex gap-6 flex-wrap bg-[#f4f6f9]">
+                                        <select
+                                            className="w-full font-inherit text-[14px] font-medium text-[#1f2733] border border-[#e7ebf1] rounded-[10px] px-3.5 py-[11px] bg-white focus:outline-none focus:ring-2 focus:ring-[#3b7df6] appearance-none"
+                                            style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236b7685' stroke-width='1.6' fill='none' stroke-linecap='round'/%3E%3C/svg%3E")`, backgroundRepeat: "no-repeat", backgroundPosition: "right 14px center" }}
+                                            value={selectedVenue?.value || ""}
                                             onChange={(e) => {
-                                                const parts = e.target.value.trim().split(" ");
-                                                setPayment({ ...payment, account_holder_name: e.target.value, firstName: parts[0] || "", lastName: parts.slice(1).join(" ") });
-                                            }}
-                                            className="w-full mt-2 border border-gray-300 rounded-xl px-4 py-3 text-base focus:outline-none" />
-                                    </label>
-
-                                    <div className="md:flex gap-4">
-                                        <label className="flex-1">
-                                            <span className="block text-[16px] font-semibold">Sort Code</span>
-                                            <input value={payment.branch_code} placeholder="00-00-00"
-                                                onChange={(e) => setPayment({ ...payment, branch_code: e.target.value.replace(/\D/g, "") })}
-                                                className="w-full mt-2 border border-gray-300 rounded-xl px-4 py-3 text-base focus:outline-none" />
-                                        </label>
-                                        <label className="flex-1">
-                                            <span className="block text-[16px] font-semibold">Account Number</span>
-                                            <input value={payment.account_number} placeholder="12345678"
-                                                onChange={(e) => setPayment({ ...payment, account_number: e.target.value.replace(/\D/g, "") })}
-                                                className="w-full mt-2 border border-gray-300 rounded-xl px-4 py-3 text-base focus:outline-none" />
-                                        </label>
-                                    </div>
-
-                                    <label className="block">
-                                        <span className="block text-[16px] font-semibold">Address Line 1</span>
-                                        <input value={payment.line1}
-                                            onChange={(e) => setPayment({ ...payment, line1: e.target.value })}
-                                            className="w-full mt-2 border border-gray-300 rounded-xl px-4 py-3 text-base focus:outline-none" />
-                                    </label>
-
-                                    <div className="md:flex gap-4">
-                                        <label className="flex-1">
-                                            <span className="block text-[16px] font-semibold">City</span>
-                                            <input value={payment.city}
-                                                onChange={(e) => setPayment({ ...payment, city: e.target.value })}
-                                                className="w-full mt-2 border border-gray-300 rounded-xl px-4 py-3 text-base focus:outline-none" />
-                                        </label>
-                                        <label className="flex-1">
-                                            <span className="block text-[16px] font-semibold">Postal Code</span>
-                                            <input value={payment.postalCode}
-                                                onChange={(e) => setPayment({ ...payment, postalCode: e.target.value })}
-                                                className="w-full mt-2 border border-gray-300 rounded-xl px-4 py-3 text-base focus:outline-none" />
-                                        </label>
-                                    </div>
-
-                                    <label className="flex items-center gap-2 text-sm text-gray-700">
-                                        <input type="checkbox" checked={payment.authorise}
-                                            onChange={(e) => setPayment({ ...payment, authorise: e.target.checked })}
-                                            className="w-4 h-4 accent-blue-600" />
-                                        I can authorise Direct Debits on this account myself
-                                    </label>
-
-                                    <div className="flex justify-end gap-3 py-3">
-                                        <button onClick={() => setShowPopup(false)}
-                                            className="border border-gray-400 text-gray-600 px-8 py-2 rounded-lg font-semibold">
-                                            Cancel
-                                        </button>
-                                        <button
-                                            disabled={!isBankValid || isSubmitting}
-                                            onClick={() => {
-                                                // if no starter pack, submit directly from step 1
-                                                if (!showStarterPack) {
-                                                    handleSubmit();
-                                                } else {
-                                                    setStep(2);
+                                                const vId = Number(e.target.value);
+                                                const v = venues?.capacityVenues?.find((x) => x?.venueId === vId);
+                                                if (v) {
+                                                    setSelectedVenue({ value: v.venueId, label: v.venueName, all: v });
+                                                    setMembershipPlan(null);
+                                                    setSelectedDate(null);
+                                                    setIsChangingVenue(false);
+                                                    setStudents((prev) => prev.map((s) => ({ ...s, selectedClassId: null, selectedClassData: null })));
                                                 }
                                             }}
-                                            className="bg-[#042C89] text-white px-6 py-2 rounded-lg font-semibold disabled:opacity-50">
-                                            {isSubmitting ? "Submitting..." : showStarterPack ? "Next" : "Complete Booking"}
+                                        >
+                                            <option value="" disabled>Select a venue to see available details...</option>
+                                            {(venues?.capacityVenues || []).map((v) => (
+                                                <option key={v.venueId} value={v.venueId}>{v.venueName}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                )}
+
+                                {/* Student class selectors */}
+                                {activeStudents.map((s, idx) => (
+                                    <div key={s._tmpId ?? idx} className={`border border-t-0 border-[#e7ebf1] p-3.5 px-5 flex flex-col gap-3.5 ${idx === activeStudents.length - 1 && !showStarterPack ? "rounded-b-[14px]" : ""}`}>
+                                        <div className="flex items-center justify-between gap-3.5 flex-wrap">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-[38px] h-[38px] rounded-full bg-[#eaf1fe] flex items-center justify-center font-bold text-[#3b7df6]">{(s.studentFirstName || "?")[0]}</div>
+                                                <div>
+                                                    <div className="font-semibold text-[15px]">{s.studentFirstName} {s.studentLastName}</div>
+                                                    {s.selectedClassData && (
+                                                        <div className="text-[12px] text-[#6b7685]">
+                                                            Class: {`${s.selectedClassData?.className || ""}${s.selectedClassData?.level ? ` (${s.selectedClassData.level})` : ""}`}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                            {s.selectedClassData && (
+                                                <div className="bg-[#e7f8f0] text-[#0e7a4d] font-semibold text-[12.5px] px-3 py-1.5 rounded-[20px] flex items-center gap-2">
+                                                    <span className="w-4 h-4 rounded-full bg-[#21b573] text-white flex items-center justify-center">
+                                                        <Star size={10} fill="currentColor" />
+                                                    </span>
+                                                    Coach's verdict: {s?.selectedClassData?.level} level
+                                                </div>
+                                            )}
+                                        </div>
+                                        {!s.selectedClassData && (
+                                            <div className="flex items-end gap-3">
+                                                <div className="flex-1">
+                                                    <label className="block text-[13px] font-semibold mb-1.5">Select class for {s.studentFirstName || "this child"}</label>
+                                                    <select
+                                                        className="w-full font-inherit text-[14px] border border-[#ffd21f] rounded-[10px] px-3.5 py-[11px] bg-[#fffcf0] focus:outline-none focus:ring-2 focus:ring-[#ffd21f] appearance-none"
+                                                        style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236b7685' stroke-width='1.6' fill='none' stroke-linecap='round'/%3E%3C/svg%3E")`, backgroundRepeat: "no-repeat", backgroundPosition: "right 14px center" }}
+                                                        onChange={(e) => {
+                                                            const classId = Number(e.target.value);
+                                                            let selectedClass = null;
+                                                            if (venueData?.classes) {
+                                                                for (const day in venueData.classes) {
+                                                                    const dayClasses = venueData.classes[day] || [];
+                                                                    selectedClass = dayClasses.find((c) => c?.classId === classId);
+                                                                    if (selectedClass) break;
+                                                                }
+                                                            }
+                                                            setStudents((prev) =>
+                                                                prev.map((st) =>
+                                                                    st._tmpId === s._tmpId ? { ...st, selectedClassId: classId, selectedClassData: selectedClass } : st
+                                                                )
+                                                            );
+                                                        }}
+                                                        defaultValue=""
+                                                    >
+                                                        <option value="" disabled>Choose a class...</option>
+                                                        {venueData?.classes && Object.keys(venueData.classes).map((day) =>
+                                                            (venueData.classes[day] || []).map((c) => (
+                                                                <option key={`${day}-${c.classId}`} value={c.classId}>
+                                                                    {c.className} ({day}) {c.time} {c.level ? `- ${c.level}` : ""}
+                                                                </option>
+                                                            ))
+                                                        )}
+                                                    </select>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+
+                            {/* Starter pack section */}
+                            {showStarterPack && (
+                                <>
+                                    <div className="text-[13px] font-bold uppercase tracking-[0.04em] text-[#6b7685] mb-3">Starter pack</div>
+                                    <div className="grid md:grid-cols-[200px_1fr] gap-5 border border-[#e7ebf1] rounded-[14px] p-4 mb-3.5 items-center">
+                                        <div className="bg-gradient-to-br from-[#15336b] to-[#ffd21f] rounded-[12px] h-[150px] flex items-center justify-center text-white text-center font-bold relative overflow-hidden">
+                                           <img src="/assets/Kids-Size-Guide.png" alt="" />
+                                        </div>
+                                        <div>
+                                            <h5 className="text-[15px] font-bold mb-2.5 text-[#1f2733]">Every membership includes the Samba starter pack:</h5>
+                                            <ul className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2.5 list-none">
+                                                {["Samba T-shirt, shorts & socks", "Drawstring bag", "Skills ball", "Road to Rio skills tracker book"].map((item, i) => (
+                                                    <li key={i} className="text-[13.5px] flex items-center gap-2 text-[#1f2733]">
+                                                        <Check size={14} className="text-[#21b573] shrink-0" />{item}
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        </div>
+                                    </div>
+
+                                    {/* Starter pack price + discount */}
+                                    <div className="border border-[#e7ebf1] rounded-[14px] p-4 mb-4">
+                                        <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+                                            <div>
+                                                <div className="font-semibold text-[14px]">Starter pack</div>
+                                                <div className="text-[13px] text-[#6b7685]">£{starterPackPrice.toFixed(2)} + £3.99 delivery</div>
+                                            </div>
+                                            <div className="text-[18px] font-bold text-[#1e3a6e]">£{(starterPackPrice + 3.99).toFixed(2)}</div>
+                                        </div>
+                                        {/* Discount code */}
+                                        <div>
+                                            <label className="block text-[13px] font-semibold mb-1.5">Discount code (optional)</label>
+                                            <div className="flex gap-2">
+                                                <input
+                                                    className="flex-1 font-inherit text-[14px] border border-[#e7ebf1] rounded-[10px] px-3.5 py-3 focus:outline-none focus:ring-2 focus:ring-[#3b7df6]"
+                                                    value={discountCode}
+                                                    placeholder="Enter discount code"
+                                                    onChange={(e) => {
+                                                        setDiscountCode(e.target.value);
+                                                        setIsApplied(false);
+                                                        setAppliedDiscount(null);
+                                                        setIsChecked(false);
+                                                    }}
+                                                />
+                                                <button
+                                                    onClick={handleApplyDiscount}
+                                                    disabled={isDiscountLoading || !discountCode.trim()}
+                                                    className="bg-[#1e3a6e] text-white rounded-[10px] px-5 py-3 font-semibold text-[14px] disabled:opacity-50"
+                                                >
+                                                    {isDiscountLoading ? "Applying..." : "Apply"}
+                                                </button>
+                                            </div>
+                                            {isChecked && !isDiscountLoading && (
+                                                isApplied
+                                                    ? <p className="text-[#21b573] text-[12px] mt-1.5 flex items-center gap-1"><Check size={12} /> {appliedDiscount?.message || "Discount applied!"}</p>
+                                                    : <p className="text-[#e53e3e] text-[12px] mt-1.5">Invalid discount code</p>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {/* Kit size per student */}
+                                    <div className="text-[13px] font-bold uppercase tracking-[0.04em] text-[#6b7685] mb-3 mt-5">
+                                        Kit size{" "}
+                                        <button
+                                            type="button"
+                                            onClick={() => setIsSizeChartOpen(true)}
+                                            className="normal-case text-[#3b7df6] font-semibold text-[12px] hover:underline ml-2"
+                                        >
+                                            Size chart →
                                         </button>
+                                    </div>
+                                    {activeStudents.map((s, idx) => (
+                                        <div key={s._tmpId ?? idx} className={`border border-[#e7ebf1] rounded-[14px] p-4 mb-3 flex items-center justify-between gap-4 flex-wrap`}>
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-[38px] h-[38px] rounded-full bg-[#eaf1fe] flex items-center justify-center font-bold text-[#3b7df6]">{(s.studentFirstName || "?")[0]}</div>
+                                                <div className="font-semibold text-[15px]">{s.studentFirstName} {s.studentLastName}</div>
+                                            </div>
+                                            <div className="flex-1 min-w-[160px] max-w-[240px]">
+                                                <select
+                                                    className="w-full font-inherit text-[14px] border border-[#e7ebf1] rounded-[10px] px-3.5 py-[11px] bg-white focus:outline-none focus:ring-2 focus:ring-[#3b7df6] appearance-none"
+                                                    style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236b7685' stroke-width='1.6' fill='none' stroke-linecap='round'/%3E%3C/svg%3E")`, backgroundRepeat: "no-repeat", backgroundPosition: "right 14px center" }}
+                                                    value={parents?.[0]?.starterPackSize || ""}
+                                                    onChange={(e) => {
+                                                        setParents((prev) => prev.map((p, pi) => pi === 0 ? { ...p, starterPackSize: e.target.value } : p));
+                                                    }}
+                                                >
+                                                    <option value="" disabled>Select size...</option>
+                                                    {sizeOptions.map((opt) => (
+                                                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                        </div>
+                                    ))}
+
+                                    {/* Address lookup */}
+                                    <div className="border border-[#e7ebf1] rounded-[14px] p-4 mt-1 mb-5">
+                                        <div className="font-bold text-[14px] mb-3 flex items-center gap-2">
+                                            <Truck size={16} /> Delivery address <span className="font-medium text-[#6b7685] text-[13px]">— where should we send the starter pack?</span>
+                                        </div>
+                                        <div className="flex items-end gap-3">
+                                            <div className="flex-1">
+                                                <label className="block text-[13px] font-semibold mb-1.5">Postcode</label>
+                                                <input
+                                                    className="w-full font-inherit text-[14px] border border-[#e7ebf1] rounded-[10px] px-3.5 py-3 focus:outline-none focus:ring-2 focus:ring-[#3b7df6]"
+                                                    value={postcode}
+                                                    onChange={(e) => {
+                                                        setPostcode(e.target.value);
+                                                        setAddressError("");
+                                                        setAddressList([]);
+                                                        setSelectedAddress("");
+                                                    }}
+                                                    placeholder="e.g. OX25 4JT"
+                                                />
+                                            </div>
+                                            <button
+                                                className="bg-[#3b7df6] text-white rounded-[12px] px-5 py-[11px] font-semibold text-[14px] whitespace-nowrap border border-[#3b7df6] disabled:opacity-50 disabled:cursor-not-allowed"
+                                                disabled={!postcode || addressLoading}
+                                                onClick={async () => {
+                                                    setAddressLoading(true);
+                                                    setAddressError("");
+                                                    try {
+                                                        const result = await getAddressesByPostcode(postcode);
+                                                        if (result?.success) {
+                                                            setAddressList(result.addresses || []);
+                                                            setShowAddrSelect(true);
+                                                        } else {
+                                                            setAddressError(result?.message || "Could not find addresses for this postcode.");
+                                                            setShowAddrSelect(false);
+                                                        }
+                                                    } catch (err) {
+                                                        setAddressError(err?.message || "Could not find addresses for this postcode.");
+                                                        setShowAddrSelect(false);
+                                                    } finally {
+                                                        setAddressLoading(false);
+                                                    }
+                                                }}
+                                            >
+                                                {addressLoading ? "Searching..." : "Find address"}
+                                            </button>
+                                        </div>
+                                        {addressError && (
+                                            <div className="mt-3 text-[13px] text-[#e53e3e] bg-[#fff5f5] border border-[#feb2b2] rounded-lg px-3.5 py-2.5 flex items-start gap-2">
+                                                <AlertTriangle size={16} className="shrink-0 mt-0.5" />
+                                                <span>{addressError}</span>
+                                            </div>
+                                        )}
+                                        {showAddrSelect && addressList.length > 0 && (
+                                            <div className="mt-3">
+                                                <label className="block text-[13px] font-semibold mb-1.5">Select your address</label>
+                                                <select
+                                                    className="w-full font-inherit text-[14px] border border-[#e7ebf1] rounded-[10px] px-3.5 py-[11px] bg-white focus:outline-none focus:ring-2 focus:ring-[#3b7df6] appearance-none"
+                                                    style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236b7685' stroke-width='1.6' fill='none' stroke-linecap='round'/%3E%3C/svg%3E")`, backgroundRepeat: "no-repeat", backgroundPosition: "right 14px center" }}
+                                                    value={selectedAddress}
+                                                    onChange={(e) => setSelectedAddress(e.target.value)}
+                                                >
+                                                    <option value="">Select from the list</option>
+                                                    {addressList.map((addr, idx) => (
+                                                        <option key={idx} value={addr?.address}>{addr?.address}</option>
+                                                    ))}
+                                                </select>
+                                                {selectedAddress && (
+                                                    <div className="mt-3 text-[13.5px] text-[#0e7a4d] font-semibold bg-[#e7f8f0] rounded-lg px-3.5 py-2.5 flex items-center gap-2">
+                                                        <Check size={14} />
+                                                        Starter pack will ship here.
+                                                        <span className="text-[#3b7df6] cursor-pointer underline ml-1.5" onClick={() => setSelectedAddress("")}>Change</span>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+                                        {showAddrSelect && addressList.length === 0 && !addressLoading && (
+                                            <div className="mt-3 text-[13px] text-[#8a6d00] bg-[#fffcf0] border border-[#ffd21f] rounded-lg px-3.5 py-2.5 flex items-center gap-2">
+                                                <MapPin size={16} />
+                                                No addresses found for this postcode. Try a different one.
+                                            </div>
+                                        )}
+                                    </div>
+                                </>
+                            )}
+
+                            {/* Membership plan */}
+                            {selectedVenue ? (
+                                <>
+                                    <div className="text-[13px] font-bold uppercase tracking-[0.04em] text-[#6b7685] mb-3 mt-5">Choose your membership plan</div>
+                                    {paymentPlanOptions.length === 0 ? (
+                                        <div className="border border-[#ffd21f] bg-[#fffcf0] text-[#8a6d00] font-medium p-4 rounded-[12px] text-[14px] mb-2 flex items-start gap-3">
+                                            <AlertTriangle size={18} className="shrink-0 mt-0.5" />
+                                            <div>
+                                                No membership plans are available for {numberOfStudents} student{numberOfStudents > 1 ? "s" : ""} at this venue.<br />
+                                                <button onClick={() => setIsChangingVenue(true)} className="text-[#3b7df6] font-bold mt-1.5 underline hover:text-[#2f6ae0]">Please select a different venue</button> to continue.
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="grid md:grid-cols-2 gap-3.5 mb-2">
+                                            {paymentPlanOptions.map((plan, idx) => {
+                                                const isSel = membershipPlan?.value === plan.value;
+                                                return (
+                                                    <div key={plan?.value ?? idx} onClick={() => setMembershipPlan(plan)} className={`border-[1.5px] rounded-[14px] p-4 cursor-pointer transition-all relative ${isSel ? "border-[#3b7df6] bg-[#f5f9ff] ring-4 ring-[#3b7df6]/10" : "border-[#e7ebf1] hover:border-[#bcd0f5]"}`}>
+                                                        <span className={`absolute top-4 right-4 w-5 h-5 rounded-full border-2 ${isSel ? "border-[#3b7df6] bg-white ring-inset ring-4 ring-[#3b7df6]" : "border-[#e7ebf1]"}`} />
+                                                        <div className="text-[12px] text-[#6b7685] font-semibold">{plan.all?.title || "Plan"}</div>
+                                                        <div className="text-[17px] font-bold my-0.5 mb-1.5">{plan.all?.title || "Plan"}</div>
+                                                        <div className="text-[22px] font-bold text-[#1e3a6e]">£{plan.all?.price ?? 0}<small className="text-[13px] text-[#6b7685] font-medium"> / month</small></div>
+                                                        <span className="inline-block mt-2 bg-[#e7f8f0] text-[#0e7a4d] text-[11px] font-bold px-2.5 py-1 rounded-[20px]">Save £60 / year</span>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    )}
+                                </>
+                            ) : (
+                                <div className="text-[13px] font-bold uppercase tracking-[0.04em] text-[#6b7685] mb-3 mt-5 text-center py-4 flex flex-col items-center gap-2">
+                                    <ArrowUp size={16} />
+                                    Select a venue above to view membership plans
+                                </div>
+                            )}
+
+                            {/* Calendar */}
+                            {membershipPlan && (
+                                <>
+                                    <div className="text-[13px] font-bold uppercase tracking-[0.04em] text-[#6b7685] mb-3 mt-5">Select your start date</div>
+                                    {availableDatesSet.size === 0 ? (
+                                        <div className="border border-[#ffd21f] bg-[#fffcf0] text-[#8a6d00] font-medium p-4 rounded-[12px] text-[14px] mb-6 flex items-start gap-3">
+                                            <AlertTriangle size={18} className="shrink-0 mt-0.5" />
+                                            <div>
+                                                <b>No session dates available</b> at <b>{selectedVenue?.label || "this venue"}</b>.<br />
+                                                <button onClick={() => setIsChangingVenue(true)} className="text-[#3b7df6] font-bold mt-1.5 underline hover:text-[#2f6ae0] block">Select a different venue to continue</button>
+                                            </div>
+                                        </div>
+                                    ) : (() => {
+                                        const today = new Date(); today.setHours(0, 0, 0, 0);
+                                        const hasFutureDates = Array.from(availableDatesSet).some((dateStr) => {
+                                            const dateObj = new Date(dateStr);
+                                            if (Number.isNaN(dateObj.getTime())) return false;
+                                            dateObj.setHours(0, 0, 0, 0);
+                                            return dateObj >= today;
+                                        });
+                                        return hasFutureDates ? (
+                                            <div className="border border-[#e7ebf1] rounded-[14px] p-4 max-w-[360px] mb-6">
+                                                <div className="flex items-center justify-between mb-3">
+                                                    <button onClick={() => { const nd = new Date(currentDate); nd.setMonth(nd.getMonth() - 1); setCurrentDate(nd); }} className="border border-[#e7ebf1] bg-white rounded-full w-[30px] h-[30px] flex items-center justify-center text-[#6b7685] font-bold hover:bg-[#f4f6f9]">
+                                                        <ChevronLeft size={16} />
+                                                    </button>
+                                                    <span className="font-bold text-[15px]">{currentDate.toLocaleString("default", { month: "long" })} {year}</span>
+                                                    <button onClick={() => { const nd = new Date(currentDate); nd.setMonth(nd.getMonth() + 1); setCurrentDate(nd); }} className="border border-[#e7ebf1] bg-white rounded-full w-[30px] h-[30px] flex items-center justify-center text-[#6b7685] font-bold hover:bg-[#f4f6f9]">
+                                                        <ChevronRight size={16} />
+                                                    </button>
+                                                </div>
+                                                <div className="grid grid-cols-7 gap-1 text-center">
+                                                    {["M", "T", "W", "T", "F", "S", "S"].map((d, i) => <div key={i} className="text-[11px] text-[#6b7685] font-semibold py-1">{d}</div>)}
+                                                    {Array.from({ length: (new Date(year, month, 1).getDay() + 6) % 7 }).map((_, i) => <div key={`e${i}`} />)}
+                                                    {Array.from({ length: new Date(year, month + 1, 0).getDate() }).map((_, i) => {
+                                                        const d = i + 1;
+                                                        const dateStr = `${year}-${(month + 1).toString().padStart(2, "0")}-${d.toString().padStart(2, "0")}`;
+                                                        const isAvail = availableDatesSet.has(dateStr);
+                                                        const isSel = selectedDate === dateStr;
+                                                        const dateObj = new Date(year, month, d);
+                                                        const todayLocal = new Date(); todayLocal.setHours(0, 0, 0, 0);
+                                                        const isPast = dateObj < todayLocal;
+                                                        let styleClass = "text-[#c2c8d2]";
+                                                        if (isAvail) {
+                                                            if (isPast) styleClass = "bg-[#ffebee] text-[#d32f2f] font-semibold cursor-not-allowed";
+                                                            else styleClass = "bg-[#eef5ff] text-[#1f2733] font-semibold cursor-pointer hover:bg-[#dcebff]";
+                                                        }
+                                                        if (isSel) styleClass = "!bg-[#3b7df6] !text-white font-semibold cursor-pointer";
+                                                        return (
+                                                            <div key={d} onClick={() => { if (isAvail && !isPast) setSelectedDate(dateStr); }}
+                                                                className={`py-2 text-[13px] rounded-lg ${styleClass}`}>
+                                                                {d}
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                                <div className="text-[12px] text-[#6b7685] mt-2.5 flex items-center gap-2">
+                                                    <span className="w-2.5 h-2.5 rounded-[3px] bg-[#eef5ff] border border-[#cfe0fb] inline-block"></span> Only dates with an available class are selectable
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <div className="border border-[#ffd21f] bg-[#fffcf0] text-[#8a6d00] font-medium p-4 rounded-[12px] text-[14px] mb-6 flex items-start gap-3">
+                                                <AlertTriangle size={18} className="shrink-0 mt-0.5" />
+                                                <div>
+                                                    <b>All session dates have passed</b> at <b>{selectedVenue?.label || "this venue"}</b>.<br />
+                                                    <button onClick={() => setIsChangingVenue(true)} className="text-[#3b7df6] font-bold mt-1.5 underline hover:text-[#2f6ae0] block">Select a different venue to continue</button>
+                                                </div>
+                                            </div>
+                                        );
+                                    })()}
+                                </>
+                            )}
+
+                            {/* Price breakdown */}
+                            {selectedDate && (
+                                <div className="bg-[#f7f9fc] border border-[#e7ebf1] rounded-[14px] p-4 md:p-5 mt-5">
+                                    <h4 className="text-[13px] uppercase tracking-[0.04em] text-[#6b7685] font-semibold mb-3">Price breakdown</h4>
+                                    <div className="flex justify-between items-center text-[14px] py-1.5">
+                                        <span className="text-[#6b7685]">{membershipPlan?.label || "Plan"} · {numberOfStudents} student{numberOfStudents > 1 ? "s" : ""}</span>
+                                        <span className="font-semibold">£{(pricingBreakdown.nextMonthPayment || 0).toFixed(2)} / mo</span>
+                                    </div>
+                                    {showStarterPack && (
+                                        <>
+                                            <div className="flex justify-between items-center text-[14px] py-1.5">
+                                                <span className="text-[#6b7685]">Starter pack</span>
+                                                <span className="font-semibold">£{(pricingBreakdown.starterPack || 0).toFixed(2)}</span>
+                                            </div>
+                                            <div className="flex justify-between items-center text-[14px] py-1.5">
+                                                <span className="text-[#6b7685]">Delivery fee</span>
+                                                <span className="font-semibold">£3.99</span>
+                                            </div>
+                                            {isApplied && pricingBreakdown.starterDiscount > 0 && (
+                                                <div className="flex justify-between items-center text-[14px] py-1.5 text-[#0e7a4d] font-semibold">
+                                                    <span>Discount ({appliedDiscount?.data?.type === "percentage" ? `${appliedDiscount.data.value}%` : "fixed"})</span>
+                                                    <span>-£{(pricingBreakdown.starterDiscount || 0).toFixed(2)}</span>
+                                                </div>
+                                            )}
+                                        </>
+                                    )}
+                                    <div className="flex justify-between items-center text-[14px] py-1.5"><span className="text-[#6b7685]">Joining fee</span><span className="font-semibold">No joining fee</span></div>
+                                    <div className="flex justify-between items-center text-[14px] py-1.5"><span className="text-[#6b7685]">Pro-rata</span><span className="font-semibold">£{(pricingBreakdown.finalProRataCost || 0).toFixed(2)}</span></div>
+                                    <div className="h-[1px] bg-[#e7ebf1] my-2.5" />
+                                    <div className="flex justify-between items-center text-[17px] font-bold pt-2"><span className="text-[#1f2733]">Due today</span><span className="text-[#1e3a6e]">£{(pricingBreakdown.totalAmountToday || 0).toFixed(2)}</span></div>
+                                    <div className="text-[12px] text-[#6b7685] bg-[#eef5ff] rounded-lg p-3 mt-2.5 leading-[1.6]">
+                                        <b className="text-[#1f2733]">Collected immediately (today):</b> {showStarterPack ? "the starter pack (incl. £3.99 delivery) and " : ""}the pro-rata for the part-month you're joining.<br />
+                                        <b className="text-[#1f2733]">From the 1st of next month:</b> your first full monthly payment (£{(pricingBreakdown.nextMonthPayment || 0).toFixed(2)}), then on the 1st of each month.
                                     </div>
                                 </div>
                             )}
 
-                            {/* Step 2 — Card (only when showStarterPack) */}
-                            {step === 2 && showStarterPack && (
-                                <div className="flex-1 flex flex-col gap-4">
-                                    <h2 className="text-xl font-semibold">Checkout</h2>
-
-                                    <label className="block">
-                                        <span className="block text-[16px] font-semibold">Name on card</span>
-                                        <input value={nameOnCard} placeholder="Name on card"
-                                            onChange={(e) => setNameOnCard(e.target.value)}
-                                            className="w-full mt-2 border border-gray-300 rounded-xl px-4 py-3 text-base focus:outline-none" />
-                                    </label>
-
-                                    <label className="block">
-                                        <span className="block text-[16px] font-semibold">Card number</span>
-                                        <input value={cardNumber} placeholder="1234 1234 1234 1234" maxLength={19} inputMode="numeric"
-                                            onChange={(e) => setCardNumber(formatCard(e.target.value))}
-                                            className="w-full mt-2 border border-gray-300 rounded-xl px-4 py-3 text-base focus:outline-none" />
-                                    </label>
-
-                                    <div className="md:flex gap-4">
-                                        <label className="flex-1">
-                                            <span className="block text-[16px] font-semibold">Expiry</span>
-                                            <input value={expiryDate} placeholder="MM/YY" maxLength={5} inputMode="numeric"
-                                                onChange={(e) => setExpiryDate(formatExpiry(e.target.value))}
-                                                className="w-full mt-2 border border-gray-300 rounded-xl px-4 py-3 text-base focus:outline-none" />
-                                        </label>
-                                        <label className="flex-1">
-                                            <span className="block text-[16px] font-semibold">CVC</span>
-                                            <input value={cvc} placeholder="CVC" maxLength={4} inputMode="numeric"
-                                                onChange={(e) => setCvc(e.target.value.replace(/\D/g, "").slice(0, 4))}
-                                                className="w-full mt-2 border border-gray-300 rounded-xl px-4 py-3 text-base focus:outline-none" />
-                                        </label>
-                                    </div>
-
-                                    <label className="block">
-                                        <span className="block text-[16px] font-semibold">Country</span>
-                                        <Select options={[
-                                            { value: "United Kingdom", label: "United Kingdom" },
-                                            { value: "United States", label: "United States" },
-                                            { value: "Ireland", label: "Ireland" },
-                                            { value: "Australia", label: "Australia" },
-                                            { value: "Canada", label: "Canada" },
-                                        ]} classNamePrefix="react-select"
-                                            value={{ value: checkoutCountry, label: checkoutCountry }}
-                                            onChange={(o) => setCheckoutCountry(o.value)}
-                                            styles={ss("checkoutCountry", fe)} />
-                                    </label>
-
-                                    <label className="block">
-                                        <span className="block text-[16px] font-semibold">Postal Code</span>
-                                        <input value={zipCode}
-                                            onChange={(e) => setZipCode(e.target.value)}
-                                            className="w-full mt-2 border border-gray-300 rounded-xl px-4 py-3 text-base focus:outline-none" />
-                                    </label>
-
-                                    <div className="flex justify-between font-semibold text-base border-t pt-3">
-                                        <span>Total</span>
-                                        <span className="text-blue-900">£{pricingBreakdown.stripeAmount?.toFixed(2)}</span>
-                                    </div>
-
-                                    <div className="flex justify-end gap-3 py-3">
-                                        <button onClick={() => setShowPopup(false)}
-                                            className="border border-gray-400 text-gray-600 px-6 py-2 rounded-lg font-semibold">
-                                            Cancel
-                                        </button>
-                                        <button onClick={() => setStep(1)}
-                                            className="border-2 border-blue-900 text-blue-900 px-6 py-2 rounded-lg font-semibold">
-                                            Back
-                                        </button>
-                                        <button disabled={!isCardValid || isSubmitting} onClick={handleSubmit}
-                                            className="bg-blue-900 text-white px-6 py-2 rounded-lg font-semibold disabled:opacity-50">
-                                            {isSubmitting ? "Processing..." : "Complete Booking"}
-                                        </button>
-                                    </div>
-                                </div>
-                            )}
-                        </motion.div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
-
-            {/* Size Chart Modal */}
-            <AnimatePresence>
-                {isSizeChartOpen && (
-                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                        className="fixed inset-0 bg-black/60 z-[9999] flex items-center justify-center p-4"
-                        onClick={() => setIsSizeChartOpen(false)}>
-                        <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} exit={{ scale: 0.95 }}
-                            className="bg-white rounded-3xl w-full max-w-4xl max-h-[90vh] overflow-auto"
-                            onClick={(e) => e.stopPropagation()}>
-                            <div className="flex justify-between items-center px-8 py-5 border-b">
-                                <h2 className="text-xl font-bold">Kids Size Chart</h2>
-                                <button onClick={() => setIsSizeChartOpen(false)}
-                                    className="p-2 hover:bg-gray-100 rounded-full">
-                                    <X className="w-5 h-5 text-gray-500" />
+                            <div className="flex justify-center gap-3.5 mt-7">
+                                <button onClick={() => (isMulti ? setFlowStep("A") : navigate(-1))} className="font-semibold text-[15px] rounded-[12px] px-8 py-3.5 border border-[#e7ebf1] text-[#1f2733] bg-white">Cancel</button>
+                                <button
+                                    disabled={!membershipPlan || !selectedDate || (showStarterPack && !selectedAddress) || (showStarterPack && !parents?.[0]?.starterPackSize) || activeStudents.some((s) => !s.selectedClassData)}
+                                    onClick={() => setFlowStep("C")}
+                                    className="font-semibold text-[15px] rounded-[12px] px-8 py-3.5 border border-[#3b7df6] text-white bg-[#3b7df6] disabled:opacity-50 hover:bg-[#2f6ae0]">
+                                    Continue to payment
                                 </button>
                             </div>
-                            <div className="p-8 overflow-x-auto">
-                                <table className="w-full text-center text-sm border-collapse">
-                                    <thead>
-                                        <tr className="bg-gray-900 text-white uppercase text-xs">
-                                            <th rowSpan="2" className="py-3 px-4 border-r border-gray-700">Size</th>
-                                            <th rowSpan="2" className="py-3 px-4 border-r border-gray-700">Age</th>
-                                            <th colSpan="2" className="py-2 px-4 border-r border-gray-700">Height</th>
-                                            <th colSpan="2" className="py-2 px-4 border-r border-gray-700">Chest</th>
-                                            <th colSpan="2" className="py-2 px-4">Waist</th>
-                                        </tr>
-                                        <tr className="bg-gray-800 text-gray-200 text-xs uppercase">
-                                            {["cm", "in", "cm", "in", "cm", "in"].map((u, i) => (
-                                                <th key={i} className="py-2 px-4 border-r border-gray-700">{u}</th>
-                                            ))}
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {[
-                                            { size: "Small", age: "4-5", h: ["107", "42"], c: ["68", "26"], w: ["46", "18"] },
-                                            { size: "Medium", age: "6-7", h: ["119", "46"], c: ["74", "29"], w: ["50", "20"] },
-                                            { size: "Large", age: "8-9", h: ["131", "51"], c: ["84", "33"], w: ["54", "21"] },
-                                            { size: "Extra Large", age: "10-12", h: ["143", "56"], c: ["89", "34"], w: ["58", "23"] },
-                                            { size: "XXL", age: "13-14", h: ["152", "60"], c: ["98", "38"], w: ["68", "26"] },
-                                        ].map((row, i) => (
-                                            <tr key={i} className="border-b hover:bg-gray-50">
-                                                <td className="py-3 px-4 font-semibold border-r">{row.size}</td>
-                                                <td className="py-3 px-4 border-r">{row.age}</td>
-                                                {[...row.h, ...row.c, ...row.w].map((v, j) => (
-                                                    <td key={j} className="py-3 px-4 border-r">{v}</td>
-                                                ))}
+                        </div>
+                    )}
+
+                    {/* SCREEN C — Direct Debit */}
+                    {flowStep === "C" && (
+                        <div>
+                            <div className="text-center text-[24px] font-bold mb-1.5 tracking-tight">Set up your monthly Direct Debit</div>
+                            <div className="text-center text-[#6b7685] text-[14px] mb-6">This covers your membership, collected on the 1st of each month</div>
+
+                            <div className="grid md:grid-cols-[1fr_1.1fr] gap-6">
+                                {/* Summary */}
+                                <div className="bg-[#f1f6ff] rounded-[14px] p-5">
+                                    <h3 className="text-[#1e3a6e] text-[18px] mb-3.5 font-bold">Your membership</h3>
+                                    <div className="flex justify-between text-[13.5px] py-1 text-[#6b7685]"><span>{membershipPlan?.label || "Plan"}</span><span>£{(pricingBreakdown.nextMonthPayment || 0).toFixed(2)} / mo</span></div>
+                                    <div className="flex justify-between text-[13.5px] py-1 text-[#6b7685]"><span>Start date</span><span>{selectedDate || "-"}</span></div>
+                                    <div className="flex justify-between text-[13.5px] py-1 text-[#6b7685]"><span>First full payment</span><span>1st of Next Month</span></div>
+                                    <div className="flex justify-between text-[18px] font-bold text-[#1e3a6e] mt-3.5 border-t border-[#d4e0f5] pt-3"><span>Monthly from 1st</span><span>£{(pricingBreakdown.nextMonthPayment || 0).toFixed(2)}</span></div>
+                                </div>
+
+                                {/* Form */}
+                                <div>
+                                    <h3 className="text-[18px] mb-1 font-bold">Direct Debit details</h3>
+                                    <p className="text-[13px] text-[#6b7685] mb-4">Your monthly membership payment is collected by Direct Debit on the 1st of each month.</p>
+
+                                    <div className="mb-4">
+                                        <label className="block text-[13px] font-semibold mb-1.5">Account holder name</label>
+                                        <input
+                                            className={inputClass(!!ddErrors.account_holder_name)}
+                                            value={payment.account_holder_name}
+                                            onChange={(e) => {
+                                                setPayment((p) => ({ ...p, account_holder_name: e.target.value }));
+                                                if (ddErrors.account_holder_name) setDdErrors((errs) => ({ ...errs, account_holder_name: "" }));
+                                            }}
+                                            placeholder="Full name as on bank account"
+                                        />
+                                        {ddErrors.account_holder_name && <p className="text-[12px] text-[#e53e3e] mt-1">{ddErrors.account_holder_name}</p>}
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-3.5 mb-4">
+                                        <div>
+                                            <label className="block text-[13px] font-semibold mb-1.5">Sort code</label>
+                                            <input className={inputClass(!!ddErrors.branch_code)} value={payment.branch_code} onChange={handleSortCodeChange} placeholder="12-34-56" inputMode="numeric" maxLength={8} />
+                                            <div className="text-[11px] text-[#6b7685] mt-1">6 digits, auto-formatted</div>
+                                            {ddErrors.branch_code && <p className="text-[12px] text-[#e53e3e] mt-1">{ddErrors.branch_code}</p>}
+                                        </div>
+                                        <div>
+                                            <label className="block text-[13px] font-semibold mb-1.5">Account number</label>
+                                            <input className={inputClass(!!ddErrors.account_number)} value={payment.account_number} onChange={handleAccountNumberChange} placeholder="00000000" inputMode="numeric" maxLength={8} />
+                                            <div className="text-[11px] text-[#6b7685] mt-1">8 digits</div>
+                                            {ddErrors.account_number && <p className="text-[12px] text-[#e53e3e] mt-1">{ddErrors.account_number}</p>}
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label className={`flex items-start gap-2.5 text-[13px] cursor-pointer ${ddErrors.authorise ? "text-[#e53e3e]" : "text-[#6b7685]"}`}>
+                                            <input type="checkbox" className="mt-0.5 cursor-pointer" checked={payment.authorise}
+                                                onChange={(e) => {
+                                                    setPayment((p) => ({ ...p, authorise: e.target.checked }));
+                                                    if (ddErrors.authorise) setDdErrors((errs) => ({ ...errs, authorise: "" }));
+                                                }} />
+                                            <span>I agree to the <strong>Direct Debit Guarantee</strong>, Terms & Conditions and Privacy Policy.</span>
+                                        </label>
+                                        {ddErrors.authorise && <p className="text-[12px] text-[#e53e3e] mt-1 ml-6">{ddErrors.authorise}</p>}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="flex justify-center gap-3.5 mt-7">
+                                <button onClick={() => setFlowStep("B")} className="font-semibold text-[15px] rounded-[12px] px-8 py-3.5 border border-[#e7ebf1] text-[#1f2733] bg-white">Back</button>
+                                <button onClick={handleDDContinue} disabled={!isDDValid} className="font-semibold text-[15px] rounded-[12px] px-8 py-3.5 border border-[#3b7df6] text-white bg-[#3b7df6] disabled:opacity-50 hover:bg-[#2f6ae0]">
+                                    Continue to card payment
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* SCREEN E — Card */}
+                    {flowStep === "E" && (
+                        <div>
+                            <div className="text-center text-[24px] font-bold mb-1.5 tracking-tight">Pay for your starter pack</div>
+                            <div className="text-center text-[#6b7685] text-[14px] mb-6">Your starter pack & delivery are taken today by card — a one-off payment</div>
+
+                            <div className="grid md:grid-cols-[1fr_1.1fr] gap-6">
+                                {/* Summary */}
+                                <div className="bg-[#f1f6ff] rounded-[14px] p-5">
+                                    <h3 className="text-[#1e3a6e] text-[18px] mb-3.5 font-bold">Due today</h3>
+                                    <div className="font-bold text-[#1e3a6e] mt-3.5 text-[14px]">Collected now (one-off)</div>
+                                    {showStarterPack && (
+                                        <>
+                                            <div className="flex justify-between text-[13.5px] py-1 text-[#6b7685]">
+                                                <span>Starter pack</span>
+                                                <span>£{(pricingBreakdown.starterPack || 0).toFixed(2)}</span>
+                                            </div>
+                                            <div className="flex justify-between text-[13.5px] py-1 text-[#6b7685]">
+                                                <span>Delivery fee</span>
+                                                <span>£3.99</span>
+                                            </div>
+                                            {isApplied && pricingBreakdown.starterDiscount > 0 && (
+                                                <div className="flex justify-between text-[13.5px] py-1 text-[#0e7a4d] font-semibold">
+                                                    <span>Discount</span>
+                                                    <span>-£{(pricingBreakdown.starterDiscount || 0).toFixed(2)}</span>
+                                                </div>
+                                            )}
+                                        </>
+                                    )}
+                                    <div className="flex justify-between text-[13.5px] py-1 text-[#6b7685]"><span>Joining fee</span><span>£0.00</span></div>
+                                    <div className="flex justify-between text-[18px] font-bold text-[#1e3a6e] mt-3.5 border-t border-[#d4e0f5] pt-3">
+                                        <span>Total today</span>
+                                        <span>£{(pricingBreakdown.totalAmountToday || 0).toFixed(2)}</span>
+                                    </div>
+                                    <div className="text-[12px] text-[#6b7685] bg-[#eef5ff] rounded-lg p-3 mt-3.5 leading-[1.6]">
+                                        Your monthly membership Direct Debit (£{(pricingBreakdown.nextMonthPayment || 0).toFixed(2)}) starts separately on 1st.
+                                    </div>
+                                </div>
+
+                                {/* Card form */}
+                                <div>
+                                    <h3 className="text-[18px] mb-1 font-bold">Card details</h3>
+                                    <p className="text-[13px] text-[#6b7685] mb-4">This one-off payment covers your starter pack and delivery.</p>
+
+                                    <div className="mb-4">
+                                        <label className="block text-[13px] font-semibold mb-1.5">Card number</label>
+                                        <div className="relative">
+                                            <input className={inputClass(!!cardErrors.cardNumber)} value={payment.cardNumber} onChange={handleCardNumberChange} placeholder="1234 5678 9012 3456" inputMode="numeric" maxLength={19} autoComplete="cc-number" />
+                                            {(payment.cardNumber || "").startsWith("4") && (
+                                                <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[11px] font-bold text-[#1a1f71] bg-[#e8eaf6] px-2 py-0.5 rounded">VISA</span>
+                                            )}
+                                            {((payment.cardNumber || "").startsWith("5") || (payment.cardNumber || "").startsWith("2")) && (
+                                                <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[11px] font-bold text-[#eb001b] bg-[#fce4ec] px-2 py-0.5 rounded">MC</span>
+                                            )}
+                                        </div>
+                                        {cardErrors.cardNumber
+                                            ? <p className="text-[12px] text-[#e53e3e] mt-1">{cardErrors.cardNumber}</p>
+                                            : payment.cardNumber && isValidCardNumber(payment.cardNumber)
+                                                ? <p className="text-[12px] text-[#21b573] mt-1 flex items-center gap-1"><Check size={12} /> Valid card number</p>
+                                                : <div className="text-[11px] text-[#6b7685] mt-1">{(payment.cardNumber || "").replace(/\s/g, "").length}/16 digits</div>
+                                        }
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-3.5 mb-4">
+                                        <div>
+                                            <label className="block text-[13px] font-semibold mb-1.5">Expiry date</label>
+                                            <input className={inputClass(!!cardErrors.expiryDate)} value={payment.expiryDate} onChange={handleExpiryChange} placeholder="MM / YY" inputMode="numeric" maxLength={7} autoComplete="cc-exp" />
+                                            {cardErrors.expiryDate
+                                                ? <p className="text-[12px] text-[#e53e3e] mt-1">{cardErrors.expiryDate}</p>
+                                                : payment.expiryDate && isValidExpiry(payment.expiryDate)
+                                                    ? <p className="text-[12px] text-[#21b573] mt-1"><Check size={12} /></p>
+                                                    : null
+                                            }
+                                        </div>
+                                        <div>
+                                            <label className="block text-[13px] font-semibold mb-1.5">CVC</label>
+                                            <input className={inputClass(!!cardErrors.cvc)} value={payment.cvc} onChange={handleCVCChange} placeholder="123" inputMode="numeric" maxLength={4} autoComplete="cc-csc" />
+                                            {cardErrors.cvc
+                                                ? <p className="text-[12px] text-[#e53e3e] mt-1">{cardErrors.cvc}</p>
+                                                : <div className="text-[11px] text-[#6b7685] mt-1">3–4 digits on back</div>
+                                            }
+                                        </div>
+                                    </div>
+
+                                    <div className="mb-4">
+                                        <label className="block text-[13px] font-semibold mb-1.5">Name on card</label>
+                                        <input className={inputClass(!!cardErrors.nameOnCard)} value={payment.nameOnCard}
+                                            onChange={(e) => {
+                                                setPayment((p) => ({ ...p, nameOnCard: e.target.value }));
+                                                if (cardErrors.nameOnCard) setCardErrors((errs) => ({ ...errs, nameOnCard: "" }));
+                                            }}
+                                            placeholder="Full name as printed on card" autoComplete="cc-name" />
+                                        {cardErrors.nameOnCard && <p className="text-[12px] text-[#e53e3e] mt-1">{cardErrors.nameOnCard}</p>}
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-3.5">
+                                        <div>
+                                            <label className="block text-[13px] font-semibold mb-1.5">Country</label>
+                                            <select
+                                                className="w-full font-inherit text-[14px] border border-[#e7ebf1] rounded-[10px] px-3.5 py-3 bg-white focus:outline-none focus:ring-2 focus:ring-[#3b7df6] appearance-none"
+                                                style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236b7685' stroke-width='1.6' fill='none' stroke-linecap='round'/%3E%3C/svg%3E")`, backgroundRepeat: "no-repeat", backgroundPosition: "right 14px center" }}
+                                                value={payment.country}
+                                                onChange={(e) => setPayment((p) => ({ ...p, country: e.target.value }))}>
+                                                <option>United Kingdom</option>
+                                                <option>Ireland</option>
+                                                <option>United States</option>
+                                                <option>Canada</option>
+                                                <option>Australia</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label className="block text-[13px] font-semibold mb-1.5">Postcode / ZIP</label>
+                                            <input
+                                                className="w-full font-inherit text-[14px] border border-[#e7ebf1] rounded-[10px] px-3.5 py-3 focus:outline-none focus:ring-2 focus:ring-[#3b7df6]"
+                                                value={payment.zipCode}
+                                                onChange={(e) => setPayment((p) => ({ ...p, zipCode: e.target.value }))}
+                                                placeholder="e.g. OX25 4JT"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="flex justify-center gap-3.5 mt-7">
+                                <button onClick={() => setFlowStep("C")} className="font-semibold text-[15px] rounded-[12px] px-8 py-3.5 border border-[#e7ebf1] text-[#1f2733] bg-white">Back</button>
+                                <button
+                                    disabled={isSubmitting || !isCardValid}
+                                    onClick={handleSubmit}
+                                    className="font-semibold text-[15px] rounded-[12px] px-11 py-3.5 border border-[#21b573] text-white bg-[#21b573] disabled:opacity-50 hover:bg-[#1a935d] flex items-center gap-2">
+                                    {isSubmitting && <Loader2 className="animate-spin w-4 h-4" />}
+                                    {isSubmitting ? "Processing..." : `Pay £${(pricingBreakdown.totalAmountToday || 0).toFixed(2)} & confirm`}
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* SCREEN D — Success */}
+                    {flowStep === "D" && (
+                        <div>
+                            <div className="text-center text-[24px] font-bold mb-1.5 tracking-tight flex items-center justify-center gap-2">
+                                You're all set! <PartyPopper size={22} />
+                            </div>
+                            <div className="text-center text-[#6b7685] text-[14px] mb-6">{activeNames}'s membership is confirmed</div>
+
+                            <div className="max-w-[560px] mx-auto border border-[#e7ebf1] rounded-[16px] overflow-hidden">
+                                <div className="bg-[#3b7df6] text-white px-4 py-3.5 font-semibold text-[14px] flex items-center gap-2">
+                                    <MapPin size={16} /> {selectedVenue?.label || "Trinity Sports Centre"}
+                                </div>
+                                <div className="p-4">
+                                    {activeStudents.map((s, i) => (
+                                        <div key={s._tmpId ?? i} className="flex items-center gap-3.5 py-2.5 font-semibold text-[14px]">
+                                            <User size={16} className="text-[#3b7df6]" /> {s.studentFirstName} {s.studentLastName} — {s.selectedClassData?.className || "4-7 Years (Beginner)"} {showStarterPack ? `· kit ${parents?.[0]?.starterPackSize || ""}` : ""}
+                                        </div>
+                                    ))}
+                                    <div className="flex items-center gap-3.5 py-2.5 font-semibold text-[14px]">
+                                        <CalendarIcon size={16} className="text-[#3b7df6]" /> Starts {selectedDate || "-"} · {membershipPlan?.label || "Plan"}
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="max-w-[560px] mx-auto text-[12px] text-[#6b7685] text-center mt-3.5 flex items-center justify-center gap-1.5">
+                                <Mail size={14} />
+                                A confirmation email with your booking details, payment summary and Direct Debit schedule has been sent to your inbox.
+                            </div>
+
+                            <div className="flex justify-center gap-3.5 mt-7">
+                                <button onClick={() => navigate("/bookings")} className="font-semibold text-[15px] rounded-[12px] px-11 py-3.5 border border-[#21b573] text-white bg-[#21b573] hover:bg-[#1a935d]">Finish</button>
+                            </div>
+                        </div>
+                    )}
+                </div>
+
+                {/* Dev flow toggles */}
+                <div className="max-w-[1040px] mx-auto mt-4 px-6 text-[12px] text-[#6b7685] text-center">
+                    Prototype — single-child journey starts at "Confirm & choose".
+                </div>
+                <div className="flex justify-center gap-3.5 mt-3.5 mb-6">
+                    <button onClick={() => { setDemoMode("single"); setFlowStep("B"); }}
+                        className={`font-semibold text-[13px] rounded-[12px] px-8 py-3.5 border transition-all ${demoMode === "single" ? "bg-[#3b7df6] text-white border-[#3b7df6]" : "bg-white text-[#1f2733] border-[#e7ebf1]"}`}>
+                        Single-child flow
+                    </button>
+                    <button onClick={() => { setDemoMode("multi"); setFlowStep("A"); }}
+                        className={`font-semibold text-[13px] rounded-[12px] px-8 py-3.5 border transition-all ${demoMode === "multi" ? "bg-[#3b7df6] text-white border-[#3b7df6]" : "bg-white text-[#1f2733] border-[#e7ebf1]"}`}>
+                        Multi-child flow
+                    </button>
+                </div>
+            </div>
+
+            {/* ── Size Chart Modal ── */}
+            <AnimatePresence>
+               {isSizeChartOpen && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 overflow-y-auto"
+                        onClick={() => setIsSizeChartOpen(false)}
+                    >
+                        <motion.div
+                            initial={{ scale: 0.95, y: 20 }}
+                            animate={{ scale: 1, y: 0 }}
+                            exit={{ scale: 0.95, y: 20 }}
+                            transition={{ type: "spring", duration: 0.4 }}
+                            className="bg-white rounded-3xl w-full max-w-5xl shadow-2xl relative flex flex-col max-h-[90vh] overflow-hidden"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            {/* Modal Header */}
+                            <div className="flex justify-between items-center px-8 py-5 border-b border-gray-100">
+                                <div>
+                                    <span className="text-[12px] uppercase tracking-wider text-[#237FEA] font-bold">Size guides</span>
+                                    <h2 className="text-[22px] font-bold text-gray-900 leading-tight">Kids Size Chart</h2>
+                                </div>
+                                <button
+                                    onClick={() => setIsSizeChartOpen(false)}
+                                    className="p-2 hover:bg-gray-100 rounded-full transition-colors focus:outline-none"
+                                >
+                                    <X className="w-6 h-6 text-gray-400 hover:text-gray-600" />
+                                </button>
+                            </div>
+
+                            {/* Modal Body */}
+                            <div className="p-8 space-y-6 overflow-y-auto">
+                                <div className="overflow-x-auto rounded-2xl border border-gray-200 shadow-sm">
+                                    <table className="w-full text-center border-collapse text-sm">
+                                        <thead>
+                                            <tr className="bg-gray-900 text-white text-[13px] font-semibold tracking-wider uppercase">
+                                                <th rowSpan="2" className="py-3 px-4 border-r border-gray-800 align-middle">Size</th>
+                                                <th rowSpan="2" className="py-3 px-4 border-r border-gray-800 align-middle">Age</th>
+                                                <th colSpan="2" className="py-2 px-4 border-r border-gray-800">Height</th>
+                                                <th colSpan="2" className="py-2 px-4 border-r border-gray-800">Chest</th>
+                                                <th colSpan="2" className="py-2 px-4">Waist</th>
                                             </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
+                                            <tr className="bg-gray-800 text-gray-200 text-[11px] font-semibold uppercase">
+                                                <th className="py-2 px-4 border-r border-gray-700">cm</th>
+                                                <th className="py-2 px-4 border-r border-gray-700">in</th>
+                                                <th className="py-2 px-4 border-r border-gray-700">cm</th>
+                                                <th className="py-2 px-4 border-r border-gray-700">in</th>
+                                                <th className="py-2 px-4 border-r border-gray-700">cm</th>
+                                                <th className="py-2 px-4">in</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-gray-200 text-gray-700">
+                                            {[
+                                                { size: "Small", age: "4-5", height: { cm: "107", in: "42" }, chest: { cm: "68", in: "26" }, waist: { cm: "46", in: "18" } },
+                                                { size: "Medium", age: "6-7", height: { cm: "119", in: "46" }, chest: { cm: "74", in: "29" }, waist: { cm: "50", in: "20" } },
+                                                { size: "Large", age: "8-9", height: { cm: "131", in: "51" }, chest: { cm: "84", in: "33" }, waist: { cm: "54", in: "21" } },
+                                                { size: "Extra Large", age: "10-12", height: { cm: "143", in: "56" }, chest: { cm: "89", in: "34" }, waist: { cm: "58", in: "23" } },
+                                                { size: "XXL", age: "13-14", height: { cm: "152", in: "60" }, chest: { cm: "98", in: "38" }, waist: { cm: "68", in: "26" } },
+                                            ].map((row, idx) => (
+                                                <tr key={idx} className="hover:bg-gray-50/70 transition-colors odd:bg-white even:bg-gray-50/30">
+                                                    <td className="py-3.5 px-4 font-semibold text-gray-900 border-r border-gray-100">{row.size}</td>
+                                                    <td className="py-3.5 px-4 border-r border-gray-100">{row.age}</td>
+                                                    <td className="py-3.5 px-4 border-r border-gray-100">{row.height.cm}</td>
+                                                    <td className="py-3.5 px-4 border-r border-gray-100">{row.height.in}</td>
+                                                    <td className="py-3.5 px-4 border-r border-gray-100">{row.chest.cm}</td>
+                                                    <td className="py-3.5 px-4 border-r border-gray-100">{row.chest.in}</td>
+                                                    <td className="py-3.5 px-4 border-r border-gray-100">{row.waist.cm}</td>
+                                                    <td className="py-3.5 px-4">{row.waist.in}</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                <div className="border-l-4 border-[#237FEA] pl-4 py-1">
+                                    <h3 className="text-[16px] font-bold text-gray-900">How to measure?</h3>
+                                    <p className="text-sm text-gray-600 mt-1">To choose the correct size, measure your child's body as follows:</p>
+                                </div>
+
+                                <div className="flex justify-center items-center py-6 bg-[#fcfcfc] rounded-2xl border border-gray-100 shadow-inner">
+                                    <img
+                                        src="/assets/Kids-Size-Guide.png"
+                                        alt="Kids Measuring Guide"
+                                        className="max-h-[380px] w-auto object-contain rounded-xl hover:scale-[1.01] transition-transform duration-300"
+                                    />
+                                </div>
                             </div>
                         </motion.div>
                     </motion.div>
