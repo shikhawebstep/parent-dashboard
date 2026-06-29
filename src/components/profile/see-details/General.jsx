@@ -5,6 +5,9 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { showSuccess, showError, showConfirm, showWarning } from "../../../../utils/swalHelper";
 import CancelTrial from "../../modals/CancelTrial";
 import RenewPackage from "../../modals/RenewPackage";
+import ChangePlanModal from "../../modals/ChangePlanModal";
+import TransferClassModal from "../../modals/TransferClassModal";
+import FreezeMembershipModal from "../../modals/FreezeMembershipModal";
 
 // ── helpers ────────────────────────────────────────────────────────────────
 
@@ -84,6 +87,9 @@ export default function General({ booking: propBooking, details, loading: mainLo
     const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
     const [cancelModal, setCancelModal] = useState({ open: false, booking: null });
     const [renewModal, setRenewModal] = useState({ open: false, booking: null });
+    const [changePlanModal, setChangePlanModal] = useState({ open: false, booking: null });
+    const [transferModal, setTransferModal] = useState({ open: false, booking: null });
+    const [freezeModal, setFreezeModal] = useState({ open: false, booking: null });
 
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
@@ -685,9 +691,40 @@ export default function General({ booking: propBooking, details, loading: mainLo
                     {hasActions && (
                         <div className="bg-white p-6 rounded-[20px] mt-6 space-y-3">
                             {serviceType === "weekly class membership" && (
-                                <PillButton color="blue" onClick={() => setIsCancelModalOpen(true)}>
-                                    Request to cancel membership
-                                </PillButton>
+                                <>
+                                    <PillButton color="blue" onClick={() => setChangePlanModal({ open: true, booking })}>
+                                        Change Plan
+                                    </PillButton>
+                                    <PillButton color="green" onClick={() => setTransferModal({ open: true, booking })}>
+                                        Transfer Class
+                                    </PillButton>
+                                    {!booking?.freezeBooking &&
+                                        (booking?.status === "active" || booking?.status === "request_to_cancel") &&
+                                        !(booking?.paymentPlan?.duration === 1 && booking?.paymentPlan?.interval === "Month") &&
+                                        (() => {
+                                            const payments = booking?.payments || [];
+                                            const hasBankOrAccess = payments.some(
+                                                (p) => p.paymentType === "bank" || p.paymentType === "accesspaysuite"
+                                            );
+
+                                            if (hasBankOrAccess) {
+                                                return payments.some(
+                                                    (p) =>
+                                                        (p.paymentType === "bank" || p.paymentType === "accesspaysuite") &&
+                                                        (p.paymentStatus === "paid")
+                                                );
+                                            }
+
+                                            return payments.some((p) => p.paymentStatus === "paid");
+                                        })() && (
+                                            <PillButton color="green" onClick={() => setFreezeModal({ open: true, booking })}>
+                                                Freeze Membership
+                                            </PillButton>
+                                        )}
+                                    <PillButton color="red" onClick={() => setIsCancelModalOpen(true)}>
+                                        Request to cancel membership
+                                    </PillButton>
+                                </>
                             )}
 
                             {(serviceType === "weekly class trial" && booking?.bookingType === "free") && (
@@ -756,6 +793,24 @@ export default function General({ booking: propBooking, details, loading: mainLo
                 isOpen={renewModal.open}
                 onClose={() => setRenewModal({ open: false, booking: null })}
                 booking={renewModal.booking}
+                onSuccess={fetchDetails}
+            />
+            <ChangePlanModal
+                isOpen={changePlanModal.open}
+                onClose={() => setChangePlanModal({ open: false, booking: null })}
+                booking={changePlanModal.booking}
+                onSuccess={fetchDetails}
+            />
+            <TransferClassModal
+                isOpen={transferModal.open}
+                onClose={() => setTransferModal({ open: false, booking: null })}
+                booking={transferModal.booking}
+                onSuccess={fetchDetails}
+            />
+            <FreezeMembershipModal
+                isOpen={freezeModal.open}
+                onClose={() => setFreezeModal({ open: false, booking: null })}
+                booking={freezeModal.booking}
                 onSuccess={fetchDetails}
             />
         </div>
