@@ -286,6 +286,8 @@ const BookMembership = () => {
         const rawParents = profile?.adminMeta?.parents || [];
         const rawStudents = profile?.adminMeta?.students || [];
 
+     
+
         const normalizeDOB = (raw) => {
             if (!raw) return "";
             return raw.includes("-") ? formatDOBForDisplay(raw) : raw;
@@ -327,6 +329,8 @@ const BookMembership = () => {
         }
 
         const emergencyContact = profile?.adminMeta?.emergency;
+
+        console.log('emergencyContact',emergencyContact)
         if (emergencyContact) {
             setEmergency({
                 sameAsAbove: false,
@@ -642,27 +646,8 @@ const BookMembership = () => {
         }`;
 
     return (
-        <div className="min-h-screen bg-[#f4f6f9] text-[#1f2733] font-['Poppins',sans-serif] pb-16">
-            {/* Topbar */}
-            <div className="bg-white border-b border-[#e7ebf1] flex items-center justify-between px-7 py-4">
-                <div>
-                    <div className="text-[13px] text-[#6b7685] font-medium">
-                        Hi {profile?.adminMeta?.parents?.[0]?.parentFirstName || "Parent"}!
-                    </div>
-                    <h1 className="text-[22px] font-bold tracking-tight">Account Information</h1>
-                </div>
-                <div className="hidden md:flex items-center gap-4">
-                    <button className="bg-[#4aa3e8] text-white rounded-[30px] px-5 py-2.5 font-semibold text-[13px]" onClick={() => navigate("/")}>
-                        Go back to the website
-                    </button>
-                    <div className="text-right text-[12px] text-[#6b7685] leading-snug">
-                        <b className="block text-[#1f2733] text-[13px]">
-                            {new Date().toLocaleDateString("en-GB", { weekday: "long" })}
-                        </b>
-                        {new Date().toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}
-                    </div>
-                </div>
-            </div>
+        <div className="min-h-screen booking-page bg-[#f4f6f9] text-[#1f2733] font-['Poppins',sans-serif] pb-16">
+           
 
             {/* Band */}
             <div className="bg-[#1e3a6e] text-white mx-6 mt-4 rounded-[14px] px-5 py-4 flex items-center gap-3 font-bold text-[18px]">
@@ -843,9 +828,11 @@ const BookMembership = () => {
                                                                 )
                                                             );
                                                         }}
+
+                                                        disabled={!selectedVenue}
                                                         defaultValue=""
                                                     >
-                                                        <option value="" disabled>Choose a class...</option>
+                                                        <option value="" disabled>{selectedVenue ? "Choose a class..." :"Select  a venue first"}</option>
                                                         {venueData?.classes && Object.keys(venueData.classes).map((day) =>
                                                             (venueData.classes[day] || []).map((c) => (
                                                                 <option key={`${day}-${c.classId}`} value={c.classId}>
@@ -1071,8 +1058,8 @@ const BookMembership = () => {
                                     )}
                                 </>
                             ) : (
-                                <div className="text-[13px] font-bold uppercase tracking-[0.04em] text-[#6b7685] mb-3 mt-5 text-center py-4 flex flex-col items-center gap-2">
-                                    <ArrowUp size={16} />
+                                <div className="text-[15px] font-bold  tracking-[0.04em] text-[#6b7685] mb-3 mt-5 text-center py-4 flex flex-col items-center gap-2">
+                                   
                                     Select a venue above to view membership plans
                                 </div>
                             )}
