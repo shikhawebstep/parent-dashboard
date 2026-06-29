@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import Payment from './Payment'
 import Credits from './Credits'
@@ -33,53 +33,53 @@ const Detail = () => {
         return serviceMap[service?.toLowerCase()] || service;
     };
 
-    useEffect(() => {
-        const fetchDetails = async () => {
-            if (!booking?.serviceType || !booking?.id) return;
+    const fetchDetails = useCallback(async () => {
+        if (!booking?.serviceType || !booking?.id) return;
 
-            setLoading(true);
-            try {
-                const token = localStorage.getItem("parentToken");
-                const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/';
+        setLoading(true);
+        try {
+            const token = localStorage.getItem("parentToken");
+            const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/';
 
-                // Format serviceType: "one to one" -> "onetoone"
-                const serviceType = (booking?.serviceType?.trim() || "")
-                    .replace(/\s+/g, "")
-                    .toLowerCase();
-                const response = await fetch(
-                    `${API_URL}api/parent/account-profile/preview?serviceType=${formattedServices(serviceType)}&bookingId=${booking.id}`,
-                    {
-                        method: "GET",
-                        headers: {
-                            "Authorization": `Bearer ${token}`,
-                            "Content-Type": "application/json"
-                        }
+            // Format serviceType: "one to one" -> "onetoone"
+            const serviceType = (booking?.serviceType?.trim() || "")
+                .replace(/\s+/g, "")
+                .toLowerCase();
+            const response = await fetch(
+                `${API_URL}api/parent/account-profile/preview?serviceType=${formattedServices(serviceType)}&bookingId=${booking.id}`,
+                {
+                    method: "GET",
+                    headers: {
+                        "Authorization": `Bearer ${token}`,
+                        "Content-Type": "application/json"
                     }
-                );
-
-                const data = await response.json();
-                if (response.ok) {
-                    setDetails(data?.data || data);
-                    console.log("Preview details result:", data);
-                } else {
-                    console.error("Failed to fetch details:", data);
                 }
-            } catch (error) {
-                console.error("Error fetching details:", error);
-            } finally {
-                setLoading(false);
-            }
-        };
+            );
 
+            const data = await response.json();
+            if (response.ok) {
+                setDetails(data?.data || data);
+                console.log("Preview details result:", data);
+            } else {
+                console.error("Failed to fetch details:", data);
+            }
+        } catch (error) {
+            console.error("Error fetching details:", error);
+        } finally {
+            setLoading(false);
+        }
+    }, [booking?.serviceType, booking?.id]);
+
+    useEffect(() => {
         fetchDetails();
-    }, [booking]);
+    }, [fetchDetails]);
 
     const renderContent = () => {
         switch (activeTab) {
-            case 'general': return <General booking={booking} details={details} loading={loading} />
-            case 'payments': return <Payment booking={booking} details={details} loading={loading} />
-            case 'credits': return <Credits booking={booking} details={details} loading={loading} />
-            case 'attendance': return <Attendance booking={booking} details={details} loading={loading} />
+            case 'general': return <General booking={booking} details={details} loading={loading}  fetchDetails={fetchDetails}/>
+            case 'payments': return <Payment booking={booking} details={details} loading={loading}  fetchDetails={fetchDetails}/>
+            case 'credits': return <Credits booking={booking} details={details} loading={loading} fetchDetails={fetchDetails}/>
+            case 'attendance': return <Attendance booking={booking} details={details} loading={loading} fetchDetails={fetchDetails} />
             default: return null
         }
     }

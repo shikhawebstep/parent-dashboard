@@ -2,8 +2,9 @@ import React, { useState } from "react";
 import { ArrowLeft } from "lucide-react";
 import CancelMembershipModal from "../CancelMembershipModal";
 import { useLocation, useNavigate } from "react-router-dom";
-import { showSuccess, showError, showConfirm } from "../../../../utils/swalHelper";
+import { showSuccess, showError, showConfirm, showWarning } from "../../../../utils/swalHelper";
 import CancelTrial from "../../modals/CancelTrial";
+import RenewPackage from "../../modals/RenewPackage";
 
 // ── helpers ────────────────────────────────────────────────────────────────
 
@@ -41,6 +42,27 @@ const safeTimeRange = (start, end, fallback = "N/A") => {
     return `${start} - ${end}`;
 };
 
+// ── Pill button style variants (matches reference design) ──────────────────
+
+const pillButtonClasses = {
+    red: "bg-[#FEF2F2] border border-[#FECACA] text-[#EF4444] hover:bg-[#FEE2E2]",
+    blue: "bg-[#EFF6FF] border border-[#DBEAFE] text-[#3B82F6] hover:bg-[#DBEAFE]",
+    green: "bg-[#F0FDF4] border border-[#DCFCE7] text-[#22C55E] hover:bg-[#DCFCE7]",
+};
+
+function PillButton({ color = "blue", onClick, children, type = "button", disabled = false }) {
+    return (
+        <button
+            type={type}
+            onClick={onClick}
+            disabled={disabled}
+            className={`w-full block text-center px-6 py-3 rounded-xl  text-[17px] transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${pillButtonClasses[color]}`}
+        >
+            {children}
+        </button>
+    );
+}
+
 // ── DetailRow ──────────────────────────────────────────────────────────────
 
 function DetailRow({ label, value }) {
@@ -58,9 +80,11 @@ function DetailRow({ label, value }) {
 
 // ── ServiceDetails ─────────────────────────────────────────────────────────
 
-export default function General({ booking: propBooking, details, loading: mainLoading }) {
+export default function General({ booking: propBooking, details, loading: mainLoading, fetchDetails }) {
     const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
-    const [cancelModal, setCancelModal] = useState({ open: false, booking: null })
+    const [cancelModal, setCancelModal] = useState({ open: false, booking: null });
+    const [renewModal, setRenewModal] = useState({ open: false, booking: null });
+
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
     const booking = details;
@@ -123,7 +147,7 @@ export default function General({ booking: propBooking, details, loading: mainLo
 
     const paymentPlan = booking?.paymentPlan || details?.paymentPlan;
 
-    console.log('paymentPlan',paymentPlan)
+    console.log('paymentPlan', paymentPlan)
 
     // Progress bar
     const progressTotal = booking?.progressBar?.totalBars || 0;
@@ -131,18 +155,25 @@ export default function General({ booking: propBooking, details, loading: mainLo
     const progressPercent =
         progressTotal > 0 ? Math.round((progressFilled / progressTotal) * 100) : 0;
 
-const getBookingSource = (b) => {
-    const source = b?.source || b?.marketingChannel || b?.lead?.source;
-    const adminName = safeName(
-        b?.bookedByAdmin?.firstName,
-        b?.bookedByAdmin?.lastName,
-        ""
-    );
-    if (adminName && source) return `${adminName} (${source})`;
-    if (adminName) return adminName;
-    if (source) return source;
-    return "N/A";
-};
+    const getBookingSource = (b) => {
+        const source = b?.source || b?.marketingChannel || b?.lead?.source;
+        const adminName = safeName(
+            b?.bookedByAdmin?.firstName,
+            b?.bookedByAdmin?.lastName,
+            ""
+        );
+        if (adminName && source) return `${adminName} (${source})`;
+        if (adminName) return adminName;
+        if (source) return source;
+        return "N/A";
+    };
+
+    const handleBirthdayPartyCancel = () => {
+        showWarning(
+            "Contact Support to Cancel",
+            "Birthday Party bookings can't be cancelled here, and refunds aren't processed automatically. Please contact our support/admin team for assistance."
+        );
+    };
     const handleCancelCamp = async (booking) => {
         const result = await showConfirm(
             "Cancel Camp",
@@ -176,6 +207,7 @@ const getBookingSource = (b) => {
                 }
 
                 showSuccess(data?.message || "Camp Cancelled successfully");
+                fetchDetails();
             } catch (error) {
                 showError(error?.message || "Something went wrong");
             } finally {
@@ -211,12 +243,60 @@ const getBookingSource = (b) => {
 
             showSuccess(data?.message || "Trial cancelled successfully");
             setCancelModal({ open: false, booking: null });
+
+            fetchDetails();
         } catch (error) {
             showError(error?.message || "Something went wrong");
         } finally {
             setLoading(false);
         }
     };
+
+    const handleRemoveWaitingList = async (booking) => {
+        const result = await showConfirm(
+            "Remove Waiting List",
+            "Are you sure you want to remove this booking from the waiting list?",
+            "Yes, remove it!"
+        );
+
+        if (result.isConfirmed) {
+            setLoading(true);
+            try {
+                const token = localStorage.getItem("parentToken");
+                const API_URL = import.meta.env.VITE_API_BASE_URL;
+
+                const response = await fetch(`${API_URL}api/parent/booking-update/remove-waiting-list`, {
+                    method: "POST",
+                    headers: {
+                        "Authorization": `Bearer ${token}`,
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({ bookingId: booking?.id })
+                });
+
+                let data = {};
+                try { data = await response.json(); } catch (e) { }
+
+                if (!response.ok) throw new Error(data?.message || "Failed to remove from waiting list");
+
+                showSuccess(data?.message || "Removed from waiting list successfully");
+                fetchDetails();
+            } catch (error) {
+                showError(error?.message || "Something went wrong");
+            } finally {
+                setLoading(false);
+            }
+        }
+    };
+
+    // ── Determine whether any action button will actually render ──────────
+    const hasActions =
+        serviceType === "weekly class membership" ||
+        (serviceType === "weekly class trial" && booking?.bookingType === "free") ||
+        (serviceType === "weekly class trial" && booking?.bookingType === "waiting list") ||
+        serviceType === "birthday party" ||
+        (serviceType === "one to one" && booking?.status == "completed") ||
+        serviceType === "holiday camp";
 
 
     return (
@@ -465,7 +545,7 @@ const getBookingSource = (b) => {
                                         className="w-20 h-20 rounded-full object-cover"
                                     />
                                     <div>
-                                        <h4 className="md:text-[24px] 2xl:text-[20px] xl:text-[18px] lg:text-[16px] text-[14px] font-bold leading-tight">
+                                        <h4 className="md:text-[24px] 2xl:text-[18px] lg:text-[16px] text-[14px] font-bold leading-tight">
                                             Account Holder
                                         </h4>
                                         <p className="lg:text-[16px] text-[14px] text-[#BDC0C3] font-medium">
@@ -502,7 +582,7 @@ const getBookingSource = (b) => {
                                                 <div className="h-1.5 bg-gray-600 rounded-full w-full overflow-hidden">
                                                     <div className="h-full bg-[#43BE4F]" style={{ width: `${progressPercent}%` }} />
                                                 </div>
-                                                <p className="text-xs font-bold text-gray-300 text-white">{progressPercent}%</p>
+                                                <p className="text-xs font-bold text-gray-300 ">{progressPercent}%</p>
                                             </div>
                                         </div>
 
@@ -596,40 +676,67 @@ const getBookingSource = (b) => {
                                     </>
                                 )}
                             </div>
-                            {
-                                serviceType == "weekly class membership" && (
 
-                                    <button
-                                        onClick={() => setIsCancelModalOpen(true)}
-                                        className="w-full py-3 bg-[#237FEA] rounded-[12px] font-semibold text-white lg:text-[18px] text-[14px] hover:bg-blue-600 transition-colors mt-2"
-                                    >
-                                        Request to cancel membership
-                                    </button>
-                                )
-                            }
-                            {(serviceType === "weekly class trial" && booking?.bookingType === "free") && (
-                                <>
-
-                                    <button onClick={() => setCancelModal({ open: true, booking })}
-                                        className="bg-red-500 block text-white w-full 2xl:px-8 px-4 py-2.5 2xl:py-3 rounded-[12px] font-semibold 2xl:text-sm md:text-[12px] text-[14px] hover:bg-[#e69500] transition-colors ">
-                                        Cancel Trial
-                                    </button>
-                                    <button onClick={() => navigate("/book-membership", { state: { booking } })} className="bg-[#042C89] text-white w-full  px-2 2xl:px-4 py-2.5 2xl:py-3 rounded-[12px] font-semibold 2xl:text-sm md:text-[12px] text-[14px] hover:bg-[#032066] transition-colors">
-                                        Book Membership
-                                    </button>
-                                </>
-                            )}
-                            {serviceType === "holiday camp" && (
-
-                                <button
-                                    onClick={() => handleCancelCamp(booking)}
-                                    className="bg-red-500 block text-white w-full 2xl:px-8 px-4 py-2.5 2xl:py-3 rounded-[12px] font-semibold 2xl:text-sm md:text-[12px] text-[14px] hover:bg-red-600 transition-colors"
-                                >
-                                    Cancel Camp
-                                </button>
-                            )}
+                            {/* ── Action Buttons (pill style) ── */}
                         </div>
                     </div>
+
+                    {/* Actions card now only renders when there's at least one action to show */}
+                    {hasActions && (
+                        <div className="bg-white p-6 rounded-[20px] mt-6 space-y-3">
+                            {serviceType === "weekly class membership" && (
+                                <PillButton color="blue" onClick={() => setIsCancelModalOpen(true)}>
+                                    Request to cancel membership
+                                </PillButton>
+                            )}
+
+                            {(serviceType === "weekly class trial" && booking?.bookingType === "free") && (
+                                <>
+                                    <PillButton color="red" onClick={() => setCancelModal({ open: true, booking })}>
+                                        Cancel Trial
+                                    </PillButton>
+                                    <PillButton color="green" onClick={() => navigate("/book-membership", { state: { booking } })}>
+                                        Book Membership
+                                    </PillButton>
+                                </>
+                            )}
+
+                            {serviceType === "birthday party" && (
+                                <PillButton
+                                    onClick={handleBirthdayPartyCancel}
+                                    color="red">
+                                    Cancel Package
+                                </PillButton>
+                            )}
+                            {serviceType === "one to one" && booking?.status == "completed" && (
+                                <PillButton
+                                    onClick={() => setRenewModal({ open: true, booking })}
+                                    color="green">
+                                    Renew Package
+                                </PillButton>
+                            )}
+
+                            {(serviceType === "weekly class trial" && booking?.bookingType === "waiting list") && (
+                                <>
+                                    <PillButton color="red" onClick={() => handleRemoveWaitingList(booking)}>
+                                        Remove Waiting List
+                                    </PillButton>
+                                    <PillButton color="blue" onClick={() => navigate("/book-a-trial", { state: { booking } })}>
+                                        Book a Free Trial
+                                    </PillButton>
+                                    <PillButton color="green" onClick={() => navigate("/book-membership", { state: { booking } })}>
+                                        Book a Membership
+                                    </PillButton>
+                                </>
+                            )}
+
+                            {serviceType === "holiday camp" && (
+                                <PillButton color="red" onClick={() => handleCancelCamp(booking)}>
+                                    Cancel Camp
+                                </PillButton>
+                            )}
+                        </div>
+                    )}
                 </div>
             </div>
 
@@ -644,6 +751,12 @@ const getBookingSource = (b) => {
                 onClose={() => setCancelModal({ open: false, booking: null })}
                 onConfirm={handleCancelTrial}
                 booking={cancelModal.booking}
+            />
+            <RenewPackage
+                isOpen={renewModal.open}
+                onClose={() => setRenewModal({ open: false, booking: null })}
+                booking={renewModal.booking}
+                onSuccess={fetchDetails}
             />
         </div>
     );

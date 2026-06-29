@@ -357,7 +357,7 @@ const MyBookings = () => {
 
                                     {/* Details */}
                                     <div className="flex-1 xl:flex grid grid-cols-1 sm:grid-cols-2 mt-4 md:mt-0 md:grid-cols-3 md:ps-7 lg:gap-6 gap-3 justify-between items-center">
-                                        <div className='self-start xl:w-[8%]'>
+                                        <div className='self-start xl:w-[16%]'>
                                             <p className="text-[#9E9FAA] 2xl:text-[16px] text-[14px] mb-1">Venue</p>
                                             <p className="text-[#5F5F6D] 2xl:text-[16px] text-[14px] font-semibold">{formatted.venue}</p>
                                         </div>
@@ -373,22 +373,7 @@ const MyBookings = () => {
                                             <p className="text-[#9E9FAA] 2xl:text-[16px] text-[14px] mb-1">Class</p>
                                             <p className="text-[#5F5F6D] 2xl:text-[16px] text-[14px] font-semibold">{formatted.classType}</p>
                                         </div>
-                                        <div className='self-start xl:w-[10%]'>
-                                            <p className="text-[#9E9FAA] 2xl:text-[16px] text-[14px] mb-1">Coach</p>
-                                            <p className="text-[#5F5F6D] 2xl:text-[16px] text-[14px] font-semibold">
-                                                {
-                                                    formatted.coach.length ? (
-
-                                                        <div className="flex gap-2 items-center"><img src={"/assets/Ethan-test1.png"} className='w-8' alt="" />{formatted.coach}</div>
-                                                    ) : (
-                                                        <span>
-                                                            -
-                                                        </span>
-
-                                                    )
-                                                }
-                                            </p>
-                                        </div>
+                                     
 
                                         {/* Action Button */}
                                         <div className="self-start xl:w-[13%] w-full flex flex-wrap gap-4 justify-end">

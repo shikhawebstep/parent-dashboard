@@ -4,20 +4,23 @@ import { useNavigate } from 'react-router-dom';
 const OnboardingTour = () => {
     const [isOpen, setIsOpen] = useState(false);
     const [currentStep, setCurrentStep] = useState(0);
-    const navigate= useNavigate();
-  const parentData = JSON.parse(localStorage.getItem("parentData"));
+    const navigate = useNavigate();
+    const parentData = JSON.parse(localStorage.getItem("parentData"));
+
+    // Build the same key everywhere so read & write never go out of sync
+    const tourKey = `hasSeenOnboardingTour_${parentData?.id || parentData?.email}`;
 
     // Persist tour state roughly (simulate trigger on first load)
     useEffect(() => {
-        const hasSeenTour = localStorage.getItem('hasSeenOnboardingTour');
+        const hasSeenTour = localStorage.getItem(tourKey);
         if (!hasSeenTour) {
             setIsOpen(true);
         }
-    }, []);
+    }, [tourKey]);
 
     const handleClose = () => {
         setIsOpen(false);
-        localStorage.setItem('hasSeenOnboardingTour', 'true');
+        localStorage.setItem(tourKey, 'true');
         navigate('bookings')
     };
 
