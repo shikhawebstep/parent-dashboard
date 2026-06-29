@@ -85,7 +85,7 @@ const Detail = () => {
     }
 
     return (
-        <div className="min-h-screen p-8">
+        <div className="min-h-screen lg:p-8 p-3">
 
             {/* Tab Bar */}
 
@@ -97,13 +97,13 @@ const Detail = () => {
                     <img src="/assets/ArrowLeft.png" className='w-6 h-6' alt="" />
 
                 </button>
-                <div className="bg-white border w-max rounded-[19px]  border-[#E2E1E5] px-4 py-2 flex items-center justify-between">
+                <div className="bg-white border w-max rounded-[19px] overflow-auto  border-[#E2E1E5] px-4 py-2 flex items-center justify-between">
 
                     {availableTabs.map((tab) => (
                         <button
                             key={tab.id}
                             onClick={() => setActiveTab(tab.id)}
-                            className={`px-4 py-1.5 rounded-[14px] text-[18px] font-semibold transition-colors ${activeTab === tab.id
+                            className={`px-4 py-1.5 rounded-[14px] whitespace-nowrap md:text-[18px] text-[14px] font-semibold transition-colors ${activeTab === tab.id
                                 ? 'bg-[#237FEA] text-white'
                                 : 'text-gray-700 hover:bg-gray-100'
                                 }`}

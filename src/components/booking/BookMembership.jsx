@@ -890,7 +890,7 @@ const BookMembership = () => {
 
     // ── Render ────────────────────────────────────────────
     return (
-        <div className="p-7 bg-gray-50 min-h-screen booking-page">
+        <div className="md:p-7 bg-gray-50 min-h-screen booking-page">
             <div className="flex px-4 items-center mb-4">
                 <h2 className="text-xl md:text-2xl font-semibold">Book a Membership</h2>
             </div>
@@ -1109,15 +1109,15 @@ const BookMembership = () => {
                                 Student {students.length > 1 ? `${index + 1} ` : ""}Information
                             </h2>
 
-                            <div className="flex gap-4">
-                                <div className="w-1/2">
+                            <div className="md:flex gap-4">
+                                <div className="md:w-1/2">
                                     <label className="block text-[16px] font-semibold">First name</label>
                                     <input value={student.studentFirstName} placeholder="Enter first name"
                                         className={fc(`s${index}_firstName`, fe)}
                                         onChange={(e) => { handleStudentChange(index, "studentFirstName", e.target.value); clearErr(`s${index}_firstName`); }} />
                                     <Err k={`s${index}_firstName`} e={fe} />
                                 </div>
-                                <div className="w-1/2">
+                                <div className="md:w-1/2">
                                     <label className="block text-[16px] font-semibold">Last name</label>
                                     <input value={student.studentLastName} placeholder="Enter last name"
                                         className={fc(`s${index}_lastName`, fe)}
@@ -1126,23 +1126,23 @@ const BookMembership = () => {
                                 </div>
                             </div>
 
-                            <div className="flex gap-4">
-                                <div className="w-1/2">
+                            <div className="md:flex gap-4">
+                                <div className="md:w-1/2">
                                     <label className="block text-[16px] font-semibold">Date of Birth</label>
                                     <input value={student.dateOfBirth} placeholder="DD/MM/YYYY" maxLength={10}
                                         className={fc(`s${index}_dob`, fe)}
                                         onChange={(e) => { handleDOBChange(index, e.target.value); clearErr(`s${index}_dob`); }} />
                                     <Err k={`s${index}_dob`} e={fe} />
                                 </div>
-                                <div className="w-1/2">
+                                <div className="md:w-1/2">
                                     <label className="block text-[16px] font-semibold">Age</label>
                                     <input readOnly value={student.age || ""} placeholder="Automatic entry"
                                         className="w-full mt-2 border border-gray-300 rounded-xl px-4 py-3 text-base bg-gray-50" />
                                 </div>
                             </div>
 
-                            <div className="flex gap-4">
-                                <div className="w-1/2">
+                            <div className="md:flex gap-4">
+                                <div className="md:w-1/2">
                                     <label className="block text-[16px] font-semibold">Gender</label>
                                     <Select options={genderOptions} classNamePrefix="react-select"
                                         placeholder="Select gender"
@@ -1151,7 +1151,7 @@ const BookMembership = () => {
                                         styles={ss(`s${index}_gender`, fe)} />
                                     <Err k={`s${index}_gender`} e={fe} />
                                 </div>
-                                <div className="w-1/2">
+                                <div className="md:w-1/2">
                                     <label className="block text-[16px] font-semibold">Medical information</label>
                                     <input value={student.medicalInformation} placeholder="Enter medical info"
                                         className={fc(`s${index}_medical`, fe)}
@@ -1160,8 +1160,8 @@ const BookMembership = () => {
                                 </div>
                             </div>
 
-                            <div className="flex gap-4">
-                                <div className="w-1/2">
+                            <div className="md:flex gap-4">
+                                <div className="md:w-1/2">
                                     <label className="block text-[16px] font-semibold">Class / Level</label>
                                     <Select options={venueClassOptions} classNamePrefix="react-select"
                                         placeholder="Select class"
@@ -1171,7 +1171,7 @@ const BookMembership = () => {
                                     {student.error && !fe[`s${index}_class`] && <p className="text-red-500 text-sm mt-1 ml-1 font-medium">{student.error}</p>}
                                     <Err k={`s${index}_class`} e={fe} />
                                 </div>
-                                <div className="w-1/2">
+                                <div className="md:w-1/2">
                                     <label className="block text-[16px] font-semibold">Time</label>
                                     <input readOnly
                                         value={student.selectedClassData ? `${student.selectedClassData.startTime} - ${student.selectedClassData.endTime}` : ""}
@@ -1207,15 +1207,15 @@ const BookMembership = () => {
                                 </div>
                             </div>
 
-                            <div className="flex gap-4">
-                                <div className="w-1/2">
+                            <div className="md:flex gap-4">
+                                <div className="md:w-1/2">
                                     <label className="block text-[16px] font-semibold">First name</label>
                                     <input value={parent.parentFirstName} placeholder="Enter first name"
                                         className={fc(`p${index}_firstName`, fe)}
                                         onChange={(e) => { handleParentChange(index, "parentFirstName", e.target.value.replace(/[^A-Za-z\s]/g, "")); clearErr(`p${index}_firstName`); }} />
                                     <Err k={`p${index}_firstName`} e={fe} />
                                 </div>
-                                <div className="w-1/2">
+                                <div className="md:w-1/2">
                                     <label className="block text-[16px] font-semibold">Last name</label>
                                     <input value={parent.parentLastName} placeholder="Enter last name"
                                         className={fc(`p${index}_lastName`, fe)}
@@ -1224,8 +1224,8 @@ const BookMembership = () => {
                                 </div>
                             </div>
 
-                            <div className="flex gap-4">
-                                <div className="w-1/2">
+                            <div className="md:flex gap-4">
+                                <div className="md:w-1/2">
                                     <label className="block text-[16px] font-semibold">Email</label>
                                     <input type="email" value={parent.parentEmail} placeholder="Enter email"
                                         className={fc(`p${index}_email`, fe)}
@@ -1238,7 +1238,7 @@ const BookMembership = () => {
                                         </p>
                                     )}
                                 </div>
-                                <div className="w-1/2">
+                                <div className="md:w-1/2">
                                     <label className="block text-[16px] font-semibold">Phone number</label>
                                     <div className={fe[`p${index}_phone`] ? "border border-red-500 rounded-xl bg-red-50 mt-2" : "mt-2"}>
                                         <PhoneNumberInput value={parent.parentPhoneNumber}
@@ -1282,8 +1282,8 @@ const BookMembership = () => {
                                     onChange={(e) => handleParentChange(index, "interestReasonOther", e.target.value)} />
                             </div>
 
-                            <div className="flex gap-4">
-                                <div className="w-1/2">
+                            <div className="md:flex gap-4">
+                                <div className="md:w-1/2">
                                     <label className="block text-[16px] font-semibold">Relation to child</label>
                                     <Select options={relationOptions} classNamePrefix="react-select"
                                         placeholder="Select Relation"
@@ -1292,7 +1292,7 @@ const BookMembership = () => {
                                         styles={ss(`p${index}_relation`, fe)} />
                                     <Err k={`p${index}_relation`} e={fe} />
                                 </div>
-                                <div className="w-1/2">
+                                <div className="md:w-1/2">
                                     <label className="block text-[16px] font-semibold">How did you hear about us?</label>
                                     <Select options={hearOptions} classNamePrefix="react-select"
                                         placeholder="Select"
@@ -1333,15 +1333,15 @@ const BookMembership = () => {
                             <span className="text-base font-semibold text-[#34353B]">Fill same as above</span>
                         </label>
 
-                        <div className="flex gap-4">
-                            <div className="w-1/2">
+                        <div className="md:flex gap-4">
+                            <div className="md:w-1/2">
                                 <label className="block text-[16px] font-semibold">First name</label>
                                 <input value={emergency.emergencyFirstName} placeholder="Enter first name"
                                     className={fc("e_firstName", fe)}
                                     onChange={(e) => { setEmergency((p) => ({ ...p, emergencyFirstName: e.target.value })); clearErr("e_firstName"); }} />
                                 <Err k="e_firstName" e={fe} />
                             </div>
-                            <div className="w-1/2">
+                            <div className="md:w-1/2">
                                 <label className="block text-[16px] font-semibold">Last name</label>
                                 <input value={emergency.emergencyLastName} placeholder="Enter last name"
                                     className={fc("e_lastName", fe)}
@@ -1350,8 +1350,8 @@ const BookMembership = () => {
                             </div>
                         </div>
 
-                        <div className="flex gap-4">
-                            <div className="w-1/2">
+                        <div className="md:flex gap-4">
+                            <div className="md:w-1/2">
                                 <label className="block text-[16px] font-semibold">Phone number</label>
                                 <div className={fe.e_phone ? "border border-red-500 rounded-xl bg-red-50 mt-2" : "mt-2"}>
                                     <PhoneNumberInput value={emergency.emergencyPhoneNumber}
@@ -1360,7 +1360,7 @@ const BookMembership = () => {
                                 </div>
                                 <Err k="e_phone" e={fe} />
                             </div>
-                            <div className="w-1/2">
+                            <div className="md:w-1/2">
                                 <label className="block text-[16px] font-semibold">Relation to child</label>
                                 <Select options={relationOptions} classNamePrefix="react-select"
                                     placeholder="Select Relation"
@@ -1373,9 +1373,9 @@ const BookMembership = () => {
                     </div>
 
                     {/* Actions */}
-                    <div className="flex justify-end gap-4 pb-6">
+                    <div className="sm:flex justify-end gap-4 pb-6">
                         <button type="button"
-                            className="border border-[#717073] text-[#717073] px-12 text-[18px] py-2 rounded-lg font-semibold">
+                            className="border md:w-max w-full border-[#717073] text-[#717073] px-12 text-[18px] py-2 rounded-lg font-semibold">
                             Cancel
                         </button>
                         <button type="button"
@@ -1386,7 +1386,7 @@ const BookMembership = () => {
                                     setShowPopup(true);
                                 }
                             }}
-                            className={`text-white font-semibold text-[18px] px-6 py-3 rounded-lg
+                            className={`text-white md:w-max mt-3 sm:mt-0 w-full font-semibold text-[18px] px-6 py-3 rounded-lg
                                 ${isBooked || parents.some((p) => p.emailStatus === "error")
                                     ? "bg-gray-400 cursor-not-allowed"
                                     : "bg-[#237FEA]"}`}>
@@ -1434,7 +1434,7 @@ const BookMembership = () => {
                                             className="w-full mt-2 border border-gray-300 rounded-xl px-4 py-3 text-base focus:outline-none" />
                                     </label>
 
-                                    <div className="flex gap-4">
+                                    <div className="md:flex gap-4">
                                         <label className="flex-1">
                                             <span className="block text-[16px] font-semibold">Sort Code</span>
                                             <input value={payment.branch_code} placeholder="00-00-00"
@@ -1456,7 +1456,7 @@ const BookMembership = () => {
                                             className="w-full mt-2 border border-gray-300 rounded-xl px-4 py-3 text-base focus:outline-none" />
                                     </label>
 
-                                    <div className="flex gap-4">
+                                    <div className="md:flex gap-4">
                                         <label className="flex-1">
                                             <span className="block text-[16px] font-semibold">City</span>
                                             <input value={payment.city}
@@ -1519,7 +1519,7 @@ const BookMembership = () => {
                                             className="w-full mt-2 border border-gray-300 rounded-xl px-4 py-3 text-base focus:outline-none" />
                                     </label>
 
-                                    <div className="flex gap-4">
+                                    <div className="md:flex gap-4">
                                         <label className="flex-1">
                                             <span className="block text-[16px] font-semibold">Expiry</span>
                                             <input value={expiryDate} placeholder="MM/YY" maxLength={5} inputMode="numeric"

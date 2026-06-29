@@ -71,10 +71,10 @@ function PillButton({ color = "blue", onClick, children, type = "button", disabl
 function DetailRow({ label, value }) {
     return (
         <div className="border-b border-[#495362] pb-3">
-            <p className="text-white 2xl:text-[20px] xl:text-[18px] lg:text-[16px] text-[14px] font-bold mb-0.5">
+            <p className="text-white 2xl:text-[20px] xl:text-[18px]  text-[16px] font-bold mb-0.5">
                 {label}
             </p>
-            <p className="font-semibold text-[#BDC0C3] lg:text-[16px] text-[14px]">
+            <p className="font-semibold text-[#BDC0C3] lg:text-[16px] text-[15px]">
                 {safeValue(value)}
             </p>
         </div>
@@ -308,18 +308,18 @@ export default function General({ booking: propBooking, details, loading: mainLo
     return (
         <div className="animate-fadeIn">
 
-            <div className="flex flex-col md:flex-row items-start gap-6">
+            <div className="flex flex-col-reverse md:flex-row items-start gap-6">
                 {/* ── Left Side: Forms ── */}
-                <div className="flex-1 xl:w-[70%] md:w-[60%] w-full space-y-8 p-6 pb-10 rounded-[30px] bg-white">
+                <div className="flex-1 xl:w-[70%] md:w-[50%] w-full space-y-8 md:p-6 pb-10 p-4 rounded-[30px] bg-white">
 
                     {/* Parent Information */}
                     {parents.length > 0 && (
                         parents.map((parent, idx) => (
                             <section key={`parent-${idx}`} className={idx > 0 ? "pt-6 border-t border-gray-100" : ""}>
-                                <h2 className="md:text-[24px] 2xl:text-[20px] xl:text-[18px] lg:text-[16px] text-[14px] font-bold text-[#383A46] mb-4">
+                                <h2 className="md:text-[24px]  font-bold text-[#383A46] mb-4 text-[20px]">
                                     Parent information {parents.length > 1 ? `(${idx + 1})` : ""}
                                 </h2>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
                                     <div className="space-y-1">
                                         <label className="lg:text-[16px] text-[14px] font-medium text-[#282829]">First name</label>
                                         <input type="text" value={safeValue(parent?.parentFirstName || parent?.firstName, "")} className="w-full lg:p-3 p-2 border border-[#E2E1E5] rounded-[12px] focus:outline-none text-[#383A46] font-medium bg-white" readOnly />
@@ -329,7 +329,7 @@ export default function General({ booking: propBooking, details, loading: mainLo
                                         <input type="text" value={safeValue(parent?.parentLastName || parent?.lastName, "")} className="w-full lg:p-3 p-2 border border-[#E2E1E5] rounded-[12px] focus:outline-none text-[#383A46] font-medium bg-white" readOnly />
                                     </div>
                                 </div>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
                                     <div className="space-y-1">
                                         <label className="lg:text-[16px] text-[14px] font-medium text-[#282829]">Email</label>
                                         <input type="text" value={safeValue(parent?.parentEmail || parent?.email, "")} className="w-full lg:p-3 p-2 border border-[#E2E1E5] rounded-[12px] focus:outline-none text-[#383A46] font-medium bg-white" readOnly />
@@ -339,7 +339,7 @@ export default function General({ booking: propBooking, details, loading: mainLo
                                         <input type="text" value={safeValue(parent?.parentPhoneNumber || parent?.phoneNumber, "")} className="w-full lg:p-3 p-2 border border-[#E2E1E5] rounded-[12px] focus:outline-none text-[#383A46] font-medium bg-white" readOnly />
                                     </div>
                                 </div>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
                                     <div className="space-y-1">
                                         <label className="lg:text-[16px] text-[14px] font-medium text-[#282829]">Relation to child</label>
                                         <input type="text" value={safeValue(parent?.relationChild || parent?.relationToChild, "")} className="w-full lg:p-3 p-2 border border-[#E2E1E5] rounded-[12px] focus:outline-none text-[#383A46] font-medium bg-white" readOnly />
@@ -349,7 +349,7 @@ export default function General({ booking: propBooking, details, loading: mainLo
                                         <input type="text" value={safeValue(parent?.howDidHear || parent?.howDidYouHear, "")} className="w-full lg:p-3 p-2 border border-[#E2E1E5] rounded-[12px] focus:outline-none text-[#383A46] font-medium bg-white" readOnly />
                                     </div>
                                 </div>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                                     <div className="space-y-1">
                                         <label className="lg:text-[16px] text-[14px] font-medium text-[#282829]">What's the main reason you're interested in Samba Soccer Schools?</label>
                                         <input type="text" value={safeValue(parent?.interestReason, "")} className="w-full lg:p-3 p-2 border border-[#E2E1E5] rounded-[12px] focus:outline-none text-[#383A46] font-medium bg-white" readOnly />
@@ -367,10 +367,10 @@ export default function General({ booking: propBooking, details, loading: mainLo
                     {students.length > 0 ? (
                         students.map((student, idx) => (
                             <section key={`student-${idx}`} className={(idx > 0 || parents.length > 0) ? "pt-6 border-t border-gray-100" : ""}>
-                                <h2 className="md:text-[24px] 2xl:text-[20px] xl:text-[18px] lg:text-[16px] text-[14px] font-bold text-[#383A46] mb-4">
+                                <h2 className="md:text-[24px]  font-bold text-[#383A46] mb-4 text-[20px]">
                                     Student information {students.length > 1 ? `(${idx + 1})` : ""}
                                 </h2>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
                                     <div className="space-y-1">
                                         <label className="lg:text-[16px] text-[14px] font-medium text-[#282829]">First name</label>
                                         <input type="text" value={safeValue(student?.studentFirstName || student?.firstName, "")} className="w-full lg:p-3 p-2 border border-[#E2E1E5] rounded-[12px] focus:outline-none text-[#383A46] font-medium bg-white" readOnly />
@@ -380,7 +380,7 @@ export default function General({ booking: propBooking, details, loading: mainLo
                                         <input type="text" value={safeValue(student?.studentLastName || student?.lastName, "")} className="w-full lg:p-3 p-2 border border-[#E2E1E5] rounded-[12px] focus:outline-none text-[#383A46] font-medium bg-white" readOnly />
                                     </div>
                                 </div>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
                                     <div className="space-y-1">
                                         <label className="lg:text-[16px] text-[14px] font-medium text-[#282829]">Date of birth</label>
                                         <input type="text" value={safeValue(student?.dateOfBirth, "")} className="w-full lg:p-3 p-2 border border-[#E2E1E5] rounded-[12px] focus:outline-none text-[#383A46] font-medium bg-white" readOnly />
@@ -390,7 +390,7 @@ export default function General({ booking: propBooking, details, loading: mainLo
                                         <input type="text" value={safeValue(student?.age, "")} className="w-full lg:p-3 p-2 border border-[#E2E1E5] rounded-[12px] focus:outline-none text-[#383A46] font-medium bg-white" readOnly />
                                     </div>
                                 </div>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                                     <div className="space-y-1">
                                         <label className="lg:text-[16px] text-[14px] font-medium text-[#282829]">Gender</label>
                                         <input type="text" value={safeValue(student?.gender, "")} className="w-full lg:p-3 p-2 border border-[#E2E1E5] rounded-[12px] focus:outline-none text-[#383A46] font-medium bg-white" readOnly />
@@ -404,7 +404,7 @@ export default function General({ booking: propBooking, details, loading: mainLo
                         ))
                     ) : (
                         <section className={parents.length > 0 ? "pt-6 border-t border-gray-100" : ""}>
-                            <h2 className="md:text-[24px] 2xl:text-[20px] xl:text-[18px] lg:text-[16px] text-[14px] font-bold text-[#383A46] mb-4">
+                            <h2 className="md:text-[24px]  font-bold text-[#383A46] mb-4 text-[20px]">
                                 Student information
                             </h2>
                             <p className="text-[#717073]">No student information available.</p>
@@ -414,10 +414,10 @@ export default function General({ booking: propBooking, details, loading: mainLo
                     {/* Emergency Contact Information */}
                     {emergency && (
                         <section className={(parents.length > 0 || students.length > 0) ? "pt-6 border-t border-gray-100" : ""}>
-                            <h2 className="md:text-[24px] 2xl:text-[20px] xl:text-[18px] lg:text-[16px] text-[14px] font-bold text-[#383A46] mb-4">
+                            <h2 className="md:text-[24px]  font-bold text-[#383A46] mb-4 text-[20px]">
                                 Emergency contact details
                             </h2>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
                                 <div className="space-y-1">
                                     <label className="lg:text-[16px] text-[14px] font-medium text-[#282829]">First name</label>
                                     <input type="text" value={safeValue(emergency?.emergencyFirstName, "")} className="w-full lg:p-3 p-2 border border-[#E2E1E5] rounded-[12px] focus:outline-none text-[#383A46] font-medium bg-white" readOnly />
@@ -427,7 +427,7 @@ export default function General({ booking: propBooking, details, loading: mainLo
                                     <input type="text" value={safeValue(emergency?.emergencyLastName, "")} className="w-full lg:p-3 p-2 border border-[#E2E1E5] rounded-[12px] focus:outline-none text-[#383A46] font-medium bg-white" readOnly />
                                 </div>
                             </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                                 <div className="space-y-1">
                                     <label className="lg:text-[16px] text-[14px] font-medium text-[#282829]">Phone number</label>
                                     <input type="text" value={safeValue(emergency?.emergencyPhoneNumber, "")} className="w-full lg:p-3 p-2 border border-[#E2E1E5] rounded-[12px] focus:outline-none text-[#383A46] font-medium bg-white" readOnly />
@@ -442,10 +442,10 @@ export default function General({ booking: propBooking, details, loading: mainLo
 
                     {/* Booking Information */}
                     <section className={(parents.length > 0 || students.length > 0 || emergency) ? "pt-6 border-t border-gray-100" : ""}>
-                        <h2 className="md:text-[24px] 2xl:text-[20px] xl:text-[18px] lg:text-[16px] text-[14px] font-bold text-[#383A46] mb-4">
+                        <h2 className="md:text-[24px]  font-bold text-[#383A46] mb-4 text-[20px]">
                             Booking information
                         </h2>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                             <div className="space-y-1">
                                 <label className="lg:text-[16px] text-[14px] font-medium text-[#282829]">
                                     Start Date
@@ -495,7 +495,7 @@ export default function General({ booking: propBooking, details, loading: mainLo
                 </div>
 
                 {/* ── Right Side: Account Status Card ── */}
-                <div className="xl:w-[30%] md:w-[40%] w-[90%] mx-auto">
+                <div className="xl:w-[30%] md:w-[50%] w-[90%] mx-auto">
                     <div className="bg-[#363E49] rounded-[30px] overflow-hidden text-white shadow-lg flex flex-col lg:p-7 p-3 h-fit">
 
                         {/* Header */}
@@ -504,7 +504,7 @@ export default function General({ booking: propBooking, details, loading: mainLo
                             className="bg-cover bg-center px-6 rounded-[20px] md:py-4 py-2 flex justify-between items-center relative overflow-hidden"
                         >
                             <div className="flex flex-col">
-                                <h3 className="text-black font-bold 2xl:text-[20px] xl:text-[18px] lg:text-[16px] text-[14px] leading-tight">
+                                <h3 className="text-black font-bold 2xl:text-[20px] text-[18px] leading-tight">
                                     Account Status
                                 </h3>
                                 <span className="text-black/80 lg:text-[16px] text-[14px] text-[#282829] font-semibold">
@@ -533,7 +533,7 @@ export default function General({ booking: propBooking, details, loading: mainLo
                                             className="w-20 h-20 rounded-full object-cover"
                                         />
                                         <div>
-                                            <h4 className="md:text-[24px] 2xl:text-[20px] xl:text-[18px] lg:text-[16px] text-[14px] font-bold leading-tight">
+                                            <h4 className="md:text-[24px] 2xl:text-[20px] text-[18px] font-bold leading-tight">
                                                 Account Holder
                                             </h4>
                                             <p className="lg:text-[16px] text-[14px] text-[#BDC0C3] font-medium">
@@ -566,7 +566,7 @@ export default function General({ booking: propBooking, details, loading: mainLo
                                 {serviceType === "weekly class membership" && (
                                     <>
                                         <div className="border-b border-[#495362] pb-2">
-                                            <p className="text-white 2xl:text-[20px] xl:text-[18px] lg:text-[16px] text-[14px] font-medium mb-1">Venue</p>
+                                            <p className="text-white 2xl:text-[20px] xl:text-[18px] text-[16px] font-medium mb-1">Venue</p>
                                             <span className="bg-[#3B82F6] text-white px-3 py-1 rounded text-xs font-semibold inline-block">{bookingVenueName}</span>
                                         </div>
                                         <DetailRow label="Membership Plan" value={paymentPlan?.title} />
@@ -599,7 +599,7 @@ export default function General({ booking: propBooking, details, loading: mainLo
                                 {(serviceType === "weekly class trial" && booking?.bookingType === "free") && (
                                     <>
                                         <div className="border-b border-[#495362] pb-2">
-                                            <p className="text-white 2xl:text-[20px] xl:text-[18px] lg:text-[16px] text-[14px] font-medium mb-1">Venue</p>
+                                            <p className="text-white 2xl:text-[20px] xl:text-[18px] text-[16px] font-medium mb-1">Venue</p>
                                             <span className="bg-[#3B82F6] text-white px-3 py-1 rounded text-xs font-semibold inline-block">{bookingVenueName}</span>
                                         </div>
                                         <DetailRow label="Date Of Trial" value={safeDateLocaleString(booking?.trialDate)} />
@@ -614,7 +614,7 @@ export default function General({ booking: propBooking, details, loading: mainLo
                                 {(serviceType === "weekly class trial" && booking?.bookingType === "waiting list") && (
                                     <>
                                         <div className="border-b border-[#495362] pb-2">
-                                            <p className="text-white 2xl:text-[20px] xl:text-[18px] lg:text-[16px] text-[14px] font-medium mb-1">Venue</p>
+                                            <p className="text-white 2xl:text-[20px] xl:text-[18px] text-[16px] font-medium mb-1">Venue</p>
                                             <span className="bg-[#3B82F6] text-white px-3 py-1 rounded text-xs font-semibold inline-block">{bookingVenueName}</span>
                                         </div>
                                         <DetailRow label="Students" value={Array.isArray(booking?.students) ? booking.students.length : null} />
@@ -640,7 +640,7 @@ export default function General({ booking: propBooking, details, loading: mainLo
                                 {serviceType === "one to one" && (
                                     <>
                                         <div className="border-b border-[#495362] pb-2">
-                                            <p className="text-white 2xl:text-[20px] xl:text-[18px] lg:text-[16px] text-[14px] font-medium mb-1">Venue</p>
+                                            <p className="text-white 2xl:text-[20px] xl:text-[18px] text-[16px] font-medium mb-1">Venue</p>
                                             <span className="bg-[#3B82F6] text-white px-3 py-1 rounded text-xs font-semibold inline-block">{bookingVenueName}</span>
                                         </div>
                                         <DetailRow label="Package" value={booking?.package?.packageName} />
@@ -661,7 +661,7 @@ export default function General({ booking: propBooking, details, loading: mainLo
                                         <DetailRow label="Stripe Transaction ID" value={booking?.payments?.[0]?.stripe_payment_intent_id} />
                                         <DetailRow label="Date of Booking" value={safeDateLocaleString(booking?.createdAt)} />
                                         <div className="border-b border-[#495362] pb-2">
-                                            <p className="text-white 2xl:text-[20px] xl:text-[18px] lg:text-[16px] text-[14px] font-medium mb-1">Venue</p>
+                                            <p className="text-white 2xl:text-[20px] xl:text-[18px] text-[16px] font-medium mb-1">Venue</p>
                                             <span className="bg-[#3B82F6] text-white px-3 py-1 rounded text-xs font-semibold inline-block">{bookingVenueName}</span>
                                         </div>
                                         <DetailRow label="Discount" value={safePrice(booking?.payments?.[0]?.discount_amount, "N/A")} />

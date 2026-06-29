@@ -1,23 +1,19 @@
 // components/Payment.jsx
 
 import React from 'react'
-import { useLocation } from 'react-router-dom'
 
 const Section = ({ title, children }) => (
-  <div className="bg-white rounded-[30px] p-5 mb-4">
-    <h2 className="text-[24px] font-semibold text-[#282829] mb-4">{title}</h2>
+  <div className="bg-white rounded-[30px] p-4 sm:p-5 mb-4">
+    <h2 className="text-[20px] sm:text-[24px] font-semibold text-[#282829] mb-4">{title}</h2>
     {children}
   </div>
 )
 
 const Payment = ({ booking, details, loading }) => {
-
-
-
   if (!details) {
     return (
       <div className="p-6 text-center bg-white rounded-[30px]">
-        <p className="text-[#3c3c3d] font-medium">No details details available.</p>
+        <p className="text-[#3c3c3d] font-medium">No details available.</p>
       </div>
     )
   }
@@ -33,6 +29,7 @@ const Payment = ({ booking, details, loading }) => {
   const firstPayment = payments[0] || {};
 
   console.log('firstPayment', firstPayment)
+
   const detailss = [
     { label: 'Status', value: firstPayment?.payment_status ?? firstPayment?.paymentStatus ?? '-' },
     { label: 'ID', value: firstPayment?.stripe_payment_intent_id ?? firstPayment?.stripePaymentIntentId ?? firstPayment?.gatewayResponse?.Id ?? '-' },
@@ -54,37 +51,61 @@ const Payment = ({ booking, details, loading }) => {
         {detailss.map((item, i) => (
           <div
             key={item.label}
-            className={`flex justify-between items-start py-4 text-sm ${i < detailss.length - 1 ? 'border-b border-gray-100' : ''}`}
+            className={`flex flex-col sm:flex-row sm:justify-between sm:items-start gap-1 sm:gap-0 py-3 sm:py-4 text-sm ${i < detailss.length - 1 ? 'border-b border-gray-100' : ''}`}
           >
-            <span className="text-[#717073] text-[16px] font-semibold w-32 shrink-0">{item.label}</span>
-            <span className="text-[#282829] text-[16px] font-semibold capitalize text-right">{item.value}</span>
+            <span className="text-[#717073] text-[14px] sm:text-[16px] font-semibold sm:w-32 shrink-0">{item.label}</span>
+            <span className="text-[#282829] text-[14px] sm:text-[16px] font-semibold capitalize sm:text-right break-all">{item.value}</span>
           </div>
         ))}
       </Section>
 
       {/* Subscription */}
-      {
-
-      }
-
-
-      {
-        details.serviceType === "weekly class membership" && (
-          <Section title="Subscription">
-            <div className="flex justify-between items-center">
-              <span className="text-[#282829] text-[16px] font-semibold">{subscription.plan}</span>
-              <div className="flex items-center gap-3">
-                <span className="text-[#282829] text-[16px] font-semibold">{subscription.price}</span>
-              </div>
+      {details.serviceType === "weekly class membership" && (
+        <Section title="Subscription">
+          <div className="flex justify-between items-center gap-3">
+            <span className="text-[#282829] text-[14px] sm:text-[16px] font-semibold">{subscription.plan}</span>
+            <div className="flex items-center gap-3 shrink-0">
+              <span className="text-[#282829] text-[14px] sm:text-[16px] font-semibold">{subscription.price}</span>
             </div>
-          </Section>
+          </div>
+        </Section>
+      )}
 
-        )
-      }
       {/* Payments */}
-      <div className="bg-white rounded-[30px] py-5 mb-4">
-        <h2 className="text-[24px] font-semibold text-[#282829] mb-4 px-5">Payments</h2>
-        <div className="overflow-x-auto">
+      <div className="bg-white rounded-[30px] py-4 sm:py-5 mb-4">
+        <h2 className="text-[20px] sm:text-[24px] font-semibold text-[#282829] mb-4 px-4 sm:px-5">Payments</h2>
+
+        {/* Mobile card view */}
+        <div className="block sm:hidden px-4 space-y-3">
+          {payments?.map((p) => {
+            const amount = p.price ?? p.amount ?? '-'
+            const status = p.paymentStatus ?? p.payment_status ?? '-'
+            const date = p?.dueDate ?? p.createdAt ?? p.paymentDate ?? p.payment_date
+            const chargeDate = date ? new Date(date).toLocaleDateString('en-GB') : '-'
+            const paymentType = p.paymentType ?? (p.stripePaymentIntentId ? 'stripe' : '-')
+            const failed = status === 'failed'
+            const isPending = status === 'pending' || status === 'pending_submission'
+
+            return (
+              <div key={p.id} className="border border-gray-100 rounded-2xl p-4 space-y-2">
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center gap-2">
+                    <span className={`w-2 h-2 rounded-full shrink-0 ${failed ? 'bg-red-500' : isPending ? 'bg-yellow-400' : 'bg-green-500'}`} />
+                    <span className="text-[15px] font-semibold text-[#282829] capitalize">{status || '-'}</span>
+                  </div>
+                  <span className="text-[15px] font-semibold text-gray-800">{amount} {p.currency}</span>
+                </div>
+                <div className="flex justify-between text-[13px] text-gray-500 font-semibold">
+                  <span className="capitalize">{paymentType}</span>
+                  <span>{chargeDate}</span>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+
+        {/* Desktop table view */}
+        <div className="hidden sm:block overflow-x-auto">
           <table className="w-full text-sm table-fixed">
             <thead>
               <tr className="bg-[#F5F5F5]">
@@ -98,11 +119,9 @@ const Payment = ({ booking, details, loading }) => {
             <tbody>
               {payments?.map((p) => {
                 const amount = p.price ?? p.amount ?? '-'
-                const currency = p.currency ?? '-'
                 const status = p.paymentStatus ?? p.payment_status ?? '-'
-                const date =p?.dueDate ?? p.createdAt ?? p.paymentDate ?? p.payment_date
+                const date = p?.dueDate ?? p.createdAt ?? p.paymentDate ?? p.payment_date
                 const chargeDate = date ? new Date(date).toLocaleDateString('en-GB') : '-'
-                const description = p.description ?? p.gatewayResponse?.payment?.description ?? '-'
                 const paymentType = p.paymentType ?? (p.stripePaymentIntentId ? 'stripe' : '-')
                 const failed = status === 'failed'
                 const isPending = status === 'pending' || status === 'pending_submission'
@@ -118,7 +137,7 @@ const Payment = ({ booking, details, loading }) => {
                       </div>
                     </td>
                     <td className="px-5 py-3 text-[16px] font-semibold text-gray-500 capitalize">
-                      {p.paymentType ?? 'Stripe'}
+                      {paymentType}
                     </td>
                     <td className="px-5 py-3 text-[16px] font-semibold text-gray-800">{chargeDate}</td>
                     <td className="px-5 py-3 text-[16px] font-semibold text-gray-500 capitalize">
@@ -127,7 +146,6 @@ const Payment = ({ booking, details, loading }) => {
                     <td className="px-5 py-3 text-[16px] font-semibold text-gray-800">
                       {amount} {p.currency}
                     </td>
-
                   </tr>
                 )
               })}

@@ -8,6 +8,27 @@ import ChangePlanModal from '../../components/modals/ChangePlanModal';
 import TransferClassModal from '../../components/modals/TransferClassModal';
 import FreezeMembershipModal from '../../components/modals/FreezeMembershipModal';
 import { showError, showWarning, showConfirm, showSuccess } from '../../../utils/swalHelper'; // ✅ showWarning added
+const pillButtonClasses = {
+    red: "bg-[#FEF2F2] border border-[#FECACA] text-[#EF4444] hover:bg-[#FEE2E2]",
+    blue: "bg-[#EFF6FF] border border-[#DBEAFE] text-[#3B82F6] hover:bg-[#DBEAFE]",
+    green: "bg-[#F0FDF4] border border-[#DCFCE7] text-[#22C55E] hover:bg-[#DCFCE7]",
+    yellow: "bg-[#FEF9C3] border border-[#FEF08A] text-[#EAB308] hover:bg-[#FEF08A]",
+    gray: "bg-[#F3F4F6] border border-[#E5E7EB] text-[#6B7280] hover:bg-[#E5E7EB]"
+};
+
+function PillButton({ color = "blue", onClick, children, type = "button", disabled = false, className = "" }) {
+    return (
+        <button
+            type={type}
+            onClick={onClick}
+            disabled={disabled}
+            className={`w-full block text-center px-2 2xl:px-4 py-2.5 2xl:py-3 rounded-[12px] font-semibold 2xl:text-sm md:text-[12px] text-[14px] transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${pillButtonClasses[color]} ${className}`}
+        >
+            {children}
+        </button>
+    );
+}
+
 const MyBookings = () => {
     const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState('Upcoming');
@@ -297,7 +318,7 @@ const MyBookings = () => {
     return (
         <div className="md:p-4 p-2 md:space-y-8 animate-fadeIn min-h-screen bg-[#fff] rounded-[30px] md:m-6 m-4">
             {/* Tabs */}
-            <div className="flex items-center md:gap-8 gap-2 mb-12 md:mb-0  pb-6">
+            <div className="flex items-center md:gap-8 gap-2 mb-7 md:mb-0  pb-6">
                 {tabs.map((tab) => (
                     <button
                         key={tab}
@@ -349,7 +370,7 @@ const MyBookings = () => {
                                 <div className="bg-[#F8F8F8] p-6 py-2 rounded-[16px] flex flex-col md:flex-row  overflow-hidden mb-4">
                                     {/* Date Column */}
 
-                                    <div className="bg-[#F9FAFB] md:w-[120px] text-left flex flex-col md:items-center md:text-center 2xl:px-5 px-0  2xl:pe-10 md:pe-5 md:justify-center md:border-r border-b md:border-b-0 border-[#E2E1E5]">
+                                    <div className="md:w-[120px] text-left flex flex-col md:items-center md:text-center 2xl:px-5 px-0  2xl:pe-10 md:pe-5 md:justify-center md:border-r border-b md:border-b-0 border-[#E2E1E5]">
                                         <span className="text-[#5F5F6D] 2xl:text-[24px] text-[20px] font-bold block">{formatted.day}</span>
                                         <span className="text-[#5F5F6D] font-bold 2xl:text-[42px] text-[36px]">{formatted.date}</span>
                                     </div>
@@ -376,52 +397,43 @@ const MyBookings = () => {
                                      
 
                                         {/* Action Button */}
-                                        <div className="self-start xl:w-[13%] w-full flex flex-wrap gap-4 justify-end">
+                                        <div className="self-start xl:w-[13%] w-full flex flex-wrap md:gap-4 gap-2 justify-end">
                                             {formatted.status === 'completed' && (
-                                                <button onClick={() => setRenewModal({ open: true, booking })} // ✅ wired
-                                                    className="bg-[#042C89] text-white w-full  px-2 2xl:px-4 py-2.5 2xl:py-3 rounded-[12px] font-semibold 2xl:text-sm md:text-[12px] text-[14px] hover:bg-[#032066] transition-colors">
+                                                <PillButton color="green" onClick={() => setRenewModal({ open: true, booking })}>
                                                     Renew Package
-                                                </button>
+                                                </PillButton>
                                             )}
                                             {formatted.bookingType === "free" && (
                                                 <>
-
-                                                    <button onClick={() => setCancelModal({ open: true, booking })}
-                                                        className="bg-red-500 block text-white w-full 2xl:px-8 px-4 py-2.5 2xl:py-3 rounded-[12px] font-semibold 2xl:text-sm md:text-[12px] text-[14px] hover:bg-[#e69500] transition-colors ">
+                                                    <PillButton color="red" onClick={() => setCancelModal({ open: true, booking })}>
                                                         Cancel Trial
-                                                    </button>
-                                                    <button onClick={() => navigate("/book-membership", { state: { booking } })} className="bg-[#042C89] text-white w-full  px-2 2xl:px-4 py-2.5 2xl:py-3 rounded-[12px] font-semibold 2xl:text-sm md:text-[12px] text-[14px] hover:bg-[#032066] transition-colors">
+                                                    </PillButton>
+                                                    <PillButton color="blue" onClick={() => navigate("/book-membership", { state: { booking } })}>
                                                         Book Membership
-                                                    </button>
-
+                                                    </PillButton>
                                                 </>
-
                                             )}
 
-                                            <button
-                                                className={`block text-white w-full 2xl:px-8 px-4 py-2.5 capitalize 2xl:py-3 rounded-[12px] font-semibold 2xl:text-sm md:text-[12px] text-[14px] transition-colors ${formatted.status === "pending" ? "bg-yellow-500 hover:bg-yellow-600" :
-                                                    formatted.status === "active" ? "bg-green-500 hover:bg-green-600" :
-                                                        formatted.status === "cancelled" ? "bg-red-500 hover:bg-red-600" :
-                                                            formatted.status === "completed" ? "bg-blue-500 hover:bg-blue-600" :
-                                                                "bg-gray-400 hover:bg-gray-500"
-                                                    }`}>
+                                            <PillButton
+                                                className="capitalize cursor-default"
+                                                color={
+                                                    formatted.status === "pending" ? "yellow" :
+                                                    formatted.status === "active" ? "green" :
+                                                    formatted.status === "cancelled" ? "red" :
+                                                    formatted.status === "completed" ? "blue" : "gray"
+                                                }
+                                            >
                                                 {formatted.status}
-                                            </button>
+                                            </PillButton>
 
                                             {formatted.serviceType === "weekly class membership" && (
                                                 <>
-                                                    <button
-                                                        onClick={() => setChangePlanModal({ open: true, booking })}
-                                                        className="bg-[#042C89] text-white w-full px-2 2xl:px-4 py-2.5 2xl:py-3 rounded-[12px] font-semibold 2xl:text-sm md:text-[12px] text-[14px] hover:bg-[#032066] transition-colors"
-                                                    >
+                                                    <PillButton color="blue" onClick={() => setChangePlanModal({ open: true, booking })}>
                                                         Change Plan
-                                                    </button>
-                                                    <button
-                                                        onClick={() => setTransferModal({ open: true, booking })}
-                                                        className="bg-[#237FEA] text-white w-full px-2 2xl:px-4 py-2.5 2xl:py-3 rounded-[12px] font-semibold 2xl:text-sm md:text-[12px] text-[14px] hover:bg-[#1b62b7] transition-colors"
-                                                    >
+                                                    </PillButton>
+                                                    <PillButton color="blue" onClick={() => setTransferModal({ open: true, booking })}>
                                                         Transfer Class
-                                                    </button>
+                                                    </PillButton>
                                                     {!formatted?.freezeBooking &&
                                                         (formatted?.status === "active" || formatted?.status === "request_to_cancel") &&
                                                         !(formatted?.paymentPlan?.duration === 1 && formatted?.paymentPlan?.interval === "Month") &&
@@ -441,30 +453,21 @@ const MyBookings = () => {
 
                                                             return payments.some((p) => p.paymentStatus === "paid");
                                                         })() && (
-                                                            <button
-                                                                onClick={() => setFreezeModal({ open: true, booking })}
-                                                                className="bg-[#0DD180] text-white w-full px-2 2xl:px-4 py-2.5 2xl:py-3 rounded-[12px] font-semibold 2xl:text-sm md:text-[12px] text-[14px] hover:bg-[#0aa665] transition-colors"
-                                                            >
+                                                            <PillButton color="green" onClick={() => setFreezeModal({ open: true, booking })}>
                                                                 Freeze Membership
-                                                            </button>
+                                                            </PillButton>
                                                         )}
                                                 </>
                                             )}
-                                            {formatted.serviceType === "birthday party" && ( // ✅ added
-                                                <button
-                                                    onClick={handleBirthdayPartyCancel}
-                                                    className="bg-red-500 block text-white w-full 2xl:px-8 px-4 py-2.5 2xl:py-3 rounded-[12px] font-semibold 2xl:text-sm md:text-[12px] text-[14px] hover:bg-red-600 transition-colors"
-                                                >
+                                            {formatted.serviceType === "birthday party" && (
+                                                <PillButton color="red" onClick={handleBirthdayPartyCancel}>
                                                     Cancel
-                                                </button>
+                                                </PillButton>
                                             )}
                                             {formatted.serviceType === "holiday camp" && formatted.status !== "cancelled" && (
-                                                <button
-                                                    onClick={() => handleCancelCamp(booking)}
-                                                    className="bg-red-500 block text-white w-full 2xl:px-8 px-4 py-2.5 2xl:py-3 rounded-[12px] font-semibold 2xl:text-sm md:text-[12px] text-[14px] hover:bg-red-600 transition-colors"
-                                                >
+                                                <PillButton color="red" onClick={() => handleCancelCamp(booking)}>
                                                     Cancel Camp
-                                                </button>
+                                                </PillButton>
                                             )}
                                         </div>
                                     </div>

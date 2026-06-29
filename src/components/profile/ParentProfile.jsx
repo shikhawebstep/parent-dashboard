@@ -438,10 +438,10 @@ const ParentProfile = () => {
     };
 
     return (
-        <div className="min-h-screen bg-[#F4F6FA] p-5 md:p-0">
+        <div className="min-h-screen bg-[#F4F6FA] p-5">
             <style>{phoneInputStyles}</style>
 
-            <div className="lg:flex gap-5 mt-2 items-start">
+            <div className="flex gap-5 mt-2 items-start md:flex-row flex-col-reverse">
                 {/* LEFT */}
                 <div className="flex-1 lg:w-9/12 min-w-0 space-y-5">
 
@@ -685,7 +685,7 @@ const ParentProfile = () => {
                 </div>
 
                 {/* RIGHT SIDEBAR */}
-                <div className="xl:w-[30%] md:w-[40%]  m-auto mt-5 md:mt-0">
+                <div className="xl:w-[30%] md:w-[40%]  m-auto mt-5 md:mt-0 w-full">
                     <div className="bg-[#363E49] rounded-[30px] overflow-hidden text-white shadow-lg flex flex-col lg:p-4 p-3 h-fit">
 
                         {/* Header */}
@@ -694,7 +694,7 @@ const ParentProfile = () => {
                             className="bg-cover bg-center px-6 rounded-[20px] md:py-4 py-2 flex justify-between items-center relative overflow-hidden"
                         >
                             <div className="flex flex-col">
-                                <h3 className="text-black font-bold 2xl:text-[20px] xl:text-[18px] lg:text-[16px] text-[14px] leading-tight">
+                                <h3 className="text-black font-bold 2xl:text-[20px] text-[18px] leading-tight">
                                     Account Status
                                 </h3>
                                 <span className="text-black/80 lg:text-[16px] text-[14px] text-[#282829] font-semibold">
@@ -703,7 +703,7 @@ const ParentProfile = () => {
                             </div>
                         </div>
 
-                        <div className="px-5 py-4 space-y-4">
+                        <div className="md:px-5 py-4 space-y-4">
                             <div className="flex items-center gap-4">
                                 <img
                                     src={profilePhoto || "/assets/dummy-avatar.png"}
@@ -711,7 +711,7 @@ const ParentProfile = () => {
                                     className="w-20 h-20  object-cover rounded-full"
                                 />
                                 <div>
-                                    <h4 className="md:text-[24px] 2xl:text-[20px] xl:text-[18px] lg:text-[16px] text-[14px] font-bold leading-tight">
+                                    <h4 className="md:text-[24px] 2xl:text-[20px] text-[18px] font-bold leading-tight">
                                         Account Holder
                                     </h4>
                                     <p className="lg:text-[16px] text-[14px] text-[#BDC0C3] font-medium">
@@ -740,8 +740,8 @@ const ParentProfile = () => {
 
                                     <div>
                                         <div className="flex justify-between mb-1.5">
-                                            <span className="text-white 2xl:text-[20px] xl:text-[18px] lg:text-[16px] text-[14px] font-medium mb-1">Progress</span>
-                                            <span className="font-semibold text-[#BDC0C3] lg:text-[16px] text-[14px]">{sidebarInfo.progress || 0}%</span>
+                                            <span className="text-white 2xl:text-[20px] xl:text-[18px] text-[16px] font-medium mb-1">Progress</span>
+                                            <span className="font-semibold text-[#BDC0C3] lg:text-[16px] text-[15px]">{sidebarInfo.progress || 0}%</span>
                                         </div>
                                         <div className="h-2 bg-white/10 rounded-full overflow-hidden">
                                             <div className="h-full bg-[#0DD180] rounded-full" style={{ width: `${sidebarInfo.progress || 0}%` }} />
@@ -815,9 +815,9 @@ const Field = ({ label, error, children }) => (
 
 const SidebarRow = ({ label, value, children, mono }) => (
     <div className="border-b border-[#495362] pb-2">
-        <p className="text-white 2xl:text-[20px] xl:text-[18px] lg:text-[16px] text-[14px] font-medium mb-1">{label}</p>
+        <p className="text-white 2xl:text-[20px] xl:text-[18px] text-[16px] font-medium mb-1">{label}</p>
         {children || (
-            <p className={`font-semibold text-[#BDC0C3] lg:text-[16px] text-[14px]`}>{value}</p>
+            <p className={`font-semibold text-[#BDC0C3] lg:text-[16px] text-[15px]`}>{value}</p>
         )}
     </div>
 );

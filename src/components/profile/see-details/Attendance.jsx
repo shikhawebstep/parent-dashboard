@@ -27,38 +27,61 @@ const Attendance = ({booking, details, loading}) => {
   const renderAttendanceBadge = (status) => {
     switch (status?.toLowerCase()) {
       case 'attended':
-        return <span className="inline-block px-3 py-1 rounded text-[14px] font-medium capitalize bg-green-100 text-green-600">Attended</span>;
+        return <span className="inline-block px-3 py-1 rounded text-[13px] sm:text-[14px] font-medium capitalize bg-green-100 text-green-600">Attended</span>;
       case 'absent':
-        return <span className="inline-block px-3 py-1 rounded text-[14px] font-medium capitalize bg-red-100 text-red-500">Absent</span>;
+        return <span className="inline-block px-3 py-1 rounded text-[13px] sm:text-[14px] font-medium capitalize bg-red-100 text-red-500">Absent</span>;
       case 'pending':
-        return <span className="inline-block px-3 py-1 rounded text-[14px] font-medium capitalize bg-yellow-100 text-yellow-600">Pending</span>;
+        return <span className="inline-block px-3 py-1 rounded text-[13px] sm:text-[14px] font-medium capitalize bg-yellow-100 text-yellow-600">Pending</span>;
       default:
-        return <span className="inline-block px-3 py-1 rounded text-[14px] font-medium capitalize bg-gray-100 text-gray-600">{status || "Not Attended"}</span>;
+        return <span className="inline-block px-3 py-1 rounded text-[13px] sm:text-[14px] font-medium capitalize bg-gray-100 text-gray-600">{status || "Not Attended"}</span>;
     }
   };
 
   return (
-    <div className="py-6 bg-white rounded-[30px] min-h-screen">
-      <h1 className="text-xl px-6 font-semibold text-gray-800 mb-4">Attendance</h1>
+    <div className="py-4 sm:py-6 bg-white rounded-[30px] min-h-screen">
+      <h1 className="text-lg sm:text-xl px-4 sm:px-6 font-semibold text-gray-800 mb-4">Attendance</h1>
 
       {/* Tab Buttons */}
-      <div className="flex px-6 gap-2 mb-5 flex-wrap">
+      <div className="flex px-4 sm:px-6 gap-2 mb-5 flex-wrap">
         {attendanceDataMain.map((s) => (
           <button
             key={s.id}
             onClick={() => setActiveTab(s.id)}
-            className={`px-4 py-2 rounded-[12px] text-[16px] font-semibold transition-colors ${(activeTab === s.id) || (!activeTab && attendanceDataMain[0]?.id === s.id)
+            className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-[12px] text-[14px] sm:text-[16px] font-semibold transition-colors ${
+              (activeTab === s.id) || (!activeTab && attendanceDataMain[0]?.id === s.id)
                 ? 'bg-[#042C89] text-white'
                 : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'
-              }`}
+            }`}
           >
             {s.studentFirstName} {s.studentLastName}
           </button>
         ))}
       </div>
 
-      {/* Table */}
-      <div className="overflow-hidden">
+      {/* Mobile card view */}
+      <div className="block sm:hidden px-4">
+        {activeStudent ? (
+          <div className="border border-gray-100 rounded-2xl p-4 space-y-3">
+            <div className="flex justify-between items-start">
+              <span className="text-[13px] text-gray-500 font-semibold">Class Venue</span>
+              <span className="text-[13px] font-semibold text-gray-800 text-right max-w-[60%]">{venue}</span>
+            </div>
+            <div className="flex justify-between items-start">
+              <span className="text-[13px] text-gray-500 font-semibold">Date</span>
+              <span className="text-[13px] font-semibold text-gray-800 text-right max-w-[60%]">{date}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-[13px] text-gray-500 font-semibold">Attendance</span>
+              {renderAttendanceBadge(activeStudent.attendance)}
+            </div>
+          </div>
+        ) : (
+          <p className="text-center text-gray-400 text-sm py-6">No data found.</p>
+        )}
+      </div>
+
+      {/* Desktop table view */}
+      <div className="hidden sm:block overflow-hidden">
         <table className="w-full text-sm table-fixed">
           <thead>
             <tr className="bg-[#F5F5F5] border-t border-b">

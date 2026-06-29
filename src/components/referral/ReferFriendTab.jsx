@@ -132,7 +132,7 @@ const ReferFriendTab = () => {
     return (
         <>
             <div className="bg-white rounded-[30px] md:p-6 p-2  md:border border-gray-100">
-                <div className="md:flex md:items-center xl:items-start gap-12">
+                <div className="md:flex md:items-center xl:items-start lg:gap-12 gap-5">
                     {/* Left Column: Blue Card */}
                     <div style={{ backgroundImage: 'url(/assets/Referr.png)' }} className="bg-cover bg-center rounded-[30px] md:w-[525px] md:p-8 p-6 md:py-14 py-6 text-white relative overflow-hidden flex flex-col items-center text-center justify-center min-h-[400px]">
                         <div className='w-full m-auto max-w-[110px]'>
@@ -184,7 +184,7 @@ const ReferFriendTab = () => {
                             </p>
 
                             <form className="space-y-6" onSubmit={handleSubmit}>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                                     <div className="space-y-1">
                                         <label className="text-[16px] font-semibold text-[#282829]">First name</label>
                                         <input
@@ -209,7 +209,7 @@ const ReferFriendTab = () => {
                                     </div>
                                 </div>
 
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-8">
                                     <div className="space-y-1">
                                         <label className="text-[16px] font-semibold text-[#282829]">Email</label>
                                         <input

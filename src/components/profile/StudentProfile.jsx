@@ -98,9 +98,9 @@ const Field = ({ label, error, children }) => (
 /* ─── Sidebar row helper ─── */
 const SidebarRow = ({ label, value, children }) => (
   <div className="border-b border-[#495362] pb-2">
-    <p className="text-white 2xl:text-[20px] xl:text-[18px] lg:text-[16px] text-[14px] font-medium mb-1">{label}</p>
+    <p className="text-white 2xl:text-[20px] xl:text-[18px] text-[16px] font-medium mb-1">{label}</p>
     {children || (
-      <p className="font-semibold text-[#BDC0C3] lg:text-[16px] text-[14px]">{value}</p>
+      <p className="font-semibold text-[#BDC0C3] lg:text-[16px] text-[15px]">{value}</p>
     )}
   </div>
 );
@@ -283,17 +283,17 @@ const handleSave = async (index) => {
 
   return (
     <div className="min-h-screen p-5 md:p-0">
-      <div className="lg:flex gap-5 mt-2 items-start">
+      <div className="flex gap-5 mt-2 items-start md:flex-row flex-col-reverse">
 
         {/* LEFT — Student Cards */}
-        <div className="flex-1 lg:w-9/12 min-w-0 md:py-4">
+        <div className="flex-1 lg:w-9/12 min-w-0 md:py-4 w-full">
 
           {/* Add Student Button */}
           {students.length <= 3 && (
             <div className="md:text-right px-6 lg:p-0 lg:bg-white md:bg-transparent xl:absolute top-7 right-5 mb-6">
               <button
                 onClick={() => setIsAddModalOpen(true)}
-                className="inline-flex items-center gap-2 font-medium text-[18px] px-4 py-2 bg-[#0DD180] text-white rounded-lg hover:bg-green-700"
+                className="inline-flex items-center gap-2 font-medium md:text-[18px] text-[15px] px-4 py-2 bg-[#0DD180] text-white rounded-lg hover:bg-green-700"
               >
                 <Plus size={20} className="text-white font-bold" />
                 Add New Student
@@ -312,7 +312,7 @@ const handleSave = async (index) => {
             const err = errors[index] || {};
 
             return (
-              <div key={index} className="bg-white rounded-[30px] p-6 md:mb-6 shadow-sm">
+              <div key={index} className="bg-white rounded-[30px] mt-4 md:mt-0 md:p-6 md:mb-6 shadow-sm">
 
                 {/* Card Header */}
                 <div className="flex justify-between items-center mb-5">
@@ -451,7 +451,7 @@ const handleSave = async (index) => {
         </div>
 
         {/* RIGHT SIDEBAR */}
-        <div className="xl:w-[30%] md:w-[40%]  m-auto mt-5 md:mt-0">
+        <div className="xl:w-[30%] md:w-[40%]  m-auto mt-5 md:mt-0 w-full">
           <div className="bg-[#363E49] rounded-[30px] overflow-hidden text-white shadow-lg flex flex-col lg:p-4 p-3 h-fit">
 
             {/* Header banner */}
@@ -460,7 +460,7 @@ const handleSave = async (index) => {
               className="bg-cover bg-center px-6 rounded-[20px] md:py-4 py-2 flex justify-between items-center relative overflow-hidden"
             >
               <div className="flex flex-col">
-                <h3 className="text-black font-bold 2xl:text-[20px] xl:text-[18px] lg:text-[16px] text-[14px] leading-tight">
+                <h3 className="text-black font-bold 2xl:text-[20px] text-[18px] leading-tight">
                   Account Status
                 </h3>
                 <span className="text-black/80 lg:text-[16px] text-[14px] text-[#282829] font-semibold">
@@ -469,12 +469,12 @@ const handleSave = async (index) => {
               </div>
             </div>
 
-            <div className="px-5 py-4 space-y-4">
+            <div className="md:px-5 py-4 space-y-4">
               {/* Avatar + name */}
               <div className="flex items-center gap-4">
                 <img src={profilePhoto || "/assets/dummy-avatar.png"} alt="Avatar" className="w-20 h-20 rounded-full object-cover" />
                 <div>
-                  <h4 className="md:text-[24px] 2xl:text-[20px] xl:text-[18px] lg:text-[16px] text-[14px] font-bold leading-tight">
+                  <h4 className="md:text-[24px] 2xl:text-[20px] text-[18px] font-bold leading-tight">
                     Account Holder
                   </h4>
                   <p className="lg:text-[16px] text-[14px] text-[#BDC0C3] font-medium">
@@ -503,7 +503,7 @@ const handleSave = async (index) => {
                   <div>
                     <div className="flex justify-between mb-1.5">
                       <span className="text-white 2xl:text-[20px] xl:text-[18px] lg:text-[16px] text-[14px] font-medium">Progress</span>
-                      <span className="font-semibold text-[#BDC0C3] lg:text-[16px] text-[14px]">{sidebarInfo.progress || 0}%</span>
+                      <span className="font-semibold text-[#BDC0C3] lg:text-[16px] text-[15px]">{sidebarInfo.progress || 0}%</span>
                     </div>
                     <div className="h-2 bg-white/10 rounded-full overflow-hidden">
                       <div className="h-full bg-[#0DD180] rounded-full" style={{ width: `${sidebarInfo.progress || 0}%` }} />
