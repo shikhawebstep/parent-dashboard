@@ -749,7 +749,7 @@ const BookFreeTrial = () => {
                             </div>
 
                             {/* Actions */}
-                            <div className="flex justify-center gap-3.5 mt-7">
+                            <div className="flex justify-center gap-3.5 mt-7 flex-wrap">
                                 <button
                                     onClick={() => navigate(-1)}
                                     className="font-semibold text-[15px] rounded-[12px] px-8 py-3.5 border border-[#e7ebf1] text-[#1f2733] bg-white"
@@ -1352,7 +1352,7 @@ const BookFreeTrial = () => {
                             </div>
 
                             {/* ── Actions ─────────────────────────────────────────────────── */}
-                            <div className="flex justify-center gap-3.5 mt-7">
+                            <div className="flex justify-center gap-3.5 mt-7 flex-wrap">
                                 <button
                                     onClick={() => (isMulti ? setFlowStep("A") : navigate(-1))}
                                     className="font-semibold text-[15px] rounded-[12px] px-8 py-3.5 border border-[#e7ebf1] text-[#1f2733] bg-white"

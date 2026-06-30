@@ -1,6 +1,7 @@
 // components/Payment.jsx
 
 import React from 'react'
+import Loader from '../../Loader';
 
 const Section = ({ title, children }) => (
   <div className="bg-white rounded-[30px] p-4 sm:p-5 mb-4">
@@ -13,10 +14,7 @@ const Payment = ({ booking, details, loading }) => {
 
   if (loading) {
     return (
-      <div className="animate-fadeIn p-6 text-center bg-white rounded-[30px] shadow-sm flex flex-col justify-center items-center min-h-[200px] gap-3">
-        <div className="w-8 h-8 border-4 border-[#237FEA] border-t-transparent rounded-full animate-spin"></div>
-        <p className="text-[#3c3c3d] font-medium">Loading details...</p>
-      </div>
+      <Loader />
     );
   }
   if (!details) {

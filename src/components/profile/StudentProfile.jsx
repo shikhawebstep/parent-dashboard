@@ -290,7 +290,7 @@ const StudentProfile = () => {
 
           {/* Add Student Button */}
           {students.length <= 3 && (
-            <div className="md:text-right px-6 lg:p-0 lg:bg-white md:bg-transparent xl:absolute top-7 right-5 mb-6">
+            <div className="md:text-right md:px-6 lg:p-0 lg:bg-white md:bg-transparent xl:absolute top-7 right-5 mb-6">
               <button
                 onClick={() => setIsAddModalOpen(true)}
                 className="inline-flex items-center gap-2 font-medium md:text-[18px] text-[15px] px-4 py-2 bg-[#0DD180] text-white rounded-lg hover:bg-green-700"

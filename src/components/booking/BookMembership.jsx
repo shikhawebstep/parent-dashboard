@@ -844,7 +844,7 @@ const BookMembership = () => {
                 </div>
 
                 {/* Screens */}
-                <div className="bg-white rounded-[16px] shadow-[0_8px_30px_rgba(20,40,80,0.08)] p-8 md:p-8">
+                <div className="bg-white rounded-[16px] shadow-[0_8px_30px_rgba(20,40,80,0.08)] p-4 md:p-8">
 
                     {/* SCREEN A */}
                     {flowStep === "A" && (
@@ -885,7 +885,7 @@ const BookMembership = () => {
                                 })}
                             </div>
 
-                            <div className="flex justify-center gap-3.5 mt-7">
+                            <div className="flex justify-center gap-3.5 mt-7 flex-wrap">
                                 <button onClick={() => navigate(-1)} className="font-semibold text-[15px] rounded-[12px] px-8 py-3.5 border border-[#e7ebf1] text-[#1f2733] bg-white">Cancel</button>
                                 <button disabled={selectedStudentIds.length === 0} onClick={() => setFlowStep("B")} className="font-semibold text-[15px] rounded-[12px] px-8 py-3.5 border border-[#3b7df6] text-white bg-[#3b7df6] disabled:opacity-50 hover:bg-[#2f6ae0]">Next</button>
                             </div>
@@ -1309,7 +1309,7 @@ const BookMembership = () => {
                                 </div>
                             )}
 
-                            <div className="flex justify-center gap-3.5 mt-7">
+                            <div className="flex justify-center gap-3.5 mt-7 flex-wrap">
                                 <button onClick={() => (isMulti ? setFlowStep("A") : navigate(-1))} className="font-semibold text-[15px] rounded-[12px] px-8 py-3.5 border border-[#e7ebf1] text-[#1f2733] bg-white">Cancel</button>
                                 <button
                                     disabled={!membershipPlan || !selectedDate || (showStarterPack && !selectedAddress) || (showStarterPack && !parents?.[0]?.starterPackSize) || activeStudents.some((s) => !s.selectedClassData)}
@@ -1385,7 +1385,7 @@ const BookMembership = () => {
                                 </div>
                             </div>
 
-                            <div className="flex justify-center gap-3.5 mt-7">
+                            <div className="flex justify-center gap-3.5 mt-7 flex-wrap">
                                 <button onClick={() => setFlowStep("B")} className="font-semibold text-[15px] rounded-[12px] px-8 py-3.5 border border-[#e7ebf1] text-[#1f2733] bg-white">Back</button>
                                 <button onClick={handleDDContinue} disabled={!isDDValid} className="font-semibold text-[15px] rounded-[12px] px-8 py-3.5 border border-[#3b7df6] text-white bg-[#3b7df6] disabled:opacity-50 hover:bg-[#2f6ae0]">
                                     Continue to card payment
@@ -1512,7 +1512,7 @@ const BookMembership = () => {
                                 </div>
                             </div>
 
-                            <div className="flex justify-center gap-3.5 mt-7">
+                            <div className="flex justify-center gap-3.5 mt-7 flex-wrap">
                                 <button onClick={() => setFlowStep("C")} className="font-semibold text-[15px] rounded-[12px] px-8 py-3.5 border border-[#e7ebf1] text-[#1f2733] bg-white">Back</button>
                                 <button
                                     disabled={isSubmitting || !isCardValid}
@@ -1553,7 +1553,7 @@ const BookMembership = () => {
                                 A confirmation email with your booking details, payment summary and Direct Debit schedule has been sent to your inbox.
                             </div>
 
-                            <div className="flex justify-center gap-3.5 mt-7">
+                            <div className="flex justify-center gap-3.5 mt-7 flex-wrap">
                                 <button onClick={() => navigate("/bookings")} className="font-semibold text-[15px] rounded-[12px] px-11 py-3.5 border border-[#21b573] text-white bg-[#21b573] hover:bg-[#1a935d]">Finish</button>
                             </div>
                         </div>
@@ -1564,7 +1564,7 @@ const BookMembership = () => {
                 <div className="max-w-[1040px] mx-auto mt-4 px-6 text-[12px] text-[#6b7685] text-center">
                     Prototype — single-child journey starts at "Confirm & choose".
                 </div>
-                <div className="flex justify-center gap-3.5 mt-3.5 mb-6">
+                <div className="flex justify-center gap-3.5 mt-3.5 mb-6 flex-wrap">
                     <button onClick={() => { setDemoMode("single"); setFlowStep("B"); }}
                         className={`font-semibold text-[13px] rounded-[12px] px-8 py-3.5 border transition-all ${demoMode === "single" ? "bg-[#3b7df6] text-white border-[#3b7df6]" : "bg-white text-[#1f2733] border-[#e7ebf1]"}`}>
                         Single-child flow

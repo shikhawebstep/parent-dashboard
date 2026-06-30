@@ -657,7 +657,7 @@ export default function AddToWaitingList() {
                             </div>
 
                             {/* Actions */}
-                            <div className="flex justify-center gap-3.5 mt-7">
+                            <div className="flex justify-center gap-3.5 mt-7 flex-wrap">
                                 <button
                                     type="button"
                                     onClick={() => navigate(-1)}
@@ -1334,7 +1334,7 @@ export default function AddToWaitingList() {
                             </div>
 
                             {/* ── Actions ─────────────────────────────────────────────────── */}
-                            <div className="flex justify-center gap-3.5 mt-7">
+                            <div className="flex justify-center gap-3.5 mt-7 flex-wrap">
                                 <button
                                     type="button"
                                     onClick={() => (isMulti ? setFlowStep("A") : navigate(-1))}

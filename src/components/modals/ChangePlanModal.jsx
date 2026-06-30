@@ -10,7 +10,6 @@ const ChangePlanModal = ({ isOpen, onClose, booking, onSuccess }) => {
   const [step, setStep] = useState(0);
   const [currentDate, setCurrentDate] = useState(new Date());
 
-  console.log('booking', booking)
   const [payment, setPayment] = useState({
     email: '',
     account_holder_name: '',
@@ -22,6 +21,7 @@ const ChangePlanModal = ({ isOpen, onClose, booking, onSuccess }) => {
     branch_code: '',
     account_number: ''
   });
+  const [authorised, setAuthorised] = useState(false);
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -35,7 +35,6 @@ const ChangePlanModal = ({ isOpen, onClose, booking, onSuccess }) => {
 
   useEffect(() => {
     if (isOpen && booking) {
-
       const parent = booking.parents?.[0] || {};
       const fullName = `${parent.parentFirstName || ''} ${parent.parentLastName || ''}`.trim();
 
@@ -63,7 +62,10 @@ const ChangePlanModal = ({ isOpen, onClose, booking, onSuccess }) => {
     if (!open) onClose();
   };
 
-  const handlePlanChange = (plan) => setMembershipPlan(plan);
+  const handlePlanChange = (plan) => {
+    setMembershipPlan(plan);
+    if (errors.membershipPlan) setErrors((e) => ({ ...e, membershipPlan: "" }));
+  };
 
   const goToPreviousMonth = () => {
     setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
@@ -82,37 +84,70 @@ const ChangePlanModal = ({ isOpen, onClose, booking, onSuccess }) => {
 
   const handleDateClick = (date) => {
     setSelectedDate(formatLocalDate(date));
+    if (errors.selectedDate) setErrors((e) => ({ ...e, selectedDate: "" }));
   };
 
   const handlePaymentChange = (field, val) => {
     setPayment(prev => ({ ...prev, [field]: val }));
+    if (errors[field]) setErrors((e) => ({ ...e, [field]: "" }));
   };
 
+  // ── Validation helpers ───────────────────────────────────────────────
   const validateField = (field, value) => {
-    if (!value) return "Required";
+    if (!value || !String(value).trim()) return "Required";
+
+    if (field === "email" && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+      return "Enter a valid email address";
+    }
+    if (field === "branch_code" && value.replace(/\D/g, "").length !== 6) {
+      return "Enter a valid 6-digit sort code";
+    }
+    if (field === "account_number" && value.replace(/\D/g, "").length !== 8) {
+      return "Enter a valid 8-digit account number";
+    }
     return "";
   };
 
+  const validateStep0 = () => {
+    const errs = {};
+    if (!membershipPlan) errs.membershipPlan = "Please select a plan";
+    if (!selectedDate) errs.selectedDate = "Please select a start date";
+    setErrors(errs);
+    return Object.keys(errs).length === 0;
+  };
+
+  const validateStep1 = () => {
+    const errs = {};
+    errs.email = validateField("email", payment.email);
+    errs.account_holder_name = validateField("account_holder_name", payment.account_holder_name);
+
+    if (!isFranchisee) {
+      errs.line1 = validateField("line1", payment.line1);
+      errs.city = validateField("city", payment.city);
+      errs.postalCode = validateField("postalCode", payment.postalCode);
+    }
+
+    errs.branch_code = validateField("branch_code", payment.branch_code);
+    errs.account_number = validateField("account_number", payment.account_number);
+
+    if (!authorised) errs.authorise = "You must confirm authorisation to continue";
+
+    Object.keys(errs).forEach((k) => { if (!errs[k]) delete errs[k]; });
+
+    setErrors(errs);
+    return Object.keys(errs).length === 0;
+  };
+
   const handleSubmit = async () => {
+    if (!validateStep1()) return;
     setIsSubmitting(true);
     try {
       const token = localStorage.getItem("parentToken");
       const API_URL = import.meta.env.VITE_API_BASE_URL;
 
-      const studentData = booking?.students?.[0] || {};
-
       const payload = {
         newPaymentPlanId: membershipPlan?.value,
         startDate: selectedDate,
-        // student: {
-        //   studentFirstName: studentData.studentFirstName || "",
-        //   studentLastName: studentData.studentLastName || "",
-        //   dateOfBirth: studentData.dateOfBirth || "",
-        //   age: studentData.age || 0,
-        //   gender: studentData.gender || "",
-        //   medicalInformation: studentData.medicalInformation || "None",
-        //   classScheduleId: studentData.classSchedule?.id || null
-        // },
         payment: {
           paymentType: "bank",
           price: pricingBreakdown.nextMonthPayment,
@@ -166,7 +201,6 @@ const ChangePlanModal = ({ isOpen, onClose, booking, onSuccess }) => {
         if (session.sessionDate) dates.push(session.sessionDate);
       });
     });
-    console.log('[sessionDates] built from venuePlans.terms:', dates);
     return dates;
   })();
 
@@ -177,7 +211,6 @@ const ChangePlanModal = ({ isOpen, onClose, booking, onSuccess }) => {
 
     groups.forEach(group => {
       (group.paymentPlans || []).forEach(plan => {
-        // Only show plans matching the number of students on this booking
         if (plan.students !== studentCount) return;
 
         const isCurrent = plan.id === currentPlanId;
@@ -186,15 +219,13 @@ const ChangePlanModal = ({ isOpen, onClose, booking, onSuccess }) => {
           label: `${plan.title} — £${plan.price} (${plan.duration} ${plan.interval}${plan.duration > 1 ? 's' : ''})${isCurrent ? ' (Current Plan)' : ''}`,
           all: plan,
           isCurrent,
-          isDisabled: isCurrent  // ← add this
+          isDisabled: isCurrent
         });
       });
     });
 
-    console.log('[paymentPlanOptions] filtered for studentCount=', studentCount, options);
     return options;
   })();
-
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
@@ -269,8 +300,6 @@ const ChangePlanModal = ({ isOpen, onClose, booking, onSuccess }) => {
     starterPack: 0
   };
 
-  const isApplied = false;
-
   return (
     <div className="fixed inset-0 bg-gray-900/40 backdrop-blur-sm flex justify-center items-center z-50 p-4">
       <motion.div
@@ -305,15 +334,16 @@ const ChangePlanModal = ({ isOpen, onClose, booking, onSuccess }) => {
               placeholder="Select a plan..."
               classNamePrefix="react-select"
               isClearable
-              isOptionDisabled={(option) => option.isDisabled}  // ← add this
+              isOptionDisabled={(option) => option.isDisabled}
               styles={{
                 control: (base) => ({
                   ...base,
                   borderRadius: '12px',
                   padding: '4px',
-                  borderColor: '#E5E7EB',
-                  boxShadow: 'none',
-                  '&:hover': { borderColor: '#D1D5DB' }
+                  borderColor: errors.membershipPlan ? '#ef4444' : '#E5E7EB',
+                  boxShadow: errors.membershipPlan ? '0 0 0 2px rgba(239,68,68,0.2)' : 'none',
+                  backgroundColor: errors.membershipPlan ? '#fef2f2' : '#fff',
+                  '&:hover': { borderColor: errors.membershipPlan ? '#ef4444' : '#D1D5DB' }
                 }),
                 option: (base, state) => ({
                   ...base,
@@ -322,6 +352,7 @@ const ChangePlanModal = ({ isOpen, onClose, booking, onSuccess }) => {
                 })
               }}
             />
+            {errors.membershipPlan && <p className="text-red-500 text-xs mt-2 font-medium">{errors.membershipPlan}</p>}
           </div>
 
           {membershipPlan && (
@@ -335,7 +366,7 @@ const ChangePlanModal = ({ isOpen, onClose, booking, onSuccess }) => {
                 2. Select Start Date
               </label>
 
-              <div className="bg-gray-50/50 border border-gray-100 rounded-[20px] p-6 w-full mx-auto shadow-sm">
+              <div className={`bg-gray-50/50 border rounded-[20px] p-6 w-full mx-auto shadow-sm ${errors.selectedDate ? "border-red-300" : "border-gray-100"}`}>
                 <div className="flex justify-between items-center mb-6">
                   <button
                     onClick={goToPreviousMonth}
@@ -400,6 +431,7 @@ const ChangePlanModal = ({ isOpen, onClose, booking, onSuccess }) => {
                   })}
                 </div>
               </div>
+              {errors.selectedDate && <p className="text-red-500 text-xs mt-2 font-medium">{errors.selectedDate}</p>}
             </motion.div>
           )}
 
@@ -467,7 +499,7 @@ const ChangePlanModal = ({ isOpen, onClose, booking, onSuccess }) => {
 
                     <button
                       type="button"
-                      onClick={() => setStep(1)}
+                      onClick={() => { if (validateStep0()) setStep(1); }}
                       className="mt-8 w-full bg-[#042C89] hover:bg-[#032066] text-white rounded-xl px-6 py-4 font-bold text-[16px] shadow-lg transition-all duration-200 block"
                       style={{ minHeight: '56px', backgroundColor: '#042C89', color: 'white', display: 'block', visibility: 'visible' }}
                     >
@@ -489,7 +521,7 @@ const ChangePlanModal = ({ isOpen, onClose, booking, onSuccess }) => {
                           placeholder="your@email.com"
                           value={payment.email}
                           onChange={(e) => handlePaymentChange("email", e.target.value)}
-                          className={`w-full bg-gray-50 border ${errors.email ? "border-red-400 focus:ring-red-500" : "border-gray-200 focus:ring-[#042C89]"} rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:border-transparent transition-all`}
+                          className={`w-full bg-gray-50 border ${errors.email ? "border-red-400 bg-red-50 focus:ring-red-500" : "border-gray-200 focus:ring-[#042C89]"} rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:border-transparent transition-all`}
                         />
                         {errors.email && <p className="text-red-500 text-xs mt-1 font-medium">{errors.email}</p>}
                       </div>
@@ -519,9 +551,11 @@ const ChangePlanModal = ({ isOpen, onClose, booking, onSuccess }) => {
                                 lastName: parts.slice(1).join(" ")
                               };
                             });
+                            if (errors.account_holder_name) setErrors((e) => ({ ...e, account_holder_name: "" }));
                           }}
-                          className={`w-full bg-gray-50 border ${errors.account_holder_name ? "border-red-400" : "border-gray-200 focus:ring-[#042C89]"} rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:border-transparent transition-all`}
+                          className={`w-full bg-gray-50 border ${errors.account_holder_name ? "border-red-400 bg-red-50 focus:ring-red-500" : "border-gray-200 focus:ring-[#042C89]"} rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:border-transparent transition-all`}
                         />
+                        {errors.account_holder_name && <p className="text-red-500 text-xs mt-1 font-medium">{errors.account_holder_name}</p>}
                       </div>
 
                       {!isFranchisee && (
@@ -533,8 +567,9 @@ const ChangePlanModal = ({ isOpen, onClose, booking, onSuccess }) => {
                               type="text"
                               value={payment.line1}
                               onChange={(e) => handlePaymentChange("line1", e.target.value)}
-                              className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#042C89] focus:border-transparent transition-all"
+                              className={`w-full bg-gray-50 border ${errors.line1 ? "border-red-400 bg-red-50 focus:ring-red-500" : "border-gray-200 focus:ring-[#042C89]"} rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:border-transparent transition-all`}
                             />
+                            {errors.line1 && <p className="text-red-500 text-xs mt-1 font-medium">{errors.line1}</p>}
                           </div>
                           <div className="grid grid-cols-2 gap-4">
                             <div>
@@ -544,8 +579,9 @@ const ChangePlanModal = ({ isOpen, onClose, booking, onSuccess }) => {
                                 type="text"
                                 value={payment.city}
                                 onChange={(e) => handlePaymentChange("city", e.target.value)}
-                                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#042C89] focus:border-transparent transition-all"
+                                className={`w-full bg-gray-50 border ${errors.city ? "border-red-400 bg-red-50 focus:ring-red-500" : "border-gray-200 focus:ring-[#042C89]"} rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:border-transparent transition-all`}
                               />
+                              {errors.city && <p className="text-red-500 text-xs mt-1 font-medium">{errors.city}</p>}
                             </div>
                             <div>
                               <label className="block text-sm font-semibold text-gray-700 mb-2">Postal Code</label>
@@ -554,8 +590,9 @@ const ChangePlanModal = ({ isOpen, onClose, booking, onSuccess }) => {
                                 type="text"
                                 value={payment.postalCode}
                                 onChange={(e) => handlePaymentChange("postalCode", e.target.value)}
-                                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#042C89] focus:border-transparent transition-all"
+                                className={`w-full bg-gray-50 border ${errors.postalCode ? "border-red-400 bg-red-50 focus:ring-red-500" : "border-gray-200 focus:ring-[#042C89]"} rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:border-transparent transition-all`}
                               />
+                              {errors.postalCode && <p className="text-red-500 text-xs mt-1 font-medium">{errors.postalCode}</p>}
                             </div>
                           </div>
                         </>
@@ -570,8 +607,9 @@ const ChangePlanModal = ({ isOpen, onClose, booking, onSuccess }) => {
                             placeholder="00-00-00"
                             value={payment.branch_code}
                             onChange={(e) => handlePaymentChange("branch_code", e.target.value.replace(/\D/g, "").slice(0, 6))}
-                            className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#042C89] focus:border-transparent transition-all font-mono tracking-wider"
+                            className={`w-full bg-gray-50 border ${errors.branch_code ? "border-red-400 bg-red-50 focus:ring-red-500" : "border-gray-200 focus:ring-[#042C89]"} rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:border-transparent transition-all font-mono tracking-wider`}
                           />
+                          {errors.branch_code && <p className="text-red-500 text-xs mt-1 font-medium">{errors.branch_code}</p>}
                         </div>
                         <div>
                           <label className="block text-sm font-semibold text-gray-700 mb-2">Account Number</label>
@@ -581,20 +619,30 @@ const ChangePlanModal = ({ isOpen, onClose, booking, onSuccess }) => {
                             placeholder="8 digits"
                             value={payment.account_number}
                             onChange={(e) => handlePaymentChange("account_number", e.target.value.replace(/\D/g, "").slice(0, 8))}
-                            className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#042C89] focus:border-transparent transition-all font-mono tracking-wider"
+                            className={`w-full bg-gray-50 border ${errors.account_number ? "border-red-400 bg-red-50 focus:ring-red-500" : "border-gray-200 focus:ring-[#042C89]"} rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:border-transparent transition-all font-mono tracking-wider`}
                           />
+                          {errors.account_number && <p className="text-red-500 text-xs mt-1 font-medium">{errors.account_number}</p>}
                         </div>
                       </div>
                     </div>
 
-                    <label className="flex items-center gap-3 mt-6 p-4 bg-blue-50/50 rounded-xl border border-blue-100 cursor-pointer group">
+                    <label className={`flex items-center gap-3 mt-6 p-4 rounded-xl border cursor-pointer group transition-colors ${errors.authorise ? "bg-red-50 border-red-300" : "bg-blue-50/50 border-blue-100"}`}>
                       <div className="relative flex items-center">
-                        <input type="checkbox" className="w-5 h-5 rounded border-gray-300 text-[#042C89] focus:ring-[#042C89] transition-all cursor-pointer" />
+                        <input
+                          type="checkbox"
+                          checked={authorised}
+                          onChange={(e) => {
+                            setAuthorised(e.target.checked);
+                            if (errors.authorise) setErrors((er) => ({ ...er, authorise: "" }));
+                          }}
+                          className="w-5 h-5 rounded border-gray-300 text-[#042C89] focus:ring-[#042C89] transition-all cursor-pointer"
+                        />
                       </div>
                       <span className="text-sm font-medium text-gray-700 group-hover:text-gray-900 transition-colors">
                         I can authorise Direct Debits on this account myself
                       </span>
                     </label>
+                    {errors.authorise && <p className="text-red-500 text-xs mt-1.5 font-medium">{errors.authorise}</p>}
 
                     <div className="flex gap-4 mt-8 pt-6 border-t border-gray-100">
                       <button

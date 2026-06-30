@@ -8,6 +8,7 @@ import RenewPackage from "../../modals/RenewPackage";
 import ChangePlanModal from "../../modals/ChangePlanModal";
 import TransferClassModal from "../../modals/TransferClassModal";
 import FreezeMembershipModal from "../../modals/FreezeMembershipModal";
+import Loader from "../../Loader";
 
 // ── helpers ────────────────────────────────────────────────────────────────
 
@@ -97,10 +98,7 @@ export default function General({ booking: propBooking, details, loading: mainLo
 
     if (mainLoading) {
         return (
-            <div className="animate-fadeIn p-6 text-center bg-white rounded-[30px] shadow-sm flex flex-col justify-center items-center min-h-[200px] gap-3">
-                <div className="w-8 h-8 border-4 border-[#237FEA] border-t-transparent rounded-full animate-spin"></div>
-                <p className="text-[#3c3c3d] font-medium">Loading details...</p>
-            </div>
+            <Loader/>
         );
     }
 

@@ -467,7 +467,7 @@ const HolidayWaitingList = () => {
                 </div>
 
                 {/* Screens */}
-                <div className="bg-white rounded-[16px] shadow-[0_8px_30px_rgba(20,40,80,0.08)] p-8 md:p-8">
+                <div className="bg-white rounded-[16px] shadow-[0_8px_30px_rgba(20,40,80,0.08)] p-4 md:p-8">
 
                     {/* SCREEN A — Who's this trial for? */}
                     {flowStep === "A" && (
@@ -517,7 +517,7 @@ const HolidayWaitingList = () => {
                                 })}
                             </div>
 
-                            <div className="flex justify-center gap-3.5 mt-7">
+                            <div className="flex justify-center gap-3.5 mt-7 flex-wrap">
                                 <button onClick={() => navigate(-1)} className="font-semibold text-[15px] rounded-[12px] px-8 py-3.5 border border-[#e7ebf1] text-[#1f2733] bg-white">Cancel</button>
                                 <button disabled={selectedStudentIds.length === 0} onClick={() => setFlowStep("B")} className="font-semibold text-[15px] rounded-[12px] px-8 py-3.5 border border-[#3b7df6] text-white bg-[#3b7df6] disabled:opacity-50 hover:bg-[#2f6ae0]">Next</button>
                             </div>
@@ -838,7 +838,7 @@ const HolidayWaitingList = () => {
                                 </div>
                             </div>
 
-                            <div className="flex justify-center gap-3.5 mt-7">
+                            <div className="flex justify-center gap-3.5 mt-7 flex-wrap">
                                 <button onClick={() => (isMulti ? setFlowStep("A") : navigate(-1))} className="font-semibold text-[15px] rounded-[12px] px-8 py-3.5 border border-[#e7ebf1] text-[#1f2733] bg-white">
                                     {isMulti ? "Back" : "Cancel"}
                                 </button>
@@ -874,7 +874,7 @@ const HolidayWaitingList = () => {
                 <div className="max-w-[1040px] mx-auto mt-4 px-6 text-[12px] text-[#6b7685] text-center">
                     Prototype — single-child journey starts at "Trial details".
                 </div>
-                <div className="flex justify-center gap-3.5 mt-3.5 mb-6">
+                <div className="flex justify-center gap-3.5 mt-3.5 mb-6 flex-wrap">
                     <button
                         onClick={() => { setDemoMode("single"); setFlowStep("B"); }}
                         className={`font-semibold text-[13px] rounded-[12px] px-8 py-3.5 border transition-all ${demoMode === "single" ? "bg-[#3b7df6] text-white border-[#3b7df6]" : "bg-white text-[#1f2733] border-[#e7ebf1]"}`}

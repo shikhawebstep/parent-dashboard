@@ -21,6 +21,8 @@ const AddFeedbackModal = ({ isOpen, onClose }) => {
         ? (Array.isArray(profile.bookings) ? profile.bookings : Object.values(profile.bookings).flat())
         : [];
 
+        
+
     const [errors, setErrors] = useState({});
     const [loading, setLoading] = useState(false);
 
