@@ -801,7 +801,7 @@ const BookMembership = () => {
     };
 
     return (
-        <div className="min-h-screen booking-page bg-[#f4f6f9] text-[#1f2733] font-['Poppins',sans-serif] pb-28 sm:pb-16 pt-5 md:pt-0">
+        <div className="min-h-screen booking-page bg-[#f4f6f9] text-[#1f2733] font-['Poppins',sans-serif] pb-28 sm:pb-16 pt-5">
 
             {/* Band */}
             <div className="bg-[#1e3a6e] text-white mx-6 rounded-[14px] px-5 py-4 flex items-center gap-3 font-bold text-[18px]">

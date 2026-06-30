@@ -21,7 +21,7 @@ const OnboardingTour = () => {
     const handleClose = () => {
         setIsOpen(false);
         localStorage.setItem(tourKey, 'true');
-        navigate('bookings')
+        
     };
 
     const handleSkip = () => {
