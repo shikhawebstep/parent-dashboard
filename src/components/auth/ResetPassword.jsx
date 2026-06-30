@@ -108,7 +108,7 @@ const ResetPassword = () => {
         <div className="w-full h-full  flex items-center p-5  lg:p-10 xl:p-0">
             <div className="w-full flex flex-col 2xl:max-w-[25%] md:max-w-[33%]  bg-white shadow-md border border-gray-200 rounded-[20px]  p-10  m-auto items-center justify-center">
                 <div className="text-center w-full mb-8">
-                    <div className="text-5xl font-bold text-blue-700 2xl:max-w-[80px] lg:w-[50px]  m-auto">
+                    <div className="text-5xl font-bold text-blue-700 2xl:max-w-[80px] lg:w-[50px] w-[50px] m-auto">
                         <img src="/assets/sambaLogoBlue.png" alt="" className="w-full" />
                     </div>
                     <h2 className="2xl:text-[36px] text-[26px] lg:text-[32px] font-semibold mt-3">Reset Password</h2>
