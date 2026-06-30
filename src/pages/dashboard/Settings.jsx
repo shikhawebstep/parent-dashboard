@@ -34,7 +34,7 @@ const Settings = () => {
                     <button
                         key={tab.id}
                         onClick={() => setActiveTab(tab.id)}
-                        className={`w-max relative flex-1 whitespace-nowrap md:px-6 px-3 2xl:text-[18px] lg:text-[16px] text-[15px] font-semibold md:py-3 py-2 rounded-[14px] transition-all ${activeTab === tab.id
+                        className={`w-max relative  whitespace-nowrap md:px-6 px-3 2xl:text-[18px] lg:text-[16px] text-[15px] font-semibold md:py-3 py-2 rounded-[14px] transition-all ${activeTab === tab.id
                                 ? "bg-[#042C89] shadow-lg text-white"
                                 : "text-[#717073] hover:text-[#282829] hover:bg-gray-50"
                             }`}

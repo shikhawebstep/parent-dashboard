@@ -27,7 +27,7 @@ const Layout = ({ children }) => {
   // 🛡️ Protected Pages (Wrapped in Middleware)
   return (
     <Middleware>
-      <div className="flex containerMain min-h-screen bg-gray-100">
+      <div className="flex containerMain min-h-screen bg-[#f4f6f9]">
         <Sidebar />
 
         {/* Mobile Menu Overlay */}
@@ -35,7 +35,7 @@ const Layout = ({ children }) => {
 
         <main className="flex-1 w-full lg:w-[80%] 2xl:w-[85%] w-full bg-white xl:bg-transparent">
           <Header onMenuClick={() => setIsMobileMenuOpen(true)} />
-          <div className="block lg:hidden md:p-6 p-4 pb-0">
+          <div className="block lg:hidden md:p-6 p-4 bg-[#f4f6f9]">
             <HeaderBanner />
           </div>
           {children}

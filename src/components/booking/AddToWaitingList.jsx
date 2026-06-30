@@ -518,12 +518,12 @@ export default function AddToWaitingList() {
 
     // ── Render ────────────────────────────────────────────────────────────────
     return (
-        <div className="min-h-screen bg-[#f4f6f9] booking-page text-[#1f2733] font-['Poppins',sans-serif] pb-16">
+        <div className="min-h-screen bg-[#f4f6f9] booking-page text-[#1f2733] font-['Poppins',sans-serif] pb-28 sm:pb-16">
 
          
 
             {/* ── Navy band ──────────────────────────────────────────────────── */}
-            <div className="bg-[#1e3a6e] text-white mx-6 mt-4 rounded-[14px] px-5 py-4 flex items-center gap-3 font-bold text-[18px]">
+            <div className="bg-[#1e3a6e] text-white mx-6 rounded-[14px] px-5 py-4 flex items-center gap-3 font-bold text-[18px]">
                 <span
                     className="cursor-pointer opacity-90 flex items-center"
                     onClick={() => {
@@ -536,7 +536,7 @@ export default function AddToWaitingList() {
                 Add to Waiting List
             </div>
 
-            <div className="max-w-[1040px] mx-auto px-6 pt-5">
+            <div className="max-w-[1040px] mx-auto md:px-6 pt-5 px-2">
 
                 {/* ── Steps indicator ────────────────────────────────────────── */}
                 <div className="hidden md:flex items-center justify-center gap-2 mb-5 flex-wrap">
@@ -572,7 +572,7 @@ export default function AddToWaitingList() {
                 </div>
 
                 {/* ── Main white card ────────────────────────────────────────── */}
-                <div className="bg-white rounded-[16px] shadow-[0_8px_30px_rgba(20,40,80,0.08)] p-8">
+                <div className="bg-white rounded-[16px] shadow-[0_8px_30px_rgba(20,40,80,0.08)] md:p-8 p-4">
 
                     {/* ════════════════════════════════════════════════════════
                         SCREEN A  —  Who's this for? (multi only)
@@ -657,11 +657,11 @@ export default function AddToWaitingList() {
                             </div>
 
                             {/* Actions */}
-                            <div className="flex justify-center gap-3.5 mt-7 flex-wrap">
+                            <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-[#e7ebf1] p-4 z-40 flex gap-3 w-full sm:relative sm:bottom-auto sm:left-auto sm:right-auto sm:bg-transparent sm:border-t-0 sm:p-0 sm:z-auto justify-center sm:mt-7 sm:w-auto">
                                 <button
                                     type="button"
                                     onClick={() => navigate(-1)}
-                                    className="font-semibold text-[15px] rounded-[12px] px-8 py-3.5 border border-[#e7ebf1] text-[#1f2733] bg-white"
+                                    className="sm:w-auto font-semibold text-[15px] rounded-[12px] md:px-8 py-3.5 border border-[#e7ebf1] text-[#1f2733] bg-white px-4"
                                 >
                                     Cancel
                                 </button>
@@ -669,7 +669,7 @@ export default function AddToWaitingList() {
                                     type="button"
                                     disabled={selectedStudentIds.length === 0}
                                     onClick={() => setFlowStep("B")}
-                                    className="font-semibold text-[15px] rounded-[12px] px-8 py-3.5 border border-[#3b7df6] text-white bg-[#3b7df6] disabled:opacity-50 hover:bg-[#2f6ae0]"
+                                    className="sm:w-auto font-semibold text-[15px] rounded-[12px] md:px-8 py-3.5 border border-[#3b7df6] text-white bg-[#3b7df6] disabled:opacity-50 hover:bg-[#2f6ae0] px-4"
                                 >
                                     Next
                                 </button>
@@ -1334,18 +1334,18 @@ export default function AddToWaitingList() {
                             </div>
 
                             {/* ── Actions ─────────────────────────────────────────────────── */}
-                            <div className="flex justify-center gap-3.5 mt-7 flex-wrap">
+                            <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-[#e7ebf1] p-4 z-40 flex gap-3 w-full sm:relative sm:bottom-auto sm:left-auto sm:right-auto sm:bg-transparent sm:border-t-0 sm:p-0 sm:z-auto justify-center sm:mt-7 sm:w-auto">
                                 <button
                                     type="button"
                                     onClick={() => (isMulti ? setFlowStep("A") : navigate(-1))}
-                                    className="font-semibold text-[15px] rounded-[12px] px-8 py-3.5 border border-[#e7ebf1] text-[#1f2733] bg-white"
+                                    className="sm:w-auto font-semibold text-[15px] rounded-[12px] md:px-8 py-3.5 border border-[#e7ebf1] text-[#1f2733] bg-white px-4"
                                 >
                                     {isMulti ? "Back" : "Cancel"}
                                 </button>
                                 <button
                                     type="submit"
                                     disabled={submitting}
-                                    className="font-semibold text-[15px] rounded-[12px] px-8 py-3.5 border border-[#1e3a6e] text-white bg-[#1e3a6e] hover:bg-[#16306e] transition-colors disabled:opacity-50"
+                                    className="sm:w-auto font-semibold text-[15px] rounded-[12px] md:px-8 py-3.5 border border-[#1e3a6e] text-white bg-[#1e3a6e] hover:bg-[#16306e] transition-colors px-4 disabled:opacity-50"
                                 >
                                     {submitting ? "Adding…" : "Add to Waiting List"}
                                 </button>
@@ -1370,7 +1370,7 @@ export default function AddToWaitingList() {
                             </div>
                             <button
                                 onClick={() => navigate(-1)}
-                                className="font-semibold text-[15px] rounded-[12px] px-8 py-3.5 bg-[#1e3a6e] text-white hover:bg-[#16306e] transition-colors"
+                                className="w-full sm:w-auto font-semibold text-[15px] rounded-[12px] px-8 py-3.5 bg-[#1e3a6e] text-white hover:bg-[#16306e] transition-colors"
                             >
                                 Back to Dashboard
                             </button>

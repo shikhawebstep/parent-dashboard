@@ -801,10 +801,10 @@ const BookMembership = () => {
     };
 
     return (
-        <div className="min-h-screen booking-page bg-[#f4f6f9] text-[#1f2733] font-['Poppins',sans-serif] pb-16">
+        <div className="min-h-screen booking-page bg-[#f4f6f9] text-[#1f2733] font-['Poppins',sans-serif] pb-28 sm:pb-16 pt-5 md:pt-0">
 
             {/* Band */}
-            <div className="bg-[#1e3a6e] text-white mx-6 mt-4 rounded-[14px] px-5 py-4 flex items-center gap-3 font-bold text-[18px]">
+            <div className="bg-[#1e3a6e] text-white mx-6 rounded-[14px] px-5 py-4 flex items-center gap-3 font-bold text-[18px]">
                 <span
                     className="cursor-pointer opacity-90 flex items-center"
                     onClick={() => {
@@ -816,7 +816,7 @@ const BookMembership = () => {
                 Booking
             </div>
 
-            <div className="max-w-[1040px] mx-auto px-6 pt-5">
+            <div className="max-w-[1040px] mx-auto md:px-6 pt-5 px-2">
                 {/* Steps */}
                 <div className="hidden md:flex items-center justify-center gap-2 mb-5 flex-wrap">
                     {flowStates.map((fs, i) => {
@@ -852,9 +852,9 @@ const BookMembership = () => {
                             <div className="text-center text-[24px] font-bold mb-1.5 tracking-tight">Who's this membership for?</div>
                             <div className="text-center text-[#6b7685] text-[14px] mb-6">Select one or more children to enrol</div>
 
-                            <div className="flex justify-center gap-2 mb-5">
-                                <button className="font-semibold text-[13px] rounded-[30px] px-4 py-2.5 bg-[#eaf1fe] text-[#3b7df6] border border-[#eaf1fe]">Select an existing child</button>
-                                <button onClick={handleAddStudents} className="font-semibold text-[13px] rounded-[30px] px-4 py-2.5 bg-white text-[#6b7685] border border-[#e7ebf1]">Add a new child</button>
+                            <div className="flex flex-col sm:flex-row justify-center gap-2.5 mb-5 w-full max-w-md mx-auto sm:max-w-none">
+                                <button className="w-full sm:w-auto font-semibold text-[13px] rounded-[30px] px-4 py-2.5 bg-[#eaf1fe] text-[#3b7df6] border border-[#eaf1fe]">Select an existing child</button>
+                                <button onClick={handleAddStudents} className="w-full sm:w-auto font-semibold text-[13px] rounded-[30px] px-4 py-2.5 bg-white text-[#6b7685] border border-[#e7ebf1]">Add a new child</button>
                             </div>
 
                             <div className="flex justify-center gap-4 flex-wrap mb-2">
@@ -885,9 +885,9 @@ const BookMembership = () => {
                                 })}
                             </div>
 
-                            <div className="flex justify-center gap-3.5 mt-7 flex-wrap">
-                                <button onClick={() => navigate(-1)} className="font-semibold text-[15px] rounded-[12px] px-8 py-3.5 border border-[#e7ebf1] text-[#1f2733] bg-white">Cancel</button>
-                                <button disabled={selectedStudentIds.length === 0} onClick={() => setFlowStep("B")} className="font-semibold text-[15px] rounded-[12px] px-8 py-3.5 border border-[#3b7df6] text-white bg-[#3b7df6] disabled:opacity-50 hover:bg-[#2f6ae0]">Next</button>
+                            <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-[#e7ebf1] p-4 z-40 flex gap-3 w-full sm:relative sm:bottom-auto sm:left-auto sm:right-auto sm:bg-transparent sm:border-t-0 sm:p-0 sm:z-auto justify-center sm:mt-7 sm:w-auto">
+                                <button onClick={() => navigate(-1)} className="sm:w-auto font-semibold text-[15px] rounded-[12px] md:px-8 py-3.5 border border-[#e7ebf1] text-[#1f2733] bg-white px-4">Cancel</button>
+                                <button disabled={selectedStudentIds.length === 0} onClick={() => setFlowStep("B")} className="sm:w-auto font-semibold text-[15px] rounded-[12px] md:px-8 py-3.5 border border-[#3b7df6] text-white bg-[#3b7df6] disabled:opacity-50 hover:bg-[#2f6ae0] px-4">Next</button>
                             </div>
                         </div>
                     )}
@@ -1011,7 +1011,7 @@ const BookMembership = () => {
                                         {/* Discount code */}
                                         <div>
                                             <label className="block text-[13px] font-semibold mb-1.5">Discount code (optional)</label>
-                                            <div className="flex gap-2">
+                                            <div className="flex flex-wrap gap-2">
                                                 <input
                                                     className="flex-1 font-inherit text-[14px] border border-[#e7ebf1] rounded-[10px] px-3.5 py-3 focus:outline-none focus:ring-2 focus:ring-[#3b7df6]"
                                                     value={discountCode}
@@ -1084,10 +1084,10 @@ const BookMembership = () => {
 
                                     {/* Address lookup */}
                                     <div className="border border-[#e7ebf1] rounded-[14px] p-4 mt-1 mb-5">
-                                        <div className="font-bold text-[14px] mb-3 flex items-center gap-2">
+                                        <div className="font-bold text-[14px] mb-3 flex flex-wrap items-center gap-2">
                                             <Truck size={16} /> Delivery address <span className="font-medium text-[#6b7685] text-[13px]">— where should we send the starter pack?</span>
                                         </div>
-                                        <div className="flex items-end gap-3">
+                                        <div className="flex flex-col sm:flex-row items-stretch sm:items-end gap-3">
                                             <div className="flex-1">
                                                 <label className="block text-[13px] font-semibold mb-1.5">Postcode</label>
                                                 <input
@@ -1103,7 +1103,7 @@ const BookMembership = () => {
                                                 />
                                             </div>
                                             <button
-                                                className="bg-[#3b7df6] text-white rounded-[12px] px-5 py-[11px] font-semibold text-[14px] whitespace-nowrap border border-[#3b7df6] disabled:opacity-50 disabled:cursor-not-allowed"
+                                                className="bg-[#3b7df6] text-white rounded-[12px] px-5 py-[11px] font-semibold text-[14px] whitespace-nowrap border border-[#3b7df6] disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto flex items-center justify-center"
                                                 disabled={!postcode || addressLoading}
                                                 onClick={async () => {
                                                     setAddressLoading(true);
@@ -1309,12 +1309,12 @@ const BookMembership = () => {
                                 </div>
                             )}
 
-                            <div className="flex justify-center gap-3.5 mt-7 flex-wrap">
-                                <button onClick={() => (isMulti ? setFlowStep("A") : navigate(-1))} className="font-semibold text-[15px] rounded-[12px] px-8 py-3.5 border border-[#e7ebf1] text-[#1f2733] bg-white">Cancel</button>
+                            <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-[#e7ebf1] p-4 z-40 flex gap-3 w-full sm:relative sm:bottom-auto sm:left-auto sm:right-auto sm:bg-transparent sm:border-t-0 sm:p-0 sm:z-auto justify-center sm:mt-7 sm:w-auto">
+                                <button onClick={() => (isMulti ? setFlowStep("A") : navigate(-1))} className="sm:w-auto font-semibold text-[15px] rounded-[12px] md:px-8 py-3.5 border border-[#e7ebf1] text-[#1f2733] bg-white px-4">Cancel</button>
                                 <button
                                     disabled={!membershipPlan || !selectedDate || (showStarterPack && !selectedAddress) || (showStarterPack && !parents?.[0]?.starterPackSize) || activeStudents.some((s) => !s.selectedClassData)}
                                     onClick={() => setFlowStep("C")}
-                                    className="font-semibold text-[15px] rounded-[12px] px-8 py-3.5 border border-[#3b7df6] text-white bg-[#3b7df6] disabled:opacity-50 hover:bg-[#2f6ae0]">
+                                    className="sm:w-auto font-semibold text-[15px] rounded-[12px] md:px-8 py-3.5 border border-[#3b7df6] text-white bg-[#3b7df6] disabled:opacity-50 hover:bg-[#2f6ae0] px-4">
                                     Continue to payment
                                 </button>
                             </div>
@@ -1385,9 +1385,9 @@ const BookMembership = () => {
                                 </div>
                             </div>
 
-                            <div className="flex justify-center gap-3.5 mt-7 flex-wrap">
-                                <button onClick={() => setFlowStep("B")} className="font-semibold text-[15px] rounded-[12px] px-8 py-3.5 border border-[#e7ebf1] text-[#1f2733] bg-white">Back</button>
-                                <button onClick={handleDDContinue} disabled={!isDDValid} className="font-semibold text-[15px] rounded-[12px] px-8 py-3.5 border border-[#3b7df6] text-white bg-[#3b7df6] disabled:opacity-50 hover:bg-[#2f6ae0]">
+                            <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-[#e7ebf1] p-4 z-40 flex gap-3 w-full sm:relative sm:bottom-auto sm:left-auto sm:right-auto sm:bg-transparent sm:border-t-0 sm:p-0 sm:z-auto justify-center sm:mt-7 sm:w-auto">
+                                <button onClick={() => setFlowStep("B")} className="sm:w-auto font-semibold text-[15px] rounded-[12px] md:px-8 py-3.5 border border-[#e7ebf1] text-[#1f2733] bg-white px-4">Back</button>
+                                <button onClick={handleDDContinue} disabled={!isDDValid} className="sm:w-auto font-semibold text-[15px] rounded-[12px] md:px-8 py-3.5 border border-[#3b7df6] text-white bg-[#3b7df6] disabled:opacity-50 hover:bg-[#2f6ae0] px-4">
                                     Continue to card payment
                                 </button>
                             </div>
@@ -1512,12 +1512,12 @@ const BookMembership = () => {
                                 </div>
                             </div>
 
-                            <div className="flex justify-center gap-3.5 mt-7 flex-wrap">
-                                <button onClick={() => setFlowStep("C")} className="font-semibold text-[15px] rounded-[12px] px-8 py-3.5 border border-[#e7ebf1] text-[#1f2733] bg-white">Back</button>
+                            <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-[#e7ebf1] p-4 z-40 flex gap-3 w-full sm:relative sm:bottom-auto sm:left-auto sm:right-auto sm:bg-transparent sm:border-t-0 sm:p-0 sm:z-auto justify-center sm:mt-7 sm:w-auto">
+                                <button onClick={() => setFlowStep("C")} className="sm:w-auto font-semibold text-[15px] rounded-[12px] md:px-8 py-3.5 border border-[#e7ebf1] text-[#1f2733] bg-white px-4">Back</button>
                                 <button
                                     disabled={isSubmitting || !isCardValid}
                                     onClick={handleSubmit}
-                                    className="font-semibold text-[15px] rounded-[12px] px-11 py-3.5 border border-[#21b573] text-white bg-[#21b573] disabled:opacity-50 hover:bg-[#1a935d] flex items-center gap-2">
+                                    className="sm:w-auto font-semibold text-[15px] rounded-[12px] md:px-11 px-4 py-3.5 border border-[#21b573] text-white bg-[#21b573] disabled:opacity-50 hover:bg-[#1a935d] flex items-center justify-center gap-2">
                                     {isSubmitting && <Loader2 className="animate-spin w-4 h-4" />}
                                     {isSubmitting ? "Processing..." : `Pay £${(pricingBreakdown.totalAmountToday || 0).toFixed(2)} & confirm`}
                                 </button>
@@ -1553,8 +1553,8 @@ const BookMembership = () => {
                                 A confirmation email with your booking details, payment summary and Direct Debit schedule has been sent to your inbox.
                             </div>
 
-                            <div className="flex justify-center gap-3.5 mt-7 flex-wrap">
-                                <button onClick={() => navigate("/bookings")} className="font-semibold text-[15px] rounded-[12px] px-11 py-3.5 border border-[#21b573] text-white bg-[#21b573] hover:bg-[#1a935d]">Finish</button>
+                            <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-[#e7ebf1] p-4 z-40 flex gap-3 w-full sm:relative sm:bottom-auto sm:left-auto sm:right-auto sm:bg-transparent sm:border-t-0 sm:p-0 sm:z-auto justify-center sm:mt-7 sm:w-auto">
+                                <button onClick={() => navigate("/bookings")} className="sm:w-auto font-semibold text-[15px] rounded-[12px] px-11 py-3.5 border border-[#21b573] text-white bg-[#21b573] hover:bg-[#1a935d]">Finish</button>
                             </div>
                         </div>
                     )}
@@ -1564,13 +1564,13 @@ const BookMembership = () => {
                 <div className="max-w-[1040px] mx-auto mt-4 px-6 text-[12px] text-[#6b7685] text-center">
                     Prototype — single-child journey starts at "Confirm & choose".
                 </div>
-                <div className="flex justify-center gap-3.5 mt-3.5 mb-6 flex-wrap">
+                <div className="flex flex-col sm:flex-row justify-center gap-3 mt-3.5 mb-6 w-full max-w-md mx-auto sm:max-w-none">
                     <button onClick={() => { setDemoMode("single"); setFlowStep("B"); }}
-                        className={`font-semibold text-[13px] rounded-[12px] px-8 py-3.5 border transition-all ${demoMode === "single" ? "bg-[#3b7df6] text-white border-[#3b7df6]" : "bg-white text-[#1f2733] border-[#e7ebf1]"}`}>
+                        className={`w-full sm:w-auto font-semibold text-[13px] rounded-[12px] px-8 py-3.5 border transition-all ${demoMode === "single" ? "bg-[#3b7df6] text-white border-[#3b7df6]" : "bg-white text-[#1f2733] border-[#e7ebf1]"}`}>
                         Single-child flow
                     </button>
                     <button onClick={() => { setDemoMode("multi"); setFlowStep("A"); }}
-                        className={`font-semibold text-[13px] rounded-[12px] px-8 py-3.5 border transition-all ${demoMode === "multi" ? "bg-[#3b7df6] text-white border-[#3b7df6]" : "bg-white text-[#1f2733] border-[#e7ebf1]"}`}>
+                        className={`w-full sm:w-auto font-semibold text-[13px] rounded-[12px] px-8 py-3.5 border transition-all ${demoMode === "multi" ? "bg-[#3b7df6] text-white border-[#3b7df6]" : "bg-white text-[#1f2733] border-[#e7ebf1]"}`}>
                         Multi-child flow
                     </button>
                 </div>
@@ -1793,18 +1793,18 @@ const BookMembership = () => {
                             </div>
 
                             {/* Footer */}
-                            <div className="flex justify-end gap-3 px-7 py-5 border-t border-gray-100">
+                            <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 px-7 py-5 border-t border-gray-100">
                                 <button
                                     onClick={() => setIsAddChildOpen(false)}
                                     disabled={isSavingChild}
-                                    className="font-semibold text-[14px] rounded-[12px] px-6 py-3 border border-[#e7ebf1] text-[#1f2733] bg-white"
+                                    className="w-full sm:w-auto font-semibold text-[14px] rounded-[12px] px-6 py-3 border border-[#e7ebf1] text-[#1f2733] bg-white"
                                 >
                                     Cancel
                                 </button>
                                 <button
                                     onClick={handleSaveNewChild}
                                     disabled={isSavingChild}
-                                    className="font-semibold text-[14px] rounded-[12px] px-7 py-3 border border-[#3b7df6] text-white bg-[#3b7df6] disabled:opacity-50 hover:bg-[#2f6ae0] flex items-center gap-2"
+                                    className="w-full sm:w-auto font-semibold text-[14px] rounded-[12px] px-7 py-3 border border-[#3b7df6] text-white bg-[#3b7df6] disabled:opacity-50 hover:bg-[#2f6ae0] flex items-center justify-center gap-2"
                                 >
                                     {isSavingChild && <Loader2 className="animate-spin w-4 h-4" />}
                                     Add child

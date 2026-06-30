@@ -427,10 +427,10 @@ const HolidayWaitingList = () => {
     };
 
     return (
-        <div className="min-h-screen booking-page bg-[#f4f6f9] text-[#1f2733] font-['Poppins',sans-serif] pb-16">
+        <div className="min-h-screen booking-page bg-[#f4f6f9] text-[#1f2733] font-['Poppins',sans-serif] pb-28 sm:pb-16 pt-5 md:pt-0">
 
             {/* Band */}
-            <div className="bg-[#1e3a6e] text-white mx-6 mt-4 rounded-[14px] px-5 py-4 flex items-center gap-3 font-bold text-[18px]">
+            <div className="bg-[#1e3a6e] text-white mx-6 rounded-[14px] px-5 py-4 flex items-center gap-3 font-bold text-[18px]">
                 <span
                     className="cursor-pointer opacity-90 flex items-center"
                     onClick={() => {
@@ -443,7 +443,7 @@ const HolidayWaitingList = () => {
                 Add to Waiting List
             </div>
 
-            <div className="max-w-[1040px] mx-auto px-6 pt-5">
+            <div className="max-w-[1040px] mx-auto md:px-6 pt-5 px-2">
                 {/* Steps */}
                 <div className="hidden md:flex items-center justify-center gap-2 mb-5 flex-wrap">
                     {flowStates.map((fs, i) => {
@@ -475,9 +475,9 @@ const HolidayWaitingList = () => {
                             <div className="text-center text-[24px] font-bold mb-1.5 tracking-tight">Who's this trial for?</div>
                             <div className="text-center text-[#6b7685] text-[14px] mb-6">Select one or more children to add to the waiting list</div>
 
-                            <div className="flex justify-center gap-2 mb-5">
-                                <button className="font-semibold text-[13px] rounded-[30px] px-4 py-2.5 bg-[#eaf1fe] text-[#3b7df6] border border-[#eaf1fe]">Select an existing child</button>
-                                <button onClick={handleAddChildOpen} className="font-semibold text-[13px] rounded-[30px] px-4 py-2.5 bg-white text-[#6b7685] border border-[#e7ebf1]">Add a new child</button>
+                            <div className="flex flex-col sm:flex-row justify-center gap-2.5 mb-5 w-full max-w-md mx-auto sm:max-w-none">
+                                <button className="w-full sm:w-auto font-semibold text-[13px] rounded-[30px] px-4 py-2.5 bg-[#eaf1fe] text-[#3b7df6] border border-[#eaf1fe]">Select an existing child</button>
+                                <button onClick={handleAddChildOpen} className="w-full sm:w-auto font-semibold text-[13px] rounded-[30px] px-4 py-2.5 bg-white text-[#6b7685] border border-[#e7ebf1]">Add a new child</button>
                             </div>
 
                             <div className="flex justify-center gap-4 flex-wrap mb-2">
@@ -517,9 +517,9 @@ const HolidayWaitingList = () => {
                                 })}
                             </div>
 
-                            <div className="flex justify-center gap-3.5 mt-7 flex-wrap">
-                                <button onClick={() => navigate(-1)} className="font-semibold text-[15px] rounded-[12px] px-8 py-3.5 border border-[#e7ebf1] text-[#1f2733] bg-white">Cancel</button>
-                                <button disabled={selectedStudentIds.length === 0} onClick={() => setFlowStep("B")} className="font-semibold text-[15px] rounded-[12px] px-8 py-3.5 border border-[#3b7df6] text-white bg-[#3b7df6] disabled:opacity-50 hover:bg-[#2f6ae0]">Next</button>
+                            <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-[#e7ebf1] p-4 z-40 flex gap-3 w-full sm:relative sm:bottom-auto sm:left-auto sm:right-auto sm:bg-transparent sm:border-t-0 sm:p-0 sm:z-auto justify-center sm:mt-7 sm:w-auto">
+                                <button onClick={() => navigate(-1)} className="sm:w-auto font-semibold text-[15px] rounded-[12px] md:px-8 py-3.5 border border-[#e7ebf1] text-[#1f2733] bg-white px-4">Cancel</button>
+                                <button disabled={selectedStudentIds.length === 0} onClick={() => setFlowStep("B")} className="sm:w-auto font-semibold text-[15px] rounded-[12px] md:px-8 py-3.5 border border-[#3b7df6] text-white bg-[#3b7df6] disabled:opacity-50 hover:bg-[#2f6ae0] px-4">Next</button>
                             </div>
                         </div>
                     )}
@@ -838,14 +838,14 @@ const HolidayWaitingList = () => {
                                 </div>
                             </div>
 
-                            <div className="flex justify-center gap-3.5 mt-7 flex-wrap">
-                                <button onClick={() => (isMulti ? setFlowStep("A") : navigate(-1))} className="font-semibold text-[15px] rounded-[12px] px-8 py-3.5 border border-[#e7ebf1] text-[#1f2733] bg-white">
+                            <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-[#e7ebf1] p-4 z-40 flex gap-3 w-full sm:relative sm:bottom-auto sm:left-auto sm:right-auto sm:bg-transparent sm:border-t-0 sm:p-0 sm:z-auto justify-center sm:mt-7 sm:w-auto">
+                                <button onClick={() => (isMulti ? setFlowStep("A") : navigate(-1))} className="sm:w-auto font-semibold text-[15px] rounded-[12px] md:px-8 py-3.5 border border-[#e7ebf1] text-[#1f2733] bg-white px-4">
                                     {isMulti ? "Back" : "Cancel"}
                                 </button>
                                 <button
                                     onClick={handleSubmit}
                                     disabled={isSubmitting}
-                                    className="font-semibold text-[15px] rounded-[12px] px-8 py-3.5 border border-[#1e3a6e] text-white bg-[#1e3a6e] hover:bg-[#16306e] disabled:opacity-50"
+                                    className="sm:w-auto font-semibold text-[15px] rounded-[12px] px-8 py-3.5 border border-[#1e3a6e] text-white bg-[#1e3a6e] hover:bg-[#16306e] disabled:opacity-50"
                                 >
                                     {isSubmitting ? "Submitting..." : "Add to Waiting List"}
                                 </button>
@@ -863,7 +863,7 @@ const HolidayWaitingList = () => {
                             <div className="text-[#6b7685] text-[15px] mb-6 max-w-[440px] mx-auto">
                                 We've added {activeNames} to the waiting list. We'll be in touch as soon as a spot opens up.
                             </div>
-                            <button onClick={() => navigate(-1)} className="font-semibold text-[15px] rounded-[12px] px-8 py-3.5 bg-[#1e3a6e] text-white hover:bg-[#16306e]">
+                             <button onClick={() => navigate(-1)} className="w-full sm:w-auto font-semibold text-[15px] rounded-[12px] px-8 py-3.5 bg-[#1e3a6e] text-white hover:bg-[#16306e]">
                                 Back to Dashboard
                             </button>
                         </div>
@@ -874,16 +874,16 @@ const HolidayWaitingList = () => {
                 <div className="max-w-[1040px] mx-auto mt-4 px-6 text-[12px] text-[#6b7685] text-center">
                     Prototype — single-child journey starts at "Trial details".
                 </div>
-                <div className="flex justify-center gap-3.5 mt-3.5 mb-6 flex-wrap">
+                <div className="flex flex-col sm:flex-row justify-center gap-3 mt-3.5 mb-6 w-full max-w-md mx-auto sm:max-w-none">
                     <button
                         onClick={() => { setDemoMode("single"); setFlowStep("B"); }}
-                        className={`font-semibold text-[13px] rounded-[12px] px-8 py-3.5 border transition-all ${demoMode === "single" ? "bg-[#3b7df6] text-white border-[#3b7df6]" : "bg-white text-[#1f2733] border-[#e7ebf1]"}`}
+                        className={`w-full sm:w-auto font-semibold text-[13px] rounded-[12px] px-8 py-3.5 border transition-all ${demoMode === "single" ? "bg-[#3b7df6] text-white border-[#3b7df6]" : "bg-white text-[#1f2733] border-[#e7ebf1]"}`}
                     >
                         Single-child flow
                     </button>
                     <button
                         onClick={() => { setDemoMode("multi"); setFlowStep("A"); }}
-                        className={`font-semibold text-[13px] rounded-[12px] px-8 py-3.5 border transition-all ${demoMode === "multi" ? "bg-[#3b7df6] text-white border-[#3b7df6]" : "bg-white text-[#1f2733] border-[#e7ebf1]"}`}
+                        className={`w-full sm:w-auto font-semibold text-[13px] rounded-[12px] px-8 py-3.5 border transition-all ${demoMode === "multi" ? "bg-[#3b7df6] text-white border-[#3b7df6]" : "bg-white text-[#1f2733] border-[#e7ebf1]"}`}
                     >
                         Multi-child flow
                     </button>
@@ -962,9 +962,9 @@ const HolidayWaitingList = () => {
                                 </div>
                             </div>
                         </div>
-                        <div className="flex justify-end gap-3 px-7 py-5 border-t border-gray-100">
-                            <button onClick={() => setIsAddChildOpen(false)} className="font-semibold text-[14px] rounded-[12px] px-6 py-3 border border-[#e7ebf1] text-[#1f2733] bg-white">Cancel</button>
-                            <button onClick={handleSaveNewChild} className="font-semibold text-[14px] rounded-[12px] px-7 py-3 border border-[#3b7df6] text-white bg-[#3b7df6] hover:bg-[#2f6ae0]">Add child</button>
+                        <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 px-7 py-5 border-t border-gray-100">
+                            <button onClick={() => setIsAddChildOpen(false)} className="w-full sm:w-auto font-semibold text-[14px] rounded-[12px] px-6 py-3 border border-[#e7ebf1] text-[#1f2733] bg-white">Cancel</button>
+                            <button onClick={handleSaveNewChild} className="w-full sm:w-auto font-semibold text-[14px] rounded-[12px] px-7 py-3 border border-[#3b7df6] text-white bg-[#3b7df6] hover:bg-[#2f6ae0]">Add child</button>
                         </div>
                     </div>
                 </div>

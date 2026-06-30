@@ -179,7 +179,7 @@ const Header = ({ onMenuClick }) => {
         />
 
         {/* Right */}
-        <div className="flex items-center 2xl:gap-8 gap-3">
+        <div className="md:flex items-center 2xl:gap-8 gap-3">
 
           <button
             onClick={() => navigate("https://synco-website.netlify.app/")}

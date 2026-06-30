@@ -195,7 +195,7 @@ const ProfileSettings = () => {
                 <div className="space-y-2">
                     <label className="text-[14px] font-semibold text-[#282829]">First Name</label>
                     <div className="relative">
-                        <User className="absolute left-4 top-1/2 -translate-y-1/2 text-[#717073]" size={18} />
+                        <User className="absolute left-4 top-8 -translate-y-1/2 text-[#717073]" size={18} />
                         <input
                             type="text"
                             name="firstName"
@@ -210,7 +210,7 @@ const ProfileSettings = () => {
                 <div className="space-y-2">
                     <label className="text-[14px] font-semibold text-[#282829]">Last Name</label>
                     <div className="relative">
-                        <User className="absolute left-4 top-1/2 -translate-y-1/2 text-[#717073]" size={18} />
+                        <User className="absolute left-4 top-8 -translate-y-1/2 text-[#717073]" size={18} />
                         <input
                             type="text"
                             name="lastName"
@@ -230,7 +230,7 @@ const ProfileSettings = () => {
                         </span>
                     </label>
                     <div className="relative">
-                        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-[#BDBCBF]" size={18} />
+                        <Mail className="absolute left-4 top-8 -translate-y-1/2 text-[#BDBCBF]" size={18} />
                         <input
                             type="email"
                             name="email"
@@ -245,7 +245,7 @@ const ProfileSettings = () => {
                 <div className="space-y-2">
                     <label className="text-[14px] font-semibold text-[#282829]">Phone Number</label>
                     <div className="relative">
-                        <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-[#717073]" size={18} />
+                        <Phone className="absolute left-4 top-8 -translate-y-1/2 text-[#717073]" size={18} />
                         <input
                             type="tel"
                             name="phone"
