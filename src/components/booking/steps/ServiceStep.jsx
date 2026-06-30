@@ -4,6 +4,7 @@ import { useStep } from "../../../context/StepContext";
 
 const serviceOptions = [
   { value: "Holiday Camp Booking", label: "Holiday Camp Booking" },
+  { value: "Add To Waiting List (Holiday Camp)", label: "Add To Waiting List (Holiday Camp)" },
   { value: "Book A Membership", label: "Book A Membership" },
   { value: "Add To Waiting List", label: "Add To Waiting List" },
   { value: "Book Free Trial", label: "Book Free Trial" },
@@ -26,6 +27,9 @@ export default function ServiceStep() {
       navigate("/book-membership");
     } else if (value === "Add To Waiting List") {
       navigate("/waiting-list");
+    } else if (value === "Add To Waiting List (Holiday Camp)") {
+      navigate("/holiday-waiting-list");
+    
     } else if (value === "Book Free Trial") {
       navigate("/book-free-trial");
     }

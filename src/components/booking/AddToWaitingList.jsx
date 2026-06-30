@@ -770,11 +770,11 @@ export default function AddToWaitingList() {
 
                                             {/* Class picker */}
                                             <div>
-                                                <label className="block text-[13px] font-semibold mb-1.5">
+                                                <label className="block text-[13px] capitalize font-semibold mb-1.5">
                                                     Select class for {s.studentFirstName || `Child ${idx + 1}`}
                                                 </label>
                                                 <select
-                                                    className={`w-full font-inherit text-[14px] border rounded-[10px] px-3.5 py-[11px] appearance-none focus:outline-none focus:ring-2 ${
+                                                    className={`w-full capitalize font-inherit text-[14px] border rounded-[10px] px-3.5 py-[11px] appearance-none focus:outline-none focus:ring-2 ${
                                                         !selectedVenue
                                                             ? "border-[#e7ebf1] bg-[#f4f6f9] text-[#9CA3AF] cursor-not-allowed"
                                                             : "border-[#ffd21f] bg-[#fffcf0] focus:ring-[#ffd21f]"
@@ -952,7 +952,7 @@ export default function AddToWaitingList() {
                                                     )}
                                                 </div>
 
-                                                <div>
+                                                <div className="col-span-2">
                                                     <label className={labelClass}>Time</label>
                                                     <input
                                                         disabled

@@ -438,7 +438,7 @@ const ParentProfile = () => {
     };
 
     return (
-        <div className="min-h-screen bg-[#F4F6FA] p-5">
+        <div className="min-h-screen md:p-0 p-5">
             <style>{phoneInputStyles}</style>
 
             <div className="flex gap-5 mt-2 items-start md:flex-row flex-col-reverse">
@@ -446,7 +446,7 @@ const ParentProfile = () => {
                 <div className="flex-1 lg:w-9/12 min-w-0 space-y-5">
 
                     {/* Parent Info Card */}
-                    <div className="bg-white rounded-[16px] p-6 shadow-sm">
+                    <div className="bg-white rounded-[16px] md:p-6 shadow-sm p-3">
                         {parents.length === 0 && (
                             <div className="text-center py-12">
                                 <p className="text-gray-500 font-medium mb-4 text-[18px]">No parent information found.</p>
@@ -624,7 +624,7 @@ const ParentProfile = () => {
 
                     {/* Emergency Contact Card */}
                     {hasEmergencyContact && (
-                        <div className="bg-white rounded-[16px] p-6 shadow-sm">
+                        <div className="bg-white rounded-[16px] md:p-6 shadow-sm p-3">
                             <div className="flex justify-between items-center mb-4">
                                 <h2 className="font-bold text-[18px] text-[#282829]">Emergency contact details</h2>
                                 {emergencyEditing ? (

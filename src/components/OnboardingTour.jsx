@@ -39,7 +39,7 @@ const OnboardingTour = () => {
     const steps = [
         {
             title: `Welcome ${parentData?.firstName && parentData?.lastName
-                ? `${parentData.firstName} ${parentData.lastName}`
+                ? `${parentData.firstName}`
                 : parentData?.email || "N/A"}`,
             description: "Take a quick tour of your parent connect account.",
             icon: '/assets/step1.png'
@@ -65,7 +65,7 @@ const OnboardingTour = () => {
             icon: '/assets/step5.png',
         },
         {
-            title: "Congratulations John!",
+            title: `Congratulations ${parentData.firstName} !`,
             description: "You have successfully completed the tour guide, you are ready to go.",
             icon: '/assets/step6.png',
         }

@@ -25,6 +25,67 @@ import { useCommon } from "../../context/CommonContext";
 import { useProfile } from "../../context/ProfileContext";
 import { getAddressesByPostcode } from "../../commom/getAddressesByPostcode";
 
+// ── react-select shared styles ─────────────────────────────
+const rsStyles = (hasError) => ({
+    control: (base, state) => ({
+        ...base,
+        minHeight: 46,
+        borderRadius: 10,
+        borderColor: hasError ? "#e53e3e" : state.isFocused ? "#3b7df6" : "#e7ebf1",
+        boxShadow: state.isFocused ? `0 0 0 2px ${hasError ? "rgba(229,62,62,0.3)" : "rgba(59,125,246,0.3)"}` : "none",
+        backgroundColor: hasError ? "#fff5f5" : "#fff",
+        "&:hover": { borderColor: hasError ? "#e53e3e" : "#3b7df6" },
+        fontSize: 14,
+        fontFamily: "inherit",
+    }),
+    valueContainer: (base) => ({ ...base, padding: "2px 14px" }),
+    placeholder: (base) => ({ ...base, color: "#6b7685" }),
+    menu: (base) => ({ ...base, borderRadius: 10, overflow: "hidden", zIndex: 50 }),
+    option: (base, state) => ({
+        ...base,
+        fontSize: 14,
+        backgroundColor: state.isSelected ? "#3b7df6" : state.isFocused ? "#eaf1fe" : "#fff",
+        color: state.isSelected ? "#fff" : "#1f2733",
+        cursor: "pointer",
+    }),
+    singleValue: (base) => ({ ...base, color: "#1f2733" }),
+    indicatorSeparator: () => ({ display: "none" }),
+});
+
+// ── DOB / Age helpers for Add Child modal ─────────────────
+const formatDOBInput = (raw = "") => {
+    const digits = raw.replace(/\D/g, "").slice(0, 8);
+    if (digits.length <= 2) return digits;
+    if (digits.length <= 4) return digits.slice(0, 2) + "/" + digits.slice(2);
+    return digits.slice(0, 2) + "/" + digits.slice(2, 4) + "/" + digits.slice(4);
+};
+
+const isValidDOB = (val = "") => {
+    const iso = toDateOnly(val);
+    if (!iso) return false;
+    const [y, m, d] = iso.split("-").map(Number);
+    const dob = new Date(y, m - 1, d);
+    if (Number.isNaN(dob.getTime())) return false;
+    return dob <= new Date(); // not in the future
+};
+
+const calculateAge = (val = "") => {
+    if (!isValidDOB(val)) return "";
+    const iso = toDateOnly(val);
+    const [y, m, d] = iso.split("-").map(Number);
+    const dob = new Date(y, m - 1, d);
+    const today = new Date();
+    let age = today.getFullYear() - dob.getFullYear();
+    const monthDiff = today.getMonth() - dob.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())) age--;
+    return age >= 0 ? age : "";
+};
+
+const genderOptions = [
+    { value: "Male", label: "Male" },
+    { value: "Female", label: "Female" },
+];
+
 // ── Inits ─────────────────────────────────────────────────
 const INIT_STUDENT = () => ({
     _tmpId: Date.now() + Math.random(),
@@ -162,6 +223,14 @@ const sizeOptions = [
     { value: "XL", label: "Extra Large" },
 ];
 
+const countryOptions = [
+    { value: "United Kingdom", label: "United Kingdom" },
+    { value: "Ireland", label: "Ireland" },
+    { value: "United States", label: "United States" },
+    { value: "Canada", label: "Canada" },
+    { value: "Australia", label: "Australia" },
+];
+
 // ── Component ─────────────────────────────────────────────
 const BookMembership = () => {
     const token = typeof window !== "undefined" ? localStorage.getItem("parentToken") : null;
@@ -194,7 +263,7 @@ const BookMembership = () => {
     const [showAddrSelect, setShowAddrSelect] = useState(false);
     const [selectedAddress, setSelectedAddress] = useState("");
     const [isChangingVenue, setIsChangingVenue] = useState(false);
-
+    const [studentSizes, setStudentSizes] = useState({});
     // info
     const [selectedVenue, setSelectedVenue] = useState(null);
     const [numberOfStudents, setNumberOfStudents] = useState(1);
@@ -233,6 +302,19 @@ const BookMembership = () => {
     // ── Derived ───────────────────────────────────────────
     const month = currentDate.getMonth();
     const year = currentDate.getFullYear();
+
+
+
+    const [isAddChildOpen, setIsAddChildOpen] = useState(false);
+    const [newChildForm, setNewChildForm] = useState({
+        studentFirstName: "",
+        studentLastName: "",
+        dateOfBirth: "",
+        gender: "",
+        medicalInformation: "",
+    });
+    const [newChildErrors, setNewChildErrors] = useState({});
+    const [isSavingChild, setIsSavingChild] = useState(false);
 
     let adminInfo = {};
     try {
@@ -275,6 +357,33 @@ const BookMembership = () => {
         return `${d}/${m}/${y}`;
     };
 
+    // ── react-select option builders (null-safe) ──────────
+    const venueOptions = (venues?.capacityVenues || [])
+        .filter((v) => v && v.venueId !== undefined && v.venueId !== null)
+        .map((v) => ({ value: v.venueId, label: v.venueName || "Unnamed venue", all: v }));
+
+    const buildClassOptions = () => {
+        const classesObj = venueData?.classes;
+        if (!classesObj || typeof classesObj !== "object") return [];
+        const opts = [];
+        Object.keys(classesObj).forEach((day) => {
+            (classesObj[day] || []).forEach((c) => {
+                if (!c || c.classId === undefined || c.classId === null) return;
+                opts.push({
+                    value: c.classId,
+                    label: `${c.className || "Class"} (${day}) ${c.time || ""} ${c.level ? `- ${c.level}` : ""}`.trim(),
+                    all: c,
+                });
+            });
+        });
+        return opts;
+    };
+    const classOptions = buildClassOptions();
+
+    const addressOptions = (addressList || [])
+        .filter((a) => a && a.address)
+        .map((a) => ({ value: a.address, label: a.address }));
+
     // ── Effects ───────────────────────────────────────────
     useEffect(() => {
         fetchVenues?.();
@@ -285,8 +394,6 @@ const BookMembership = () => {
         if (!profile) return;
         const rawParents = profile?.adminMeta?.parents || [];
         const rawStudents = profile?.adminMeta?.students || [];
-
-     
 
         const normalizeDOB = (raw) => {
             if (!raw) return "";
@@ -330,7 +437,6 @@ const BookMembership = () => {
 
         const emergencyContact = profile?.adminMeta?.emergency;
 
-        console.log('emergencyContact',emergencyContact)
         if (emergencyContact) {
             setEmergency({
                 sameAsAbove: false,
@@ -550,6 +656,7 @@ const BookMembership = () => {
                     medicalInformation: student?.medicalInformation || "NA",
                     classScheduleId: Number(student?.selectedClassId) || 1,
                     initialClassId: student?.initialClassId || null,
+                    starterPackSize: studentSizes[student._tmpId] || null,
                 })),
                 parents: parents.map((parent) => ({
                     parentFirstName: parent?.parentFirstName || "NA",
@@ -639,15 +746,62 @@ const BookMembership = () => {
 
     // ── Input class helper ────────────────────────────────
     const inputClass = (hasErr) =>
-        `w-full font-inherit text-[14px] border rounded-[10px] px-3.5 py-3 focus:outline-none focus:ring-2 transition-colors ${
-            hasErr
-                ? "border-[#e53e3e] focus:ring-[#e53e3e]/30 bg-[#fff5f5]"
-                : "border-[#e7ebf1] focus:ring-[#3b7df6]"
+        `w-full font-inherit text-[14px] border rounded-[10px] px-3.5 py-3 focus:outline-none focus:ring-2 transition-colors ${hasErr
+            ? "border-[#e53e3e] focus:ring-[#e53e3e]/30 bg-[#fff5f5]"
+            : "border-[#e7ebf1] focus:ring-[#3b7df6]"
         }`;
+
+    const handleAddStudents = () => {
+        setNewChildForm({
+            studentFirstName: "",
+            studentLastName: "",
+            dateOfBirth: "",
+            gender: "",
+            medicalInformation: "",
+        });
+        setNewChildErrors({});
+        setIsAddChildOpen(true);
+    };
+
+    const handleNewChildDOBChange = (e) => {
+        const formatted = formatDOBInput(e?.target?.value);
+        setNewChildForm((f) => ({ ...f, dateOfBirth: formatted }));
+        if (newChildErrors.dateOfBirth) setNewChildErrors((errs) => ({ ...errs, dateOfBirth: "" }));
+    };
+
+    const validateNewChild = () => {
+        const errs = {};
+        if (!newChildForm.studentFirstName.trim()) errs.studentFirstName = "First name is required";
+        if (!newChildForm.studentLastName.trim()) errs.studentLastName = "Last name is required";
+        if (!isValidDOB(newChildForm.dateOfBirth)) errs.dateOfBirth = "Enter a valid date (DD/MM/YYYY)";
+        if (!newChildForm.gender) errs.gender = "Gender is required";
+        setNewChildErrors(errs);
+        return Object.keys(errs).length === 0;
+    };
+
+    const handleSaveNewChild = () => {
+        if (!validateNewChild()) return;
+        setIsSavingChild(true);
+
+        const newStudent = {
+            ...INIT_STUDENT(),
+            studentFirstName: newChildForm.studentFirstName.trim(),
+            studentLastName: newChildForm.studentLastName.trim(),
+            dateOfBirth: newChildForm.dateOfBirth,
+            age: calculateAge(newChildForm.dateOfBirth),
+            gender: newChildForm.gender,
+            medicalInformation: newChildForm.medicalInformation.trim() || "NA",
+        };
+
+        setStudents((prev) => [...prev, newStudent]);
+        setSelectedStudentIds((prev) => [...prev, newStudent._tmpId]);
+
+        setIsSavingChild(false);
+        setIsAddChildOpen(false);
+    };
 
     return (
         <div className="min-h-screen booking-page bg-[#f4f6f9] text-[#1f2733] font-['Poppins',sans-serif] pb-16">
-           
 
             {/* Band */}
             <div className="bg-[#1e3a6e] text-white mx-6 mt-4 rounded-[14px] px-5 py-4 flex items-center gap-3 font-bold text-[18px]">
@@ -672,13 +826,12 @@ const BookMembership = () => {
                             <React.Fragment key={fs}>
                                 <div className={`flex items-center gap-2 text-[13px] font-semibold ${isActive ? "text-[#1f2733]" : "text-[#6b7685]"}`}>
                                     <span
-                                        className={`w-6 h-6 rounded-full border-[1.5px] flex items-center justify-center text-[12px] ${
-                                            isActive
-                                                ? "bg-[#21b573] border-[#21b573] text-white"
-                                                : isDone
+                                        className={`w-6 h-6 rounded-full border-[1.5px] flex items-center justify-center text-[12px] ${isActive
+                                            ? "bg-[#21b573] border-[#21b573] text-white"
+                                            : isDone
                                                 ? "bg-[#cdeede] border-[#cdeede] text-[#21b573]"
                                                 : "bg-white border-[#e7ebf1]"
-                                        }`}
+                                            }`}
                                     >
                                         {isDone ? <Check size={13} /> : i + 1}
                                     </span>
@@ -701,7 +854,7 @@ const BookMembership = () => {
 
                             <div className="flex justify-center gap-2 mb-5">
                                 <button className="font-semibold text-[13px] rounded-[30px] px-4 py-2.5 bg-[#eaf1fe] text-[#3b7df6] border border-[#eaf1fe]">Select an existing child</button>
-                                <button className="font-semibold text-[13px] rounded-[30px] px-4 py-2.5 bg-white text-[#6b7685] border border-[#e7ebf1]">Add a new child</button>
+                                <button onClick={handleAddStudents} className="font-semibold text-[13px] rounded-[30px] px-4 py-2.5 bg-white text-[#6b7685] border border-[#e7ebf1]">Add a new child</button>
                             </div>
 
                             <div className="flex justify-center gap-4 flex-wrap mb-2">
@@ -711,14 +864,12 @@ const BookMembership = () => {
                                         <div
                                             key={s._tmpId ?? i}
                                             onClick={() => toggleStudent(s._tmpId)}
-                                            className={`w-[230px] border-[1.5px] rounded-[14px] p-4 cursor-pointer transition-all relative ${
-                                                isSel ? "border-[#3b7df6] ring-4 ring-[#3b7df6]/10" : "border-[#e7ebf1] hover:border-[#bcd0f5]"
-                                            }`}
+                                            className={`w-[230px] border-[1.5px] rounded-[14px] p-4 cursor-pointer transition-all relative ${isSel ? "border-[#3b7df6] ring-4 ring-[#3b7df6]/10" : "border-[#e7ebf1] hover:border-[#bcd0f5]"
+                                                }`}
                                         >
                                             <div
-                                                className={`absolute top-3.5 right-3.5 w-[22px] h-[22px] rounded-full border-2 flex items-center justify-center text-white text-[12px] ${
-                                                    isSel ? "bg-[#3b7df6] border-[#3b7df6]" : "border-[#e7ebf1]"
-                                                }`}
+                                                className={`absolute top-3.5 right-3.5 w-[22px] h-[22px] rounded-full border-2 flex items-center justify-center text-white text-[12px] ${isSel ? "bg-[#3b7df6] border-[#3b7df6]" : "border-[#e7ebf1]"
+                                                    }`}
                                             >
                                                 {isSel && <Check size={13} />}
                                             </div>
@@ -727,7 +878,7 @@ const BookMembership = () => {
                                                 <div><div className="text-[11px] text-[#6b7685]">Date of birth</div><div className="text-[14px] font-semibold">{s.dateOfBirth || "-"}</div></div>
                                                 <div><div className="text-[11px] text-[#6b7685]">Age</div><div className="text-[14px] font-semibold">{s.age || "-"}</div></div>
                                                 <div><div className="text-[11px] text-[#6b7685]">Gender</div><div className="text-[14px] font-semibold">{s.gender || "-"}</div></div>
-                                                <div><div className="text-[11px] text-[#6b7685]">Class</div><div className="text-[14px] font-semibold">{s.selectedClassData?.className || "4-7 years"}</div></div>
+                                                <div><div className="text-[11px] text-[#6b7685]">Class</div><div className="text-[14px] font-semibold">{s.selectedClassData?.className || ""}</div></div>
                                             </div>
                                         </div>
                                     );
@@ -757,27 +908,24 @@ const BookMembership = () => {
                                 </div>
                                 {isChangingVenue && (
                                     <div className="border border-t-0 border-[#e7ebf1] px-5 py-3.5 flex gap-6 flex-wrap bg-[#f4f6f9]">
-                                        <select
-                                            className="w-full font-inherit text-[14px] font-medium text-[#1f2733] border border-[#e7ebf1] rounded-[10px] px-3.5 py-[11px] bg-white focus:outline-none focus:ring-2 focus:ring-[#3b7df6] appearance-none"
-                                            style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236b7685' stroke-width='1.6' fill='none' stroke-linecap='round'/%3E%3C/svg%3E")`, backgroundRepeat: "no-repeat", backgroundPosition: "right 14px center" }}
-                                            value={selectedVenue?.value || ""}
-                                            onChange={(e) => {
-                                                const vId = Number(e.target.value);
-                                                const v = venues?.capacityVenues?.find((x) => x?.venueId === vId);
-                                                if (v) {
-                                                    setSelectedVenue({ value: v.venueId, label: v.venueName, all: v });
+                                        <div className="w-full">
+                                            <Select
+                                                styles={rsStyles(false)}
+                                                options={venueOptions}
+                                                value={venueOptions.find((o) => o.value === selectedVenue?.value) || null}
+                                                placeholder={venueOptions.length ? "Select a venue to see available details..." : "No venues available"}
+                                                isDisabled={venueOptions.length === 0}
+                                                isClearable={false}
+                                                onChange={(opt) => {
+                                                    if (!opt) return;
+                                                    setSelectedVenue({ value: opt.value, label: opt.label, all: opt.all });
                                                     setMembershipPlan(null);
                                                     setSelectedDate(null);
                                                     setIsChangingVenue(false);
                                                     setStudents((prev) => prev.map((s) => ({ ...s, selectedClassId: null, selectedClassData: null })));
-                                                }
-                                            }}
-                                        >
-                                            <option value="" disabled>Select a venue to see available details...</option>
-                                            {(venues?.capacityVenues || []).map((v) => (
-                                                <option key={v.venueId} value={v.venueId}>{v.venueName}</option>
-                                            ))}
-                                        </select>
+                                                }}
+                                            />
+                                        </div>
                                     </div>
                                 )}
 
@@ -809,38 +957,21 @@ const BookMembership = () => {
                                             <div className="flex items-end gap-3">
                                                 <div className="flex-1">
                                                     <label className="block text-[13px] font-semibold mb-1.5">Select class for {s.studentFirstName || "this child"}</label>
-                                                    <select
-                                                        className="w-full font-inherit text-[14px] border border-[#ffd21f] rounded-[10px] px-3.5 py-[11px] bg-[#fffcf0] focus:outline-none focus:ring-2 focus:ring-[#ffd21f] appearance-none"
-                                                        style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236b7685' stroke-width='1.6' fill='none' stroke-linecap='round'/%3E%3C/svg%3E")`, backgroundRepeat: "no-repeat", backgroundPosition: "right 14px center" }}
-                                                        onChange={(e) => {
-                                                            const classId = Number(e.target.value);
-                                                            let selectedClass = null;
-                                                            if (venueData?.classes) {
-                                                                for (const day in venueData.classes) {
-                                                                    const dayClasses = venueData.classes[day] || [];
-                                                                    selectedClass = dayClasses.find((c) => c?.classId === classId);
-                                                                    if (selectedClass) break;
-                                                                }
-                                                            }
+                                                    <Select
+                                                        styles={rsStyles(false)}
+                                                        options={classOptions}
+                                                        value={classOptions.find((o) => o.value === s.selectedClassId) || null}
+                                                        isDisabled={!selectedVenue || classOptions.length === 0}
+                                                        placeholder={!selectedVenue ? "Select a venue first" : classOptions.length ? "Choose a class..." : "No classes available"}
+                                                        onChange={(opt) => {
+                                                            if (!opt) return;
                                                             setStudents((prev) =>
                                                                 prev.map((st) =>
-                                                                    st._tmpId === s._tmpId ? { ...st, selectedClassId: classId, selectedClassData: selectedClass } : st
+                                                                    st._tmpId === s._tmpId ? { ...st, selectedClassId: opt.value, selectedClassData: opt.all } : st
                                                                 )
                                                             );
                                                         }}
-
-                                                        disabled={!selectedVenue}
-                                                        defaultValue=""
-                                                    >
-                                                        <option value="" disabled>{selectedVenue ? "Choose a class..." :"Select  a venue first"}</option>
-                                                        {venueData?.classes && Object.keys(venueData.classes).map((day) =>
-                                                            (venueData.classes[day] || []).map((c) => (
-                                                                <option key={`${day}-${c.classId}`} value={c.classId}>
-                                                                    {c.className} ({day}) {c.time} {c.level ? `- ${c.level}` : ""}
-                                                                </option>
-                                                            ))
-                                                        )}
-                                                    </select>
+                                                    />
                                                 </div>
                                             </div>
                                         )}
@@ -854,7 +985,7 @@ const BookMembership = () => {
                                     <div className="text-[13px] font-bold uppercase tracking-[0.04em] text-[#6b7685] mb-3">Starter pack</div>
                                     <div className="grid md:grid-cols-[200px_1fr] gap-5 border border-[#e7ebf1] rounded-[14px] p-4 mb-3.5 items-center">
                                         <div className="bg-gradient-to-br from-[#15336b] to-[#ffd21f] rounded-[12px] h-[150px] flex items-center justify-center text-white text-center font-bold relative overflow-hidden">
-                                           <img src="/assets/Kids-Size-Guide.png" alt="" />
+                                            <img src="/assets/Kids-Size-Guide.png" alt="" />
                                         </div>
                                         <div>
                                             <h5 className="text-[15px] font-bold mb-2.5 text-[#1f2733]">Every membership includes the Samba starter pack:</h5>
@@ -919,29 +1050,37 @@ const BookMembership = () => {
                                             Size chart →
                                         </button>
                                     </div>
-                                    {activeStudents.map((s, idx) => (
-                                        <div key={s._tmpId ?? idx} className={`border border-[#e7ebf1] rounded-[14px] p-4 mb-3 flex items-center justify-between gap-4 flex-wrap`}>
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-[38px] h-[38px] rounded-full bg-[#eaf1fe] flex items-center justify-center font-bold text-[#3b7df6]">{(s.studentFirstName || "?")[0]}</div>
-                                                <div className="font-semibold text-[15px]">{s.studentFirstName} {s.studentLastName}</div>
+                                    {activeStudents.map((s, idx) => {
+                                        const currentSize = studentSizes[s._tmpId] ?? parents?.[0]?.starterPackSize ?? "";
+                                        return (
+                                            <div key={s._tmpId ?? idx} className={`border border-[#e7ebf1] rounded-[14px] p-4 mb-3 flex items-center justify-between gap-4 flex-wrap`}>
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-[38px] h-[38px] rounded-full bg-[#eaf1fe] flex items-center justify-center font-bold text-[#3b7df6]">{(s.studentFirstName || "?")[0]}</div>
+                                                    <div className="font-semibold text-[15px]">{s.studentFirstName} {s.studentLastName}</div>
+                                                </div>
+                                                <div className="flex-1 min-w-[160px] max-w-[240px]">
+                                                    <Select
+                                                        styles={rsStyles(false)}
+                                                        options={sizeOptions}
+                                                        value={sizeOptions.find((o) => o.value === currentSize) || null}
+                                                        placeholder="Select size..."
+                                                        onChange={(opt) => {
+                                                            const size = opt?.value || "";
+                                                            setStudentSizes((prev) => ({ ...prev, [s._tmpId]: size }));
+                                                            setStudents((prev) => prev.map((st) =>
+                                                                st._tmpId === s._tmpId ? { ...st, starterPackSize: size } : st
+                                                            ));
+                                                            setParents((prev) =>
+                                                                prev.length
+                                                                    ? prev.map((p, i) => (i === 0 ? { ...p, starterPackSize: size } : p))
+                                                                    : prev
+                                                            );
+                                                        }}
+                                                    />
+                                                </div>
                                             </div>
-                                            <div className="flex-1 min-w-[160px] max-w-[240px]">
-                                                <select
-                                                    className="w-full font-inherit text-[14px] border border-[#e7ebf1] rounded-[10px] px-3.5 py-[11px] bg-white focus:outline-none focus:ring-2 focus:ring-[#3b7df6] appearance-none"
-                                                    style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236b7685' stroke-width='1.6' fill='none' stroke-linecap='round'/%3E%3C/svg%3E")`, backgroundRepeat: "no-repeat", backgroundPosition: "right 14px center" }}
-                                                    value={parents?.[0]?.starterPackSize || ""}
-                                                    onChange={(e) => {
-                                                        setParents((prev) => prev.map((p, pi) => pi === 0 ? { ...p, starterPackSize: e.target.value } : p));
-                                                    }}
-                                                >
-                                                    <option value="" disabled>Select size...</option>
-                                                    {sizeOptions.map((opt) => (
-                                                        <option key={opt.value} value={opt.value}>{opt.label}</option>
-                                                    ))}
-                                                </select>
-                                            </div>
-                                        </div>
-                                    ))}
+                                        );
+                                    })}
 
                                     {/* Address lookup */}
                                     <div className="border border-[#e7ebf1] rounded-[14px] p-4 mt-1 mb-5">
@@ -995,20 +1134,16 @@ const BookMembership = () => {
                                                 <span>{addressError}</span>
                                             </div>
                                         )}
-                                        {showAddrSelect && addressList.length > 0 && (
+                                        {showAddrSelect && addressOptions.length > 0 && (
                                             <div className="mt-3">
                                                 <label className="block text-[13px] font-semibold mb-1.5">Select your address</label>
-                                                <select
-                                                    className="w-full font-inherit text-[14px] border border-[#e7ebf1] rounded-[10px] px-3.5 py-[11px] bg-white focus:outline-none focus:ring-2 focus:ring-[#3b7df6] appearance-none"
-                                                    style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236b7685' stroke-width='1.6' fill='none' stroke-linecap='round'/%3E%3C/svg%3E")`, backgroundRepeat: "no-repeat", backgroundPosition: "right 14px center" }}
-                                                    value={selectedAddress}
-                                                    onChange={(e) => setSelectedAddress(e.target.value)}
-                                                >
-                                                    <option value="">Select from the list</option>
-                                                    {addressList.map((addr, idx) => (
-                                                        <option key={idx} value={addr?.address}>{addr?.address}</option>
-                                                    ))}
-                                                </select>
+                                                <Select
+                                                    styles={rsStyles(false)}
+                                                    options={addressOptions}
+                                                    value={addressOptions.find((o) => o.value === selectedAddress) || null}
+                                                    placeholder="Select from the list"
+                                                    onChange={(opt) => setSelectedAddress(opt?.value || "")}
+                                                />
                                                 {selectedAddress && (
                                                     <div className="mt-3 text-[13.5px] text-[#0e7a4d] font-semibold bg-[#e7f8f0] rounded-lg px-3.5 py-2.5 flex items-center gap-2">
                                                         <Check size={14} />
@@ -1018,7 +1153,7 @@ const BookMembership = () => {
                                                 )}
                                             </div>
                                         )}
-                                        {showAddrSelect && addressList.length === 0 && !addressLoading && (
+                                        {showAddrSelect && addressOptions.length === 0 && !addressLoading && (
                                             <div className="mt-3 text-[13px] text-[#8a6d00] bg-[#fffcf0] border border-[#ffd21f] rounded-lg px-3.5 py-2.5 flex items-center gap-2">
                                                 <MapPin size={16} />
                                                 No addresses found for this postcode. Try a different one.
@@ -1059,7 +1194,7 @@ const BookMembership = () => {
                                 </>
                             ) : (
                                 <div className="text-[15px] font-bold  tracking-[0.04em] text-[#6b7685] mb-3 mt-5 text-center py-4 flex flex-col items-center gap-2">
-                                   
+
                                     Select a venue above to view membership plans
                                 </div>
                             )}
@@ -1357,17 +1492,12 @@ const BookMembership = () => {
                                     <div className="grid grid-cols-2 gap-3.5">
                                         <div>
                                             <label className="block text-[13px] font-semibold mb-1.5">Country</label>
-                                            <select
-                                                className="w-full font-inherit text-[14px] border border-[#e7ebf1] rounded-[10px] px-3.5 py-3 bg-white focus:outline-none focus:ring-2 focus:ring-[#3b7df6] appearance-none"
-                                                style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236b7685' stroke-width='1.6' fill='none' stroke-linecap='round'/%3E%3C/svg%3E")`, backgroundRepeat: "no-repeat", backgroundPosition: "right 14px center" }}
-                                                value={payment.country}
-                                                onChange={(e) => setPayment((p) => ({ ...p, country: e.target.value }))}>
-                                                <option>United Kingdom</option>
-                                                <option>Ireland</option>
-                                                <option>United States</option>
-                                                <option>Canada</option>
-                                                <option>Australia</option>
-                                            </select>
+                                            <Select
+                                                styles={rsStyles(false)}
+                                                options={countryOptions}
+                                                value={countryOptions.find((o) => o.value === payment.country) || countryOptions[0]}
+                                                onChange={(opt) => setPayment((p) => ({ ...p, country: opt?.value || "United Kingdom" }))}
+                                            />
                                         </div>
                                         <div>
                                             <label className="block text-[13px] font-semibold mb-1.5">Postcode / ZIP</label>
@@ -1410,7 +1540,7 @@ const BookMembership = () => {
                                 <div className="p-4">
                                     {activeStudents.map((s, i) => (
                                         <div key={s._tmpId ?? i} className="flex items-center gap-3.5 py-2.5 font-semibold text-[14px]">
-                                            <User size={16} className="text-[#3b7df6]" /> {s.studentFirstName} {s.studentLastName} — {s.selectedClassData?.className || "4-7 Years (Beginner)"} {showStarterPack ? `· kit ${parents?.[0]?.starterPackSize || ""}` : ""}
+                                            <User size={16} className="text-[#3b7df6]" /> {s.studentFirstName} {s.studentLastName} — {s.selectedClassData?.className || " (Beginner)"} {showStarterPack ? `· kit ${parents?.[0]?.starterPackSize || ""}` : ""}
                                         </div>
                                     ))}
                                     <div className="flex items-center gap-3.5 py-2.5 font-semibold text-[14px]">
@@ -1448,7 +1578,7 @@ const BookMembership = () => {
 
             {/* ── Size Chart Modal ── */}
             <AnimatePresence>
-               {isSizeChartOpen && (
+                {isSizeChartOpen && (
                     <motion.div
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
@@ -1534,6 +1664,151 @@ const BookMembership = () => {
                                         className="max-h-[380px] w-auto object-contain rounded-xl hover:scale-[1.01] transition-transform duration-300"
                                     />
                                 </div>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+
+
+            </AnimatePresence>
+
+            {/* ── Add Child Modal ── */}
+            <AnimatePresence>
+                {isAddChildOpen && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 overflow-y-auto"
+                        onClick={() => !isSavingChild && setIsAddChildOpen(false)}
+                    >
+                        <motion.div
+                            initial={{ scale: 0.95, y: 20 }}
+                            animate={{ scale: 1, y: 0 }}
+                            exit={{ scale: 0.95, y: 20 }}
+                            transition={{ type: "spring", duration: 0.4 }}
+                            className="bg-white rounded-3xl w-full max-w-[640px] shadow-2xl relative flex flex-col max-h-[90vh] overflow-hidden"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            {/* Header */}
+                            <div className="flex justify-between items-center px-7 py-5 border-b border-gray-100">
+                                <div>
+                                    <span className="text-[12px] uppercase tracking-wider text-[#3b7df6] font-bold">New child</span>
+                                    <h2 className="text-[20px] font-bold text-gray-900 leading-tight">Add a new child</h2>
+                                </div>
+                                <button
+                                    onClick={() => !isSavingChild && setIsAddChildOpen(false)}
+                                    className="p-2 hover:bg-gray-100 rounded-full transition-colors focus:outline-none"
+                                >
+                                    <X className="w-5 h-5 text-gray-400 hover:text-gray-600" />
+                                </button>
+                            </div>
+
+                            {/* Body */}
+                            <div className="p-7 overflow-y-auto">
+                                <div className="grid grid-cols-2 gap-x-5 gap-y-4">
+                                    {/* First name */}
+                                    <div>
+                                        <label className="block text-[14px] font-semibold mb-1.5">First name</label>
+                                        <input
+                                            className={inputClass(!!newChildErrors.studentFirstName)}
+                                            value={newChildForm.studentFirstName}
+                                            onChange={(e) => {
+                                                setNewChildForm((f) => ({ ...f, studentFirstName: e.target.value }));
+                                                if (newChildErrors.studentFirstName) setNewChildErrors((errs) => ({ ...errs, studentFirstName: "" }));
+                                            }}
+                                            placeholder="Enter first name"
+                                        />
+                                        {newChildErrors.studentFirstName && <p className="text-[12px] text-[#e53e3e] mt-1">{newChildErrors.studentFirstName}</p>}
+                                    </div>
+
+                                    {/* Last name */}
+                                    <div>
+                                        <label className="block text-[14px] font-semibold mb-1.5">Last name</label>
+                                        <input
+                                            className={inputClass(!!newChildErrors.studentLastName)}
+                                            value={newChildForm.studentLastName}
+                                            onChange={(e) => {
+                                                setNewChildForm((f) => ({ ...f, studentLastName: e.target.value }));
+                                                if (newChildErrors.studentLastName) setNewChildErrors((errs) => ({ ...errs, studentLastName: "" }));
+                                            }}
+                                            placeholder="Enter last name"
+                                        />
+                                        {newChildErrors.studentLastName && <p className="text-[12px] text-[#e53e3e] mt-1">{newChildErrors.studentLastName}</p>}
+                                    </div>
+
+                                    {/* Date of birth */}
+                                    <div>
+                                        <label className="block text-[14px] font-semibold mb-1.5">Date of birth</label>
+                                        <input
+                                            className={inputClass(!!newChildErrors.dateOfBirth)}
+                                            value={newChildForm.dateOfBirth}
+                                            onChange={handleNewChildDOBChange}
+                                            placeholder="DD/MM/YYYY"
+                                            inputMode="numeric"
+                                            maxLength={10}
+                                        />
+                                        {newChildErrors.dateOfBirth && <p className="text-[12px] text-[#e53e3e] mt-1">{newChildErrors.dateOfBirth}</p>}
+                                    </div>
+
+                                    {/* Age (auto) */}
+                                    <div>
+                                        <label className="block text-[14px] font-semibold mb-1.5">Age</label>
+                                        <input
+                                            className="w-full font-inherit text-[14px] border border-[#e7ebf1] bg-[#f4f6f9] text-[#6b7685] rounded-[10px] px-3.5 py-3 cursor-not-allowed"
+                                            value={calculateAge(newChildForm.dateOfBirth)}
+                                            placeholder="Auto calculated"
+                                            disabled
+                                            readOnly
+                                        />
+                                    </div>
+
+                                    {/* Gender */}
+                                    <div>
+                                        <label className="block text-[14px] font-semibold mb-1.5">Gender</label>
+                                        <Select
+                                            styles={rsStyles(!!newChildErrors.gender)}
+                                            options={genderOptions}
+                                            value={genderOptions.find((o) => o.value === newChildForm.gender) || null}
+                                            placeholder="Select gender"
+                                            onChange={(opt) => {
+                                                setNewChildForm((f) => ({ ...f, gender: opt?.value || "" }));
+                                                if (newChildErrors.gender) setNewChildErrors((errs) => ({ ...errs, gender: "" }));
+                                            }}
+                                        />
+                                        {newChildErrors.gender && <p className="text-[12px] text-[#e53e3e] mt-1">{newChildErrors.gender}</p>}
+                                    </div>
+
+                                    {/* Medical information */}
+                                    <div>
+                                        <label className="block text-[14px] font-semibold mb-1.5">Medical information</label>
+                                        <input
+                                            className={inputClass(false)}
+                                            value={newChildForm.medicalInformation}
+                                            onChange={(e) => setNewChildForm((f) => ({ ...f, medicalInformation: e.target.value }))}
+                                            placeholder="e.g. Asthma, None"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Footer */}
+                            <div className="flex justify-end gap-3 px-7 py-5 border-t border-gray-100">
+                                <button
+                                    onClick={() => setIsAddChildOpen(false)}
+                                    disabled={isSavingChild}
+                                    className="font-semibold text-[14px] rounded-[12px] px-6 py-3 border border-[#e7ebf1] text-[#1f2733] bg-white"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={handleSaveNewChild}
+                                    disabled={isSavingChild}
+                                    className="font-semibold text-[14px] rounded-[12px] px-7 py-3 border border-[#3b7df6] text-white bg-[#3b7df6] disabled:opacity-50 hover:bg-[#2f6ae0] flex items-center gap-2"
+                                >
+                                    {isSavingChild && <Loader2 className="animate-spin w-4 h-4" />}
+                                    Add child
+                                </button>
                             </div>
                         </motion.div>
                     </motion.div>

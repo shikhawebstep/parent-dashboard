@@ -11,12 +11,16 @@ const renderValue = (val, fallback = "-") => {
   return val;
 };
 
-const renderAgentName = (agent) => {
-  if (!agent || typeof agent !== "object") return "Not Assigned Yet";
-  const first = agent?.firstName;
-  const last = agent?.lastName;
-  if (!first) return "Not Assigned Yet";
-  return last ? `${first} ${last}`.trim() : first;
+const renderAgentName = (agents) => {
+  if (!Array.isArray(agents) || agents.length === 0) {
+    return "Not Assigned Yet";
+  }
+
+  const { firstName, lastName } = agents[0];
+
+  if (!firstName) return "Not Assigned Yet";
+
+  return [firstName, lastName].filter(Boolean).join(" ");
 };
 
 const safeVenueName = (item) =>
@@ -157,10 +161,10 @@ const Feedback = () => {
                     {renderValue(item?.notes)}
                   </td>
                   <td className="p-4 text-sm text-[#282829] font-medium gilory whitespace-nowrap">
-                    {item?.assignedAgent ? (
+                    {item?.assignedAgents ? (
                       <div className="flex items-center gap-1 w-full">
                         <img src={item?.profile || '/assets/Ethan-test1.png'} className="w-7" alt="" />
-                        <span>{renderAgentName(item.assignedAgent)}</span>
+                        <span>{renderAgentName(item.assignedAgents)}</span>
                       </div>
                     ) : (
                       "Not Assigned Yet"
@@ -206,7 +210,7 @@ const Feedback = () => {
               </div>
 
               <div className="mt-6 flex items-center justify-between pt-4 border-t border-gray-100">
-                {item?.assignedAgent ? (
+                {item?.assignedAgents ? (
                   <div className="flex items-center gap-2">
                     <img
                       src={item?.profile || "/assets/Ethan-test1.png"}
@@ -214,7 +218,7 @@ const Feedback = () => {
                       alt=""
                     />
                     <span className="font-semibold text-[#282829] text-[15px]">
-                      {renderAgentName(item.assignedAgent)}
+                      {renderAgentName(item.assignedAgents)}
                     </span>
                   </div>
                 ) : (
@@ -287,7 +291,7 @@ const Feedback = () => {
           </div>
 
           <div className="divide-y divide-gray-200">
-            <ResolveRow label="Agent" value={renderAgentName(resolveData?.assignedAgent)} />
+            <ResolveRow label="Agent" value={renderAgentName(resolveData?.assignedAgents)} />
             <ResolveRow label="Date submitted" value={formatDate(resolveData?.createdAt, true)} />
             <ResolveRow label="Venue" value={safeVenueName(resolveData)} />
             <ResolveRow label="Class details" value={safeClassDetails(resolveData)} />

@@ -190,10 +190,10 @@ const StudentProfile = () => {
 
   // add import at top
 
-// add saving state
-const [savingIndex, setSavingIndex] = useState(null);
+  // add saving state
+  const [savingIndex, setSavingIndex] = useState(null);
 
-const handleSave = async (index) => {
+  const handleSave = async (index) => {
     const student = students[index];
     const validationErrors = validateStudent(student);
     const newErrors = [...errors];
@@ -204,45 +204,45 @@ const handleSave = async (index) => {
     const token = localStorage.getItem("parentToken");
     setSavingIndex(index);
     try {
-        const res = await fetch(
-            `${import.meta.env.VITE_API_BASE_URL}api/parent/booking-update/student/${student.id}`,
-            {
-                method: "PUT",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`,
-                },
-                body: JSON.stringify({
-                    studentFirstName: student.studentFirstName,
-                    studentLastName: student.studentLastName,
-                    dateOfBirth: convertToYYYYMMDD(student.dateOfBirth),
-                    age: student.age,
-                    gender: student.gender,
-                    medicalInformation: student.medicalInfo,
-                }),
-            }
-        );
-        const data = await res.json();
-        if (!res.ok) throw new Error(data?.message || "Update failed");
-        showSuccess("Saved", data?.message || "Student updated successfully");
-        setEditingIndex(null);
-        fetchProfileData();
+      const res = await fetch(
+        `${import.meta.env.VITE_API_BASE_URL}api/parent/booking-update/student/${student.id}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            studentFirstName: student.studentFirstName,
+            studentLastName: student.studentLastName,
+            dateOfBirth: convertToYYYYMMDD(student.dateOfBirth),
+            age: student.age,
+            gender: student.gender,
+            medicalInformation: student.medicalInfo,
+          }),
+        }
+      );
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.message || "Update failed");
+      showSuccess("Saved", data?.message || "Student updated successfully");
+      setEditingIndex(null);
+      fetchProfileData();
     } catch (err) {
-        console.error(err);
-        showError("Error", err.message || "Something went wrong");
+      console.error(err);
+      showError("Error", err.message || "Something went wrong");
     } finally {
-        setSavingIndex(null);
+      setSavingIndex(null);
     }
-};
+  };
 
   /* ===== SIDEBAR DATA ===== */
   const sidebarInfo = profile?.adminMeta || {};
   const parentFirstName = sidebarInfo?.parents?.[0]?.parentFirstName?.trim() || "";
   const parentLastName = sidebarInfo?.parents?.[0]?.parentLastName?.trim() || "";
   const parentDisplayName = `${parentFirstName} ${parentLastName}`.trim();
-  const relationChild = sidebarInfo?.parents?.[0]?.relationChild?.trim();
-  const parentRelation = relationChild ? ` / ${relationChild}` : "";
-    const profilePhoto = profile?.accountInfo?.profile;
+  const relationToChild = sidebarInfo?.parents?.[0]?.relationToChild?.trim();
+  const parentRelation = relationToChild ? ` / ${relationToChild}` : "";
+  const profilePhoto = profile?.accountInfo?.profile;
 
   const allBookings = Array.isArray(profile?.bookings)
     ? profile.bookings
@@ -534,7 +534,7 @@ const handleSave = async (index) => {
                   <SidebarRow label="ID" value={displayBooking?.id || "—"} />
                   <hr className="border-white/10" />
                   <SidebarRow label="Price" value={displayBooking?.payment?.amount ? `£${displayBooking.payment.amount}` : "—"} />
-                  
+
                   <div className="mt-4">
                     <button className="w-full py-2 rounded-[8px] bg-[#0DD180] text-white text-[16px] font-semibold hover:bg-green-600 transition">
                       Renew Package
@@ -558,7 +558,7 @@ const handleSave = async (index) => {
           </div>
 
           {/* Action buttons */}
-         
+
         </div>
 
       </div>

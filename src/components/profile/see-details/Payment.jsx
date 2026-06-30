@@ -10,6 +10,15 @@ const Section = ({ title, children }) => (
 )
 
 const Payment = ({ booking, details, loading }) => {
+
+  if (loading) {
+    return (
+      <div className="animate-fadeIn p-6 text-center bg-white rounded-[30px] shadow-sm flex flex-col justify-center items-center min-h-[200px] gap-3">
+        <div className="w-8 h-8 border-4 border-[#237FEA] border-t-transparent rounded-full animate-spin"></div>
+        <p className="text-[#3c3c3d] font-medium">Loading details...</p>
+      </div>
+    );
+  }
   if (!details) {
     return (
       <div className="p-6 text-center bg-white rounded-[30px]">
@@ -40,8 +49,9 @@ const Payment = ({ booking, details, loading }) => {
 
   const subscription = {
     plan: paymentPlan?.title ?? '-',
-    price: paymentPlan ? `${(paymentPlan.price / 100).toFixed(2)} GBP` : '-',
+    price: paymentPlan ? `${paymentPlan.price} GBP` : '-',
   }
+
 
   return (
     <div className="min-h-screen">

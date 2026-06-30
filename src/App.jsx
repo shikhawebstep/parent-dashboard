@@ -26,6 +26,7 @@ import OneToOneBookingForm from "./components/booking/OneToOneBooking";
 import BookMembership from "./components/booking/BookMembership";
 import { PhoneInputProvider } from "./context/PhoneInputContext";
 import { CommonProvider } from "./context/CommonContext";
+import HolidayWaitingList from "./components/booking/HolidayWaitingList";
 function App() {
   return (
     <StepProvider>
@@ -43,6 +44,7 @@ function App() {
                     <Route path="/one-to-one-booking" element={<OneToOneBookingForm />} />
                     <Route path="/book-free-trial" element={<BookFreeTrial />} />
                     <Route path="/waiting-list" element={<AddToWaitingList />} />
+                    <Route path="/holiday-waiting-list" element={<HolidayWaitingList />} />
                     <Route path="/book-membership" element={<BookMembership />} />
                     <Route path="/auth/login" element={<LoginPage />} />
                     <Route path="/auth/forgot-password" element={<ForgotPasswordPage />} />

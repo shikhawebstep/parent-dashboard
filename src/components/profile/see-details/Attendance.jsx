@@ -31,7 +31,7 @@ const Attendance = ({booking, details, loading}) => {
       case 'absent':
         return <span className="inline-block px-3 py-1 rounded text-[13px] sm:text-[14px] font-medium capitalize bg-red-100 text-red-500">Absent</span>;
       case 'pending':
-        return <span className="inline-block px-3 py-1 rounded text-[13px] sm:text-[14px] font-medium capitalize bg-yellow-100 text-yellow-600">Pending</span>;
+        return <span className="inline-block px-3 py-1 rounded text-[13px] sm:text-[14px] font-medium capitalize bg-yellow-100 text-yellow-600">Not Attended</span>;
       default:
         return <span className="inline-block px-3 py-1 rounded text-[13px] sm:text-[14px] font-medium capitalize bg-gray-100 text-gray-600">{status || "Not Attended"}</span>;
     }

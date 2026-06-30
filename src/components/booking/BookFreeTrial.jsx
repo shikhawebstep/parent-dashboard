@@ -44,9 +44,16 @@ const hearOptions = [
     { value: "Flyer",     label: "Flyer"     },
 ];
 
+const numStudentsOptions = [
+    { value: "1", label: "1" },
+    { value: "2", label: "2" },
+    { value: "3", label: "3" },
+    { value: "4", label: "4" },
+];
+
 // ── Module-level helper ───────────────────────────────────────────────────────
 const formatDOBForDisplay = (isoDate) => {
-    if (!isoDate) return "";
+    if (!isoDate || typeof isoDate !== "string") return "";
     const [y, m, d] = isoDate.split("-");
     if (!y || !m || !d) return "";
     return `${d}/${m}/${y}`;
@@ -102,6 +109,15 @@ const selectStyles = {
     menu: (base) => ({ ...base, zIndex: 9999 }),
 };
 
+const selectStylesError = {
+    ...selectStyles,
+    control: (base, state) => ({
+        ...selectStyles.control(base, state),
+        borderColor: "#e53e3e",
+        backgroundColor: "#fff5f5",
+    }),
+};
+
 // ── Component ─────────────────────────────────────────────────────────────────
 const BookFreeTrial = () => {
     const { fetchVenues, venues } = useCommon();
@@ -138,28 +154,28 @@ const BookFreeTrial = () => {
         const rawStudents = profile?.adminMeta?.students || [];
 
         const normalizedParents = rawParents.map((p) => ({
-            id: p.id ?? Date.now() + Math.random(),
-            parentFirstName:    p.parentFirstName    || "",
-            parentLastName:     p.parentLastName     || "",
-            parentEmail:        p.parentEmail        || "",
-            parentPhoneNumber:  p.parentPhoneNumber  || p.phoneNumber || "",
-            interestReason:     p.interestReason     || "",
-            interestReasonOther:p.interestReasonOther|| "",
-            relationToChild:    p.relationToChild    || "",
-            howDidYouHear:      p.howDidYouHear      || "",
-            isCustomReason:     p.isCustomReason     || false,
+            id: p?.id ?? Date.now() + Math.random(),
+            parentFirstName:    p?.parentFirstName    || "",
+            parentLastName:     p?.parentLastName     || "",
+            parentEmail:        p?.parentEmail        || "",
+            parentPhoneNumber:  p?.parentPhoneNumber  || p?.phoneNumber || "",
+            interestReason:     p?.interestReason     || "",
+            interestReasonOther:p?.interestReasonOther|| "",
+            relationToChild:    p?.relationToChild    || "",
+            howDidYouHear:      p?.howDidYouHear      || "",
+            isCustomReason:     p?.isCustomReason     || false,
         }));
 
         const normalizedStudents = rawStudents.map((s) => ({
-            _tmpId:             s.id ?? Date.now() + Math.random(),
-            studentFirstName:   s.studentFirstName  || "",
-            studentLastName:    s.studentLastName   || "",
-            dob:                s.dob || formatDOBForDisplay(s.dateOfBirth),
-            age:                s.age ?? "",
-            gender:             s.gender            || "",
-            medicalInfo:        s.medicalInfo || s.medicalInformation || "",
-            selectedClassId:    s.selectedClassId   || "",
-            selectedClassData:  s.selectedClassData || null,
+            _tmpId:             s?.id ?? Date.now() + Math.random(),
+            studentFirstName:   s?.studentFirstName  || "",
+            studentLastName:    s?.studentLastName   || "",
+            dob:                s?.dob || formatDOBForDisplay(s?.dateOfBirth),
+            age:                s?.age ?? "",
+            gender:             s?.gender            || "",
+            medicalInfo:        s?.medicalInfo || s?.medicalInformation || "",
+            selectedClassId:    s?.selectedClassId   || "",
+            selectedClassData:  s?.selectedClassData || null,
             error:              null,
         }));
 
@@ -181,20 +197,19 @@ const BookFreeTrial = () => {
 
         const ec = profile?.adminMeta?.emergency;
 
-        console.log('ec',ec)
         if (ec) {
             const p0 = finalParents[0];
             const isSame =
                 !!p0 &&
-                p0.parentFirstName?.trim()   === ec.emergencyFirstName?.trim()   &&
-                p0.parentLastName?.trim()    === ec.emergencyLastName?.trim()    &&
-                p0.parentPhoneNumber?.trim() === ec.emergencyPhoneNumber?.trim();
+                (p0.parentFirstName || "").trim()   === (ec?.emergencyFirstName || "").trim()   &&
+                (p0.parentLastName || "").trim()    === (ec?.emergencyLastName || "").trim()    &&
+                (p0.parentPhoneNumber || "").trim() === (ec?.emergencyPhoneNumber || "").trim();
             setEmergency({
                 sameAsAbove:          isSame,
-                emergencyFirstName:   ec.emergencyFirstName   || "",
-                emergencyLastName:    ec.emergencyLastName    || "",
-                emergencyPhoneNumber: ec.emergencyPhoneNumber || "",
-                emergencyRelation:    ec.emergencyRelation    || "",
+                emergencyFirstName:   ec?.emergencyFirstName   || "",
+                emergencyLastName:    ec?.emergencyLastName    || "",
+                emergencyPhoneNumber: ec?.emergencyPhoneNumber || "",
+                emergencyRelation:    ec?.emergencyRelation    || "",
             });
         } else {
             setEmergency(INIT_EMERGENCY);
@@ -203,14 +218,14 @@ const BookFreeTrial = () => {
 
     // ── Fetch on mount ────────────────────────────────────────────────────────
     useEffect(() => {
-        fetchVenues();
-        fetchProfileData();
+        fetchVenues?.();
+        fetchProfileData?.();
     }, [fetchVenues]);
 
     // ── Venue derived ─────────────────────────────────────────────────────────
-    const sessionDates = selectedVenue?.terms?.flatMap((t) =>
-        t.sessionsMap.map((s) => s.sessionDate)
-    ) || [];
+    const sessionDates = (selectedVenue?.terms || []).flatMap((t) =>
+        (t?.sessionsMap || []).map((s) => s?.sessionDate).filter(Boolean)
+    );
     const availableDatesSet = new Set(sessionDates);
 
     // Auto-select first future session date when venue changes
@@ -219,25 +234,41 @@ const BookFreeTrial = () => {
         const today = new Date(); today.setHours(0, 0, 0, 0);
         const future = sessionDates
             .map((d) => new Date(d))
+            .filter((d) => !Number.isNaN(d.getTime()))
             .filter((d) => { const x = new Date(d); x.setHours(0, 0, 0, 0); return x >= today; })
             .sort((a, b) => a - b);
         setSelectedDate(future.length ? future[0] : new Date(sessionDates[0]));
     }, [selectedVenue]);
 
+    // ── react-select option builders (null-safe) ──────────────────────────────
+    const venueSelectOptions = (venues?.capacityVenues || [])
+        .filter((v) => v && v.venueId !== undefined && v.venueId !== null)
+        .map((v) => ({ value: v.venueId, label: v.venueName || "Unnamed venue", all: v }));
+
     const allClasses = selectedVenue
         ? Object.entries(selectedVenue.classes || {}).flatMap(([day, cls]) =>
-            cls.map((c) => ({
-                id:          c.classId,
-                className:   c.className,
-                dayOfWeek:   day,
-                startTime:   c.time?.split(" - ")[0] || "",
-                endTime:     c.time?.split(" - ")[1] || "",
-                capacity:    c.capacity,
-                level:       c.level,
-                time:        c.time,
-            }))
+            (cls || [])
+                .filter((c) => c && c.classId !== undefined && c.classId !== null)
+                .map((c) => ({
+                    id:          c.classId,
+                    className:   c.className || "Class",
+                    dayOfWeek:   day,
+                    startTime:   c.time?.split(" - ")[0] || "",
+                    endTime:     c.time?.split(" - ")[1] || "",
+                    capacity:    c.capacity ?? 0,
+                    level:       c.level || "",
+                    time:        c.time || "",
+                }))
         )
         : [];
+
+    const buildClassSelectOptions = () =>
+        allClasses.map((c) => ({
+            value: c.id,
+            label: `${c.className} (${c.dayOfWeek}) ${c.time}${c.level ? ` – ${c.level}` : ""}`.trim(),
+            all: c,
+        }));
+    const classSelectOptions = buildClassSelectOptions();
 
     // ── Wizard derived ────────────────────────────────────────────────────────
     const isMulti = demoMode === "multi";
@@ -247,7 +278,7 @@ const BookFreeTrial = () => {
         : students.slice(0, 1);
 
     const activeNames = activeStudents
-        .map((s) => s.studentFirstName || "Child")
+        .map((s) => s?.studentFirstName || "Child")
         .join(" & ") || "your child";
 
     const fullFlowStates   = ["A", "B", "D"];
@@ -260,14 +291,14 @@ const BookFreeTrial = () => {
 
     // ── Helpers ───────────────────────────────────────────────────────────────
     const getStudentIdx = (student) =>
-        students.findIndex((s) => s._tmpId === student._tmpId);
+        students.findIndex((s) => s._tmpId === student?._tmpId);
 
     const clearErr = (k) =>
         setErrors((p) => { const n = { ...p }; delete n[k]; return n; });
 
     // ── Handlers ──────────────────────────────────────────────────────────────
     const toggleStudent = (id) => {
-        if (id == null) return;
+        if (id === undefined || id === null) return;
         setSelectedStudentIds((prev) =>
             prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
         );
@@ -290,7 +321,7 @@ const BookFreeTrial = () => {
     };
 
     const handleDOBChange = (index, value) => {
-        let formatted = value.replace(/[^\d]/g, "");
+        let formatted = (value || "").replace(/[^\d]/g, "");
         if (formatted.length > 2 && formatted.length <= 4) {
             formatted = `${formatted.slice(0, 2)}/${formatted.slice(2)}`;
         } else if (formatted.length > 4) {
@@ -378,8 +409,8 @@ const BookFreeTrial = () => {
     };
 
     const handleSameAsAboveChange = (e) => {
-        const checked = e.target.checked;
-        const p = parents[0];
+        const checked = e?.target?.checked || false;
+        const p = parents?.[0] || {};
         setEmergency((prev) => ({
             ...prev,
             sameAsAbove:          checked,
@@ -396,7 +427,7 @@ const BookFreeTrial = () => {
 
     const handleEmergencyChange = (field, value) => {
         setEmergency((prev) => ({ ...prev, [field]: value }));
-        clearErr(`e_${field.replace("emergency", "").toLowerCase()}`);
+        clearErr(`e_${(field || "").replace("emergency", "").toLowerCase()}`);
     };
 
     // Sync emergency when "same as above" is checked and parent data changes
@@ -425,6 +456,7 @@ const BookFreeTrial = () => {
             if (isNaN(parsed.getTime())) return "";
             value = parsed;
         }
+        if (!(value instanceof Date) || Number.isNaN(value.getTime())) return "";
         const y = value.getFullYear();
         const m = String(value.getMonth() + 1).padStart(2, "0");
         const d = String(value.getDate()).padStart(2, "0");
@@ -439,9 +471,9 @@ const BookFreeTrial = () => {
         const classSelections = {};
         activeStudents.forEach((student) => {
             const i = getStudentIdx(student);
-            if (!student.studentFirstName?.trim())  errs[`s${i}_studentFirstName`] = "Required";
-            if (!student.studentLastName?.trim())   errs[`s${i}_studentLastName`]  = "Required";
-            if (!student.dob) {
+            if (!(student?.studentFirstName || "").trim())  errs[`s${i}_studentFirstName`] = "Required";
+            if (!(student?.studentLastName || "").trim())   errs[`s${i}_studentLastName`]  = "Required";
+            if (!student?.dob) {
                 errs[`s${i}_dob`] = "Required";
             } else if (student.dob.length !== 10) {
                 errs[`s${i}_dob`] = "Enter a valid date (DD/MM/YYYY)";
@@ -458,9 +490,9 @@ const BookFreeTrial = () => {
                     errs[`s${i}_dob`] = "Date of birth cannot be in the future";
                 }
             }
-            if (!student.gender)            errs[`s${i}_gender`]     = "Required";
-            if (!student.medicalInfo?.trim())errs[`s${i}_medicalInfo`]= "Required (write 'None')";
-            if (!student.selectedClassId) {
+            if (!student?.gender)            errs[`s${i}_gender`]     = "Required";
+            if (!(student?.medicalInfo || "").trim())errs[`s${i}_medicalInfo`]= "Required (write 'None')";
+            if (!student?.selectedClassId) {
                 errs[`s${i}_selectedClassId`] = "Required";
             } else {
                 const clsId = student.selectedClassId;
@@ -476,23 +508,23 @@ const BookFreeTrial = () => {
         });
 
         parents.forEach((p, i) => {
-            if (!p.parentFirstName?.trim())  errs[`p${i}_parentFirstName`]  = "Required";
-            if (!p.parentLastName?.trim())   errs[`p${i}_parentLastName`]   = "Required";
-            if (!p.parentEmail?.trim()) {
+            if (!(p?.parentFirstName || "").trim())  errs[`p${i}_parentFirstName`]  = "Required";
+            if (!(p?.parentLastName || "").trim())   errs[`p${i}_parentLastName`]   = "Required";
+            if (!(p?.parentEmail || "").trim()) {
                 errs[`p${i}_parentEmail`] = "Required";
             } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(p.parentEmail)) {
                 errs[`p${i}_parentEmail`] = "Invalid email";
             }
-            if (!p.parentPhoneNumber?.trim()) errs[`p${i}_parentPhoneNumber`] = "Required";
-            if (!p.relationToChild)           errs[`p${i}_relationToChild`]   = "Required";
-            if (!p.interestReason)            errs[`p${i}_interestReason`]    = "Required";
-            if (!p.howDidYouHear)             errs[`p${i}_howDidYouHear`]     = "Required";
+            if (!(p?.parentPhoneNumber || "").trim()) errs[`p${i}_parentPhoneNumber`] = "Required";
+            if (!p?.relationToChild)           errs[`p${i}_relationToChild`]   = "Required";
+            if (!p?.interestReason)            errs[`p${i}_interestReason`]    = "Required";
+            if (!p?.howDidYouHear)             errs[`p${i}_howDidYouHear`]     = "Required";
         });
 
-        if (!emergency.emergencyFirstName?.trim())   errs.e_firstName = "Required";
-        if (!emergency.emergencyLastName?.trim())    errs.e_lastName  = "Required";
-        if (!emergency.emergencyPhoneNumber?.trim()) errs.e_phone     = "Required";
-        if (!emergency.emergencyRelation)            errs.e_relation  = "Required";
+        if (!(emergency?.emergencyFirstName || "").trim())   errs.e_firstName = "Required";
+        if (!(emergency?.emergencyLastName || "").trim())    errs.e_lastName  = "Required";
+        if (!(emergency?.emergencyPhoneNumber || "").trim()) errs.e_phone     = "Required";
+        if (!emergency?.emergencyRelation)            errs.e_relation  = "Required";
 
         setErrors(errs);
         return Object.keys(errs).length === 0;
@@ -503,7 +535,12 @@ const BookFreeTrial = () => {
             alert("Please check the form for errors.");
             return;
         }
-        const parentData = JSON.parse(localStorage.getItem("parentData") || "{}");
+        let parentData = {};
+        try {
+            parentData = JSON.parse(localStorage.getItem("parentData") || "{}") || {};
+        } catch {
+            parentData = {};
+        }
         const parentId   = parentData?.id;
         const token      = localStorage.getItem("parentToken");
 
@@ -512,43 +549,43 @@ const BookFreeTrial = () => {
             trialDate:     toDateOnly(selectedDate),
             totalStudents: activeStudents.length,
             students: activeStudents.map((s) => ({
-                studentFirstName:  s.studentFirstName,
-                studentLastName:   s.studentLastName,
-                dateOfBirth:       toDateOnly(s.dob),
-                age:               Number(s.age),
-                gender:            s.gender,
-                medicalInformation:s.medicalInfo,
-                classScheduleId:   Number(s.selectedClassId),
+                studentFirstName:  s?.studentFirstName || "",
+                studentLastName:   s?.studentLastName || "",
+                dateOfBirth:       toDateOnly(s?.dob),
+                age:               Number(s?.age) || 0,
+                gender:            s?.gender || "",
+                medicalInformation:s?.medicalInfo || "",
+                classScheduleId:   Number(s?.selectedClassId) || null,
             })),
             parents: parents.map((p) => ({
-                parentFirstName:    p.parentFirstName,
-                parentLastName:     p.parentLastName,
-                parentEmail:        p.parentEmail,
-                parentPhoneNumber:  p.parentPhoneNumber,
-                relationToChild:    p.relationToChild,
-                interestReason:     p.interestReason,
-                interestReasonOther:p.interestReasonOther || "NA",
-                howDidYouHear:      p.howDidYouHear,
-                isCustomReason:     p.isCustomReason,
+                parentFirstName:    p?.parentFirstName || "",
+                parentLastName:     p?.parentLastName || "",
+                parentEmail:        p?.parentEmail || "",
+                parentPhoneNumber:  p?.parentPhoneNumber || "",
+                relationToChild:    p?.relationToChild || "",
+                interestReason:     p?.interestReason || "",
+                interestReasonOther:p?.interestReasonOther || "NA",
+                howDidYouHear:      p?.howDidYouHear || "",
+                isCustomReason:     p?.isCustomReason || false,
             })),
             emergency: {
-                sameAsAbove:          emergency.sameAsAbove,
-                emergencyFirstName:   emergency.emergencyFirstName,
-                emergencyLastName:    emergency.emergencyLastName,
-                emergencyPhoneNumber: emergency.emergencyPhoneNumber,
-                emergencyRelation:    emergency.emergencyRelation,
+                sameAsAbove:          emergency?.sameAsAbove || false,
+                emergencyFirstName:   emergency?.emergencyFirstName || "",
+                emergencyLastName:    emergency?.emergencyLastName || "",
+                emergencyPhoneNumber: emergency?.emergencyPhoneNumber || "",
+                emergencyRelation:    emergency?.emergencyRelation || "",
             },
         };
 
         try {
-            const API_URL = import.meta.env.VITE_API_BASE_URL;
+            const API_URL = import.meta.env.VITE_API_BASE_URL || "";
             const response = await axios.post(
                 `${API_URL}api/parent/booking/free-trial/create/${parentId}`,
                 payload,
                 {
                     headers: {
                         "Content-Type": "application/json",
-                        Authorization: `Bearer ${token}`,
+                        Authorization: `Bearer ${token || ""}`,
                     },
                 }
             );
@@ -574,16 +611,11 @@ const BookFreeTrial = () => {
 
     const labelClass = "block text-[13px] font-semibold mb-1.5 text-[#1f2733]";
 
-    const nativeSelectClass =
-        "w-full font-inherit text-[14px] font-medium text-[#1f2733] border border-[#e7ebf1] rounded-[10px] px-3.5 py-[11px] bg-white focus:outline-none focus:ring-2 focus:ring-[#3b7df6] appearance-none";
-
-    const chevronBg = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236b7685' stroke-width='1.6' fill='none' stroke-linecap='round'/%3E%3C/svg%3E")`;
-
     // ── Render ────────────────────────────────────────────────────────────────
     return (
         <div className="min-h-screen booking-page bg-[#f4f6f9] text-[#1f2733] font-['Poppins',sans-serif] pb-16">
 
-         
+
             {/* ── Navy band ──────────────────────────────────────────────────── */}
             <div className="bg-[#1e3a6e] text-white mx-6 mt-4 rounded-[14px] px-5 py-4 flex items-center gap-3 font-bold text-[18px]">
                 <span
@@ -651,20 +683,18 @@ const BookFreeTrial = () => {
                             {/* Number of children picker */}
                             <div className="flex justify-center mb-6">
                                 <div className="flex items-center gap-3 bg-[#f4f6f9] rounded-[12px] px-4 py-3">
-                                    <span className="text-[13px] font-semibold text-[#6b7685]">
+                                    <span className="text-[13px] font-semibold text-[#6b7685] whitespace-nowrap">
                                         Number of children:
                                     </span>
-                                    <select
-                                        className="font-inherit text-[14px] font-medium border border-[#e7ebf1] rounded-[10px] px-3.5 py-2 pr-8 bg-white focus:outline-none focus:ring-2 focus:ring-[#3b7df6] appearance-none"
-                                        style={{ backgroundImage: chevronBg, backgroundRepeat: "no-repeat", backgroundPosition: "right 10px center" }}
-                                        value={numStudents}
-                                        onChange={(e) => handleNumStudentsChange(e.target.value)}
-                                    >
-                                        <option value="1">1</option>
-                                        <option value="2">2</option>
-                                        <option value="3">3</option>
-                                        <option value="4">4</option>
-                                    </select>
+                                    <div className="w-[90px]">
+                                        <Select
+                                            styles={selectStyles}
+                                            options={numStudentsOptions}
+                                            value={numStudentsOptions.find((o) => o.value === numStudents) || numStudentsOptions[0]}
+                                            isSearchable={false}
+                                            onChange={(option) => handleNumStudentsChange(option?.value || "1")}
+                                        />
+                                    </div>
                                 </div>
                             </div>
 
@@ -771,28 +801,22 @@ const BookFreeTrial = () => {
                                 {/* Venue dropdown (visible when changing) */}
                                 {isChangingVenue && (
                                     <div className="border border-t-0 border-[#e7ebf1] px-5 py-3.5 bg-[#f4f6f9]">
-                                        <select
-                                            className={nativeSelectClass}
-                                            style={{ backgroundImage: chevronBg, backgroundRepeat: "no-repeat", backgroundPosition: "right 14px center" }}
-                                            value={selectedVenue?.venueId || ""}
-                                            onChange={(e) => {
-                                                const vId = Number(e.target.value);
-                                                const v   = venues?.capacityVenues?.find((x) => x.venueId === vId);
-                                                if (v) {
-                                                    setSelectedVenue(v);
-                                                    setStudents((prev) =>
-                                                        prev.map((s) => ({ ...s, selectedClassId: "", selectedClassData: null }))
-                                                    );
-                                                    setIsChangingVenue(false);
-                                                    clearErr("venue");
-                                                }
+                                        <Select
+                                            styles={selectStyles}
+                                            options={venueSelectOptions}
+                                            value={venueSelectOptions.find((o) => o.value === selectedVenue?.venueId) || null}
+                                            placeholder={venueSelectOptions.length ? "Select a venue…" : "No venues available"}
+                                            isDisabled={venueSelectOptions.length === 0}
+                                            onChange={(option) => {
+                                                if (!option) return;
+                                                setSelectedVenue(option.all);
+                                                setStudents((prev) =>
+                                                    prev.map((s) => ({ ...s, selectedClassId: "", selectedClassData: null }))
+                                                );
+                                                setIsChangingVenue(false);
+                                                clearErr("venue");
                                             }}
-                                        >
-                                            <option value="" disabled>Select a venue…</option>
-                                            {(venues?.capacityVenues || []).map((v) => (
-                                                <option key={v.venueId} value={v.venueId}>{v.venueName}</option>
-                                            ))}
-                                        </select>
+                                        />
                                     </div>
                                 )}
 
@@ -828,30 +852,19 @@ const BookFreeTrial = () => {
 
                                             {/* Class picker */}
                                             <div>
-                                                <label className="block text-[13px] font-semibold mb-1.5">
+                                                <label className="block text-[13px] capitalize font-semibold mb-1.5">
                                                     Select class for {s.studentFirstName || `Child ${idx + 1}`}
                                                 </label>
-                                                <select
-                                                    className={`w-full font-inherit text-[14px] border rounded-[10px] px-3.5 py-[11px] appearance-none focus:outline-none focus:ring-2 ${
-                                                        !selectedVenue
-                                                            ? "border-[#e7ebf1] bg-[#f4f6f9] text-[#9CA3AF] cursor-not-allowed"
-                                                            : "border-[#ffd21f] bg-[#fffcf0] focus:ring-[#ffd21f]"
-                                                    }`}
-                                                    style={{ backgroundImage: chevronBg, backgroundRepeat: "no-repeat", backgroundPosition: "right 14px center" }}
-                                                    disabled={!selectedVenue}
-                                                    value={s.selectedClassId || ""}
-                                                    onChange={(e) => handleStudentChange(sIdx, "selectedClassId", e.target.value)}
-                                                >
-                                                    <option value="" disabled>
-                                                        {selectedVenue ? "Choose a class…" : "Select a venue first"}
-                                                    </option>
-                                                    {allClasses.map((c) => (
-                                                        <option key={c.id} value={c.id}>
-                                                            {c.className} ({c.dayOfWeek}) {c.time}
-                                                            {c.level ? ` – ${c.level}` : ""}
-                                                        </option>
-                                                    ))}
-                                                </select>
+                                                <Select
+                                                    styles={errors[`s${sIdx}_selectedClassId`] ? selectStylesError : selectStyles}
+                                                    options={classSelectOptions}
+                                                    value={classSelectOptions.find((o) => String(o.value) === String(s.selectedClassId)) || null}
+                                                    isDisabled={!selectedVenue || classSelectOptions.length === 0}
+                                                    placeholder={!selectedVenue ? "Select a venue first" : classSelectOptions.length ? "Choose a class…" : "No classes available"}
+                                                    onChange={(option) =>
+                                                        handleStudentChange(sIdx, "selectedClassId", option?.value ?? "")
+                                                    }
+                                                />
                                                 {errors[`s${sIdx}_selectedClassId`] && (
                                                     <p className="text-[12px] text-[#e53e3e] mt-1">
                                                         {errors[`s${sIdx}_selectedClassId`]}
@@ -872,7 +885,7 @@ const BookFreeTrial = () => {
                                 <div className="text-[13px] font-bold uppercase tracking-[0.04em] text-[#6b7685] mb-3">
                                     Select your trial date
                                 </div>
-                                <div className="border border-[#e7ebf1] rounded-[14px] p-4">
+                                <div className="border border-[#e7ebf1] w-[60%] rounded-[14px] p-8">
                                     <CalendarWidget
                                         selectedDate={selectedDate}
                                         onSelectDate={setSelectedDate}
@@ -983,7 +996,7 @@ const BookFreeTrial = () => {
                                                 <div>
                                                     <label className={labelClass}>Gender</label>
                                                     <Select
-                                                        styles={selectStyles}
+                                                        styles={errors[`s${sIdx}_gender`] ? selectStylesError : selectStyles}
                                                         placeholder="Select gender"
                                                         options={genderOptions}
                                                         value={
@@ -1133,7 +1146,7 @@ const BookFreeTrial = () => {
                                             <div>
                                                 <label className={labelClass}>Relation to child</label>
                                                 <Select
-                                                    styles={selectStyles}
+                                                    styles={errors[`p${index}_relationToChild`] ? selectStylesError : selectStyles}
                                                     placeholder="Select relation"
                                                     options={relationOptions}
                                                     value={
@@ -1155,7 +1168,7 @@ const BookFreeTrial = () => {
                                             <div>
                                                 <label className={labelClass}>How did you hear about us?</label>
                                                 <Select
-                                                    styles={selectStyles}
+                                                    styles={errors[`p${index}_howDidYouHear`] ? selectStylesError : selectStyles}
                                                     placeholder="Select how you heard"
                                                     options={hearOptions}
                                                     value={
@@ -1201,7 +1214,7 @@ const BookFreeTrial = () => {
                                                     </div>
                                                 ) : (
                                                     <Select
-                                                        styles={selectStyles}
+                                                        styles={errors[`p${index}_interestReason`] ? selectStylesError : selectStyles}
                                                         placeholder="Select your reason…"
                                                         options={interestReasonOptions}
                                                         value={
@@ -1311,24 +1324,25 @@ const BookFreeTrial = () => {
 
                                         <div>
                                             <label className={labelClass}>Relation to child</label>
-                                            <select
-                                                className={`w-full font-inherit text-[14px] border rounded-[10px] px-3.5 py-[11px] bg-white focus:outline-none focus:ring-2 appearance-none ${
-                                                    errors.e_relation
-                                                        ? "border-[#e53e3e] focus:ring-[#e53e3e]/30 bg-[#fff5f5]"
-                                                        : "border-[#e7ebf1] focus:ring-[#3b7df6]"
-                                                }`}
-                                                style={{ backgroundImage: chevronBg, backgroundRepeat: "no-repeat", backgroundPosition: "right 14px center" }}
-                                                value={emergency.emergencyRelation}
-                                                disabled={emergency.sameAsAbove}
-                                                onChange={(e) =>
-                                                    handleEmergencyChange("emergencyRelation", e.target.value)
+                                            <Select
+                                                styles={errors.e_relation ? selectStylesError : selectStyles}
+                                                placeholder="Select relation"
+                                                options={relationOptions}
+                                                isDisabled={emergency.sameAsAbove}
+                                                value={
+                                                    emergency.emergencyRelation
+                                                        ? {
+                                                            value: emergency.emergencyRelation,
+                                                            label:
+                                                                relationOptions.find((o) => o.value === emergency.emergencyRelation)?.label ||
+                                                                emergency.emergencyRelation,
+                                                        }
+                                                        : null
                                                 }
-                                            >
-                                                <option value="">Select relation</option>
-                                                {relationOptions.map((o) => (
-                                                    <option key={o.value} value={o.value}>{o.label}</option>
-                                                ))}
-                                            </select>
+                                                onChange={(option) =>
+                                                    handleEmergencyChange("emergencyRelation", option?.value || "")
+                                                }
+                                            />
                                             {errors.e_relation && (
                                                 <p className="text-[12px] text-[#e53e3e] mt-1">{errors.e_relation}</p>
                                             )}
@@ -1364,7 +1378,7 @@ const BookFreeTrial = () => {
                                 <Check size={32} className="text-[#21b573]" />
                             </div>
                             <div className="text-[26px] font-bold mb-2 tracking-tight">
-                                Free Trial Booked ! 
+                                Free Trial Booked !
                             </div>
                             <div className="text-[#6b7685] text-[15px] mb-6 max-w-[440px] mx-auto">
                                 We've confirmed {activeNames}'s free trial. We'll be in touch with all the details shortly.

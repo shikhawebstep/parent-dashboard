@@ -163,7 +163,7 @@ const Header = ({ onMenuClick }) => {
             <p className="text-[18px] lg:text-[26px] font-medium text-[#282829] m-0">
               Hi{" "}
               {parentData?.firstName && parentData?.lastName
-                ? `${parentData.firstName} ${parentData.lastName}`
+                ? `${parentData.firstName}`
                 : parentData?.email || "N/A"}
             </p>
             <h1 className="text-[24px] lg:text-[36px] m-0 font-semibold text-gray-900 leading-tight">
@@ -246,8 +246,8 @@ const Header = ({ onMenuClick }) => {
               className="w-[52px] lg:h-[52px] rounded-full object-cover"
             />
             <span className="2xl:text-[18px] text-[14px] hidden lg:block font-semibold text-[#282829]">
-              {parentData?.firstName && parentData?.lastName
-                ? `${parentData.firstName} ${parentData.lastName}`
+              {parentData?.firstName 
+                ? `${parentData.firstName}`
                 : parentData?.email || "N/A"}
             </span>
             <img

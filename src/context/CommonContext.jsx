@@ -1,4 +1,4 @@
-import { createContext, useContext, useCallback, useState, useEffect } from "react";
+import { createContext, useContext, useCallback, useState } from "react";
 import axios from "axios";
 import { showError } from "../../utils/swalHelper";
 
@@ -8,54 +8,75 @@ export const useCommon = () => useContext(CommonContext);
 
 export const CommonProvider = ({ children }) => {
     const [venues, setVenues] = useState(null);
+    const [holidayVenues, setHolidayVenues] = useState(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
+    const fetchVenues = useCallback(async () => {
+        const token = localStorage.getItem("parentToken") || localStorage.getItem("adminToken") || localStorage.getItem("token");
+        const API_URL = import.meta.env.VITE_API_BASE_URL;
 
- const fetchVenues = useCallback(async () => {
-    const token = localStorage.getItem("parentToken") || localStorage.getItem("adminToken") || localStorage.getItem("token");
-    const API_URL = import.meta.env.VITE_API_BASE_URL;
+        setLoading(true);
+        setError(null);
 
-    setLoading(true);
-    setError(null);
+        try {
+            const headers = {};
+            if (token) headers.Authorization = `Bearer ${token}`;
 
-    try {
-        const headers = {};
-        if (token) {
-            headers.Authorization = `Bearer ${token}`;
+            const { data } = await axios.get(`${API_URL}api/parent/venues`, { headers });
+            setVenues(data?.data ?? []);
+        } catch (err) {
+            console.error("Error fetching venues:", err);
+            const errorMessage =
+                err?.response?.data?.message ||
+                err?.response?.data?.error ||
+                err?.message ||
+                "Something went wrong while fetching venues.";
+            setError(errorMessage);
+            showError("Error", errorMessage);
+        } finally {
+            setLoading(false);
         }
-        const { data } = await axios.get(
-            `${API_URL}api/parent/venues`,
-            { headers }
-        );
+    }, []);
 
-        setVenues(data?.data ?? []);
-    } catch (err) {
-        console.error("Error fetching venues:", err);
+    const fetchHolidayVenues = useCallback(async () => {
+        const token = localStorage.getItem("parentToken") || localStorage.getItem("adminToken") || localStorage.getItem("token");
+        const API_URL = import.meta.env.VITE_API_BASE_URL;
 
-        const errorMessage =
-            err?.response?.data?.message ||
-            err?.response?.data?.error ||
-            err?.message ||
-            "Something went wrong while fetching venues.";
+        setLoading(true);
+        setError(null);
 
-        setError(errorMessage);
-        showError("Error", errorMessage);
-    } finally {
-        setLoading(false);
-    }
-}, [showError]);
+        try {
+            const headers = {};
+            if (token) headers.Authorization = `Bearer ${token}`;
 
-
+            const { data } = await axios.get(`${API_URL}api/parent/holiday/find-a-camp`, { headers });
+            setHolidayVenues(data?.data ?? []);
+        } catch (err) {
+            console.error("Error fetching holiday venues:", err);
+            const errorMessage =
+                err?.response?.data?.message ||
+                err?.response?.data?.error ||
+                err?.message ||
+                "Something went wrong while fetching holiday venues.";
+            setError(errorMessage);
+            showError("Error", errorMessage);
+        } finally {
+            setLoading(false);
+        }
+    }, []);
 
     return (
         <CommonContext.Provider
             value={{
                 venues,
+                holidayVenues,
                 loading,
                 error,
                 fetchVenues,
+                fetchHolidayVenues,
                 setVenues,
+                setHolidayVenues,
             }}
         >
             {children}
