@@ -16,6 +16,7 @@ import {
     User,
     PartyPopper,
     Loader2,
+    Zap,
 } from "lucide-react";
 import { showErrorToast, showError, showSuccess } from "../../../utils/swalHelper";
 import { motion, AnimatePresence } from "framer-motion";
@@ -244,6 +245,18 @@ const BookMembership = () => {
     const location = useLocation();
     const booking = location?.state?.booking;
     const navigate = useNavigate();
+
+
+
+
+    // ── Reserved booking via URL (?bookingId=&venueId=&createdAt=) ──
+    const searchParams = new URLSearchParams(location.search);
+    const urlBookingId = searchParams.get("bookingId");
+    const urlVenueId = searchParams.get("venueId");
+    const urlCreatedAt = searchParams.get("createdAt");
+    const RESERVATION_DURATION_MS = 24 * 60 * 60 * 1000; // 24 hr
+    const [reservationTimeLeft, setReservationTimeLeft] = useState(null);
+    const [reservationExpired, setReservationExpired] = useState(false);
 
     // form
     const [students, setStudents] = useState([INIT_STUDENT()]);
@@ -480,6 +493,84 @@ const BookMembership = () => {
     useEffect(() => {
         setNumberOfStudents(activeStudents.length || 1);
     }, [selectedStudentIds, activeStudents.length]);
+
+
+    // ── IST conversion helpers ──────────────────────────────
+    const IST_OFFSET_MS = 5.5 * 60 * 60 * 1000; // UTC+5:30
+
+    const toIST = (date) => new Date(date.getTime() + IST_OFFSET_MS);
+
+    const getNowIST = () => toIST(new Date());
+
+    const formatISTDisplay = (date) => {
+        const ist = toIST(date);
+        return ist.toLocaleString("en-IN", {
+            day: "2-digit",
+            month: "short",
+            year: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+            second: "2-digit",
+            hour12: true,
+            timeZone: "UTC", // since we've already manually shifted to IST
+        });
+    };
+    useEffect(() => {
+        if (!urlCreatedAt) return;
+        const createdTimeUTC = new Date(urlCreatedAt);
+        if (Number.isNaN(createdTimeUTC.getTime())) return;
+
+        // Convert createdAt to IST
+        const createdIST = toIST(createdTimeUTC);
+        const expiryIST = new Date(createdIST.getTime() + RESERVATION_DURATION_MS);
+
+        const tick = () => {
+            const nowIST = getNowIST();
+            const diff = expiryIST.getTime() - nowIST.getTime();
+            if (diff <= 0) {
+                setReservationTimeLeft(0);
+                setReservationExpired(true);
+                return;
+            }
+            setReservationTimeLeft(diff);
+        };
+
+        tick();
+        const interval = setInterval(tick, 1000);
+        return () => clearInterval(interval);
+    }, [urlCreatedAt]);
+
+    useEffect(() => {
+        if (!urlVenueId || selectedVenue) return;
+        const match = (venues?.capacityVenues || []).find(
+            (v) => String(v.venueId) === String(urlVenueId)
+        );
+        if (match) {
+            setSelectedVenue({ value: match.venueId, label: match.venueName || "Unnamed venue", all: match });
+        }
+    }, [venues, urlVenueId]);
+
+    useEffect(() => {
+        if (urlBookingId && showStarterPack && !isApplied && !reservationExpired) {
+            setAppliedDiscount({
+                status: true,
+                message: "50% off applied for your reserved booking!",
+                data: { type: "percentage", value: 50 },
+            });
+            setIsApplied(true);
+            setIsChecked(true);
+            setDiscountCode("RESERVED50");
+        }
+    }, [urlBookingId, showStarterPack, reservationExpired]);
+
+    const formatTimeLeft = (ms) => {
+        if (ms === null) return "--:--:--";
+        const totalSeconds = Math.floor(ms / 1000);
+        const h = Math.floor(totalSeconds / 3600);
+        const m = Math.floor((totalSeconds % 3600) / 60);
+        const s = totalSeconds % 60;
+        return { h, m, s };
+    };
 
     // ── Pricing (ported from file 2) ──────────────────────
     const calculateAmount = (startDate) => {
@@ -815,6 +906,40 @@ const BookMembership = () => {
                 </span>
                 Booking
             </div>
+
+            {urlCreatedAt && !reservationExpired && (() => {
+                const t = formatTimeLeft(reservationTimeLeft);
+                const pad = (n) => String(n).padStart(2, "0");
+                return (
+                    <div className="max-w-[1040px] mx-auto md:px-6 px-2 mt-4">
+                        <div className="bg-[#fff4dd] border border-[#ffd98a] text-[#7a5210] rounded-[14px] px-5 py-3 flex items-center justify-center gap-3 flex-wrap text-[14px]">
+                            <Zap size={16} className="text-[#d98c00] shrink-0" fill="currentColor" />
+                            <span>
+                                Book within 24 hours for <strong>50% off</strong> the full Samba starter pack
+                            </span>
+                            <div className="flex items-center gap-1.5 ml-1">
+                                {[["h", t.h], ["m", t.m], ["s", t.s]].map(([unit, val], i) => (
+                                    <React.Fragment key={unit}>
+                                        <span className="bg-[#3b2a14] text-white font-bold text-[13px] rounded-[6px] px-2.5 py-1.5 tabular-nums">
+                                            {pad(val)}
+                                        </span>
+                                        {i < 2 && <span className="text-[#7a5210] font-bold">:</span>}
+                                    </React.Fragment>
+                                ))}
+                                <span className="text-[10px] text-[#9c7a3a] font-semibold ml-1 uppercase tracking-wide">Left</span>
+                            </div>
+                        </div>
+                    </div>
+                );
+            })()}
+            {urlCreatedAt && reservationExpired && (
+                <div className="max-w-[1040px] mx-auto md:px-6 px-2 mt-4">
+                    <div className="bg-[#fff5f5] border border-[#feb2b2] text-[#c53030] rounded-[14px] px-5 py-3.5 flex items-center gap-2.5 font-semibold text-[14px]">
+                        <AlertTriangle size={18} />
+                        Your reservation has expired — the 50% discount is no longer available, but you can still continue booking.
+                    </div>
+                </div>
+            )}
 
             <div className="max-w-[1040px] mx-auto md:px-6 pt-5 px-2">
                 {/* Steps */}
