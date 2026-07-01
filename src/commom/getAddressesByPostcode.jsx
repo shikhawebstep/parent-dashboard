@@ -1,44 +1,52 @@
 export const getAddressesByPostcode = async (postcode) => {
-    try {
-        // Nominatim API - search by postcode
-        const response = await fetch(
-            `https://nominatim.openstreetmap.org/search?postalcode=${encodeURIComponent(postcode)}&format=json&limit=10&countrycodes=gb`,
-            {
-                headers: {
-                    'Accept': 'application/json',
-                }
-            }
-        );
+    const API_KEY = import.meta.env.VITE_IDEAL_POSTCODES_API_KEY;
 
+    try {
+        const response = await fetch(
+            `https://api.ideal-postcodes.co.uk/v1/postcodes/${encodeURIComponent(postcode)}?api_key=${API_KEY}`
+        );
         const data = await response.json();
 
-        if (!data || data.length === 0) {
-            return { 
-                success: false, 
-                addresses: [], 
-                message: "Postcode not found. Try again." 
+        if (response.status === 404 || !data?.result?.length) {
+            return {
+                success: false,
+                addresses: [],
+                message: data?.result?.length === 0
+                    ? "No addresses found for this postcode."
+                    : "Postcode not found.",
             };
         }
 
-        // Format addresses nicely
-        const addresses = data.map(result => ({
-            address: result.address || `${result.name}, ${result.display_name}`,
-            fullAddress: result.display_name,
-            lat: parseFloat(result.lat),
-            lng: parseFloat(result.lon),
-        }));
+        if (data.code !== 2000) {
+            return {
+                success: false,
+                addresses: [],
+                message: data?.message || "Error fetching postcode details.",
+            };
+        }
 
-        return { 
-            success: true, 
-            addresses, 
-            message: "" 
-        };
+        const addresses = data.result.map((item) => {
+            const formatted = [item.line_1, item.line_2, item.line_3, item.post_town]
+                .filter(Boolean)
+                .join(", ");
+            return {
+                address: formatted,            // ← what addressOptions filters/maps on
+                line1: item.line_1,
+                line2: item.line_2,
+                line3: item.line_3,
+                city: item.post_town,
+                postcode: item.postcode,
+                udprn: item.udprn,             // unique premise reference, handy to store
+            };
+        });
+
+        return { success: true, addresses, message: "" };
     } catch (error) {
         console.error("Address lookup error:", error);
-        return { 
-            success: false, 
-            addresses: [], 
-            message: "Error fetching addresses. Please try again." 
+        return {
+            success: false,
+            addresses: [],
+            message: "Error fetching postcode details.",
         };
     }
 };

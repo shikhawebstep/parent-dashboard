@@ -223,6 +223,7 @@ const sizeOptions = [
     { value: "Medium", label: "Medium" },
     { value: "Large", label: "Large" },
     { value: "XL", label: "Extra Large" },
+    { value: "XXL", label: "XXL" },
 ];
 
 const countryOptions = [
@@ -240,7 +241,6 @@ const BookMembership = () => {
     const [addressList, setAddressList] = useState([]);
     const [addressLoading, setAddressLoading] = useState(false);
     const [addressError, setAddressError] = useState("");
-
     const { fetchVenues, venues, loading: commonLoading } = useCommon();
     const { profile, fetchProfileData, loading: profileLoading } = useProfile();
     const location = useLocation();
@@ -261,6 +261,8 @@ const BookMembership = () => {
         : null;
 
     const booking = location?.state?.booking || matchedBooking;
+    const bookingSource = location?.state?.bookingsource || null;
+    console.log("booking", booking, location?.state);
 
     const urlVenueId = searchParams.get("venueId");
     const urlBooking = searchParams.get("bookingId");
@@ -286,6 +288,7 @@ const BookMembership = () => {
     const [postcode, setPostcode] = useState("");
     const [showAddrSelect, setShowAddrSelect] = useState(false);
     const [selectedAddress, setSelectedAddress] = useState("");
+    const [selectedAddressData, setSelectedAddressData] = useState(null); // ← FIX 1: added missing state
     const [isChangingVenue, setIsChangingVenue] = useState(false);
     const [studentSizes, setStudentSizes] = useState({});
     // info
@@ -383,6 +386,8 @@ const BookMembership = () => {
         return `${d}/${m}/${y}`;
     };
 
+    console.log("student,parents,emergency", students, parents, emergency);
+
     // ── react-select option builders (null-safe) ──────────
     const venueOptions = (venues?.capacityVenues || [])
         .filter((v) => v && v.venueId !== undefined && v.venueId !== null)
@@ -429,9 +434,10 @@ const BookMembership = () => {
         return `Pro-rata (${monthShort}: ${sessions} remaining session${sessions !== 1 ? "s" : ""})`;
     };
 
+    // ← FIX 2: keep the full address object (`all: a`) so line1/city/postcode survive selection
     const addressOptions = (addressList || [])
         .filter((a) => a && a.address)
-        .map((a) => ({ value: a.address, label: a.address }));
+        .map((a) => ({ value: a.address, label: a.address, all: a }));
 
     // ── Effects ───────────────────────────────────────────
     useEffect(() => {
@@ -497,6 +503,7 @@ const BookMembership = () => {
         const normalizedParents = rawParents.map((p) => ({
             id: p?.id ?? Date.now() + Math.random(),
             parentFirstName: p?.parentFirstName || "",
+
             parentLastName: p?.parentLastName || "",
             parentEmail: p?.parentEmail || "",
             parentPhoneNumber: p?.parentPhoneNumber || p?.phoneNumber || "",
@@ -510,6 +517,7 @@ const BookMembership = () => {
 
         const normalizedStudents = rawStudents.map((s, index) => ({
             _tmpId: s?.id ?? index,
+            id: s?.id ?? null,
             studentFirstName: s?.studentFirstName || "",
             studentLastName: s?.studentLastName || "",
             dateOfBirth: normalizeDOB(s?.dateOfBirth || s?.dob),
@@ -705,6 +713,7 @@ const BookMembership = () => {
                     sched?.classScheduleId ?? sched?.id ?? sched?.classId ?? null;
                 return {
                     ...student,
+                    id: match?.id ?? student.id, // ← keep real student id from booking
                     selectedClassId: classId ? String(classId) : student.selectedClassId,
                     selectedClassData: sched ?? student.selectedClassData,
                 };
@@ -727,7 +736,7 @@ const BookMembership = () => {
     }, [booking, venues]);
 
     useEffect(() => {
-        if (urlBookingId && showStarterPack && !isApplied && !reservationExpired) {
+        if (!bookingSource && showStarterPack && !isApplied && !reservationExpired) {
             setAppliedDiscount({
                 status: true,
                 message: "50% off applied for your reserved booking!",
@@ -910,11 +919,18 @@ const BookMembership = () => {
             }
             const parentId = parentData?.id;
             const holderParts = (payment.account_holder_name || "").trim().split(" ").filter(Boolean);
+
+            // Use the structured address picked via postcode lookup, falling back to raw inputs
+            const deliveryLine1 = selectedAddressData?.line1 || selectedAddress || payment.line1 || "NA";
+            const deliveryCity = selectedAddressData?.city || payment.city || "NA";
+            const deliveryPostcode = selectedAddressData?.postcode || postcode || payment.postalCode || "NA";
+
             const payload = {
                 venueId: selectedVenue?.value,
                 startDate: selectedDate,
                 totalStudents: activeStudents.length,
                 students: activeStudents.map((student) => ({
+                    ...(urlBookingId && student?.id ? { id: student.id } : {}), // only existing
                     studentFirstName: student?.studentFirstName || "",
                     studentLastName: student?.studentLastName || "",
                     dateOfBirth: toDateOnly(student?.dateOfBirth),
@@ -922,10 +938,10 @@ const BookMembership = () => {
                     gender: student?.gender || "",
                     medicalInformation: student?.medicalInformation || "NA",
                     classScheduleId: Number(student?.selectedClassId) || 1,
-                    initialClassId: student?.initialClassId || null,
-                    starterPackSize: studentSizes[student._tmpId] || null,
+                    size: studentSizes[student._tmpId] || null,
                 })),
                 parents: parents.map((parent) => ({
+                    ...(urlBookingId && parent?.id ? { id: parent.id } : {}), // only existing
                     parentFirstName: parent?.parentFirstName || "NA",
                     parentLastName: parent?.parentLastName || "NA",
                     parentEmail: parent?.parentEmail || "na@na.com",
@@ -934,19 +950,22 @@ const BookMembership = () => {
                     interestReasonOther: parent?.interestReasonOther || "NA",
                     relationToChild: parent?.relationToChild || "Parent",
                     howDidYouHear: parent?.howDidYouHear || "Google",
-                    isCustomReason: parent?.isCustomReason || false,
-                    starterPackSize: parent?.starterPackSize || null,
                 })),
                 starterPack: showStarterPack ? starterPackPrice : 0,
+                starterPackDeliveryAddress: showStarterPack
+                    ? { line1: deliveryLine1, city: deliveryCity, postcode: deliveryPostcode }
+                    : null,
                 discountId: isApplied && appliedDiscount?.data?.id ? appliedDiscount.data.id : null,
-                size: showStarterPack ? (parents?.[0]?.starterPackSize || null) : null,
                 emergency: {
-                    sameAsAbove: true,
-                    emergencyFirstName: "NA",
-                    emergencyLastName: "NA",
-                    emergencyPhoneNumber: "00000000000",
-                    emergencyRelation: "Parent",
+                    ...(urlBookingId && emergency?.id ? { id: emergency.id } : {}), // only existing
+                    sameAsAbove: emergency?.sameAsAbove || false,
+                    emergencyFirstName: emergency?.emergencyFirstName || "NA",
+                    emergencyLastName: emergency?.emergencyLastName || "NA",
+                    emergencyPhoneNumber: emergency?.emergencyPhoneNumber || "00000000000",
+                    emergencyRelation: emergency?.emergencyRelation || "Parent",
                 },
+
+
                 paymentPlanId: Number(membershipPlan?.value) || 1,
                 payment: {
                     paymentType: "bank",
@@ -958,21 +977,24 @@ const BookMembership = () => {
                     authorise: payment.authorise || false,
                     price: Number(pricingBreakdown.nextMonthPayment) || 0,
                     proRataAmount: Number(pricingBreakdown.finalProRataCost) || 0,
-                    line1: selectedAddress || payment.line1 || "NA",
-                    city: payment.city || "NA",
-                    postCode: postcode || payment.postalCode || "NA",
+                    line1: deliveryLine1,
+                    city: deliveryCity,
+                    postcode: deliveryPostcode,
                     nameOnCard: payment.nameOnCard || "",
                     cardNumber: (payment.cardNumber || "").replace(/\s/g, ""),
                     expiryDate: payment.expiryDate || "",
                     cvc: payment.cvc || "",
                     country: payment.country || "United Kingdom",
-                    zipCode: payment.zipCode || "",
+                    zipCode: payment.zipCode || deliveryPostcode,
                 },
             };
 
-            const APIURL = `${API_BASE_URL}api/parent/booking/membership/create/${parentId}`;
+            const APIURL = urlBookingId
+                ? `${API_BASE_URL}api/parent/booking/start-membership/${urlBookingId}`
+                : `${API_BASE_URL}api/parent/booking/membership/create/${parentId}`;
+
             const response = await fetch(APIURL, {
-                method: "POST",
+                method: urlBookingId ? "PUT" : "POST",
                 headers: { "Content-Type": "application/json", Authorization: `Bearer ${token || ""}` },
                 body: JSON.stringify(payload),
             });
@@ -1076,7 +1098,7 @@ const BookMembership = () => {
         <div className="min-h-screen booking-page bg-[#f4f6f9] text-[#1f2733] font-['Poppins',sans-serif] pb-28 sm:pb-16 pt-5">
 
             {/* Band */}
-            <div className="bg-[#1e3a6e] text-white mx-6 rounded-[14px] px-5 py-4 flex items-center gap-3 font-bold text-[14px]">
+            <div className="bg-[#1e3a6e] text-white mx-6 rounded-[14px] px-5 py-4 flex items-center gap-3 font-bold text-[18px]">
                 <span
                     className="cursor-pointer opacity-90 flex items-center"
                     onClick={() => {
@@ -1117,7 +1139,7 @@ const BookMembership = () => {
                 </div>
 
 
-                {(urlCreatedAt || urlBookingId) && !reservationExpired && (() => {
+                {(urlCreatedAt || !bookingSource) && !reservationExpired && (() => {
                     const t = formatTimeLeft(reservationTimeLeft);
                     const pad = (n) => String(n).padStart(2, "0");
                     return (
@@ -1142,7 +1164,7 @@ const BookMembership = () => {
                         </div>
                     );
                 })()}
-                {(urlCreatedAt || booking?.createdAt) && reservationExpired && (
+                {(urlCreatedAt || !bookingSource) && reservationExpired && (
                     <div className=" mx-auto md:px-6 px-2 mt-4">
                         <div className="bg-[#fff5f5] border border-[#feb2b2] text-[#c53030] rounded-[14px] px-5 py-3.5 flex items-center gap-2.5 font-semibold text-[14px]">
                             <AlertTriangle size={18} />
@@ -1263,12 +1285,12 @@ const BookMembership = () => {
                                 {activeStudents.map((s, idx) => (
                                     <div key={s._tmpId ?? idx} className={`border border-t-0 border-[#e7ebf1] p-3.5 px-5 flex flex-col gap-3.5 ${idx === activeStudents.length - 1 && !showStarterPack ? "rounded-b-[14px]" : ""}`}>
                                         <div className="flex items-center justify-between gap-3.5 flex-wrap">
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-[38px] h-[38px] rounded-full bg-[#eaf1fe] flex items-center justify-center font-bold text-[#3b7df6]">{(s.studentFirstName || "?")[0]}</div>
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-[35px] h-[35px] rounded-full bg-[#eaf1fe] flex items-center justify-center font-bold text-[#3b7df6]">{(s.studentFirstName || "?")[0]}</div>
                                                 <div>
                                                     <div className="font-semibold text-[14px]">{s.studentFirstName} {s.studentLastName}</div>
                                                     {s.selectedClassData && (
-                                                        <div className="text-[14px] text-[#6b7685]">
+                                                        <div className="text-[11px] text-[#6b7685]">
                                                             Class: {`${s.selectedClassData?.className || ""}${s.selectedClassData?.level ? ` (${s.selectedClassData.level})` : ""}`}
                                                         </div>
                                                     )}
@@ -1345,7 +1367,7 @@ const BookMembership = () => {
                                         return (
                                             <div className="border border-[#e7ebf1] rounded-[14px] p-4 mb-4 relative overflow-hidden">
 
-                                               
+
                                                 {/* Discount code */}
                                                 <div>
                                                     <label className="block text-[14px] font-semibold mb-1.5">Discount code (optional)</label>
@@ -1379,18 +1401,22 @@ const BookMembership = () => {
                                         );
                                     })()}
                                     {/* Kit size per student */}
-                                    <div className="text-[12px] font-bold uppercase tracking-[0.04em] text-[#6b7685] mb-3 mt-5">
-                                        Student & kit size{" "}
-                                        <button
-                                            type="button"
-                                            onClick={() => setIsSizeChartOpen(true)}
-                                            className="normal-case text-[#3b7df6] font-semibold text-[14px] hover:underline ml-2"
-                                        >
-                                            Size chart →
-                                        </button>
-                                    </div>
+
+                                    {showStarterPack && (
+                                        <div className="text-[12px] font-bold uppercase tracking-[0.04em] text-[#6b7685] mb-3 mt-5">
+                                            Student & kit size{" "}
+                                            <button
+                                                type="button"
+                                                onClick={() => setIsSizeChartOpen(true)}
+                                                className="normal-case text-[#3b7df6] font-semibold text-[14px] hover:underline ml-2"
+                                            >
+                                                Size chart →
+                                            </button>
+                                        </div>
+                                    )
+                                    }
                                     {activeStudents.map((s, idx) => {
-                                        const currentSize = studentSizes[s._tmpId] ?? parents?.[0]?.starterPackSize ?? "";
+                                        const currentSize = studentSizes[s._tmpId] ?? "";
                                         return (
                                             <div key={s._tmpId ?? idx} className={`border border-[#e7ebf1] rounded-[10px] p-3 mb-3 flex items-center justify-between gap-4 flex-wrap`}>
                                                 <div>
@@ -1420,11 +1446,6 @@ const BookMembership = () => {
                                                             setStudents((prev) => prev.map((st) =>
                                                                 st._tmpId === s._tmpId ? { ...st, starterPackSize: size } : st
                                                             ));
-                                                            setParents((prev) =>
-                                                                prev.length
-                                                                    ? prev.map((p, i) => (i === 0 ? { ...p, starterPackSize: size } : p))
-                                                                    : prev
-                                                            );
                                                         }}
                                                     />
                                                 </div>
@@ -1433,83 +1454,89 @@ const BookMembership = () => {
                                     })}
 
                                     {/* Address lookup */}
-                                    <div className="border border-[#e7ebf1] rounded-[14px] p-4 mt-1 mb-5">
-                                        <div className="font-bold text-[14px] mb-3 flex flex-wrap items-center gap-2">
-                                            <Truck size={16} /> Delivery address <span className="font-medium text-[#6b7685] text-[14px]">— where should we send the starter pack?</span>
-                                        </div>
-                                        <div className="flex flex-col sm:flex-row items-stretch sm:items-end gap-3">
-                                            <div className="flex-1">
-                                                <label className="block text-[14px] font-semibold mb-1.5">Postcode</label>
-                                                <input
-                                                    className="w-full font-inherit text-[14px] border border-[#e7ebf1] rounded-[10px] px-3.5 py-3 focus:outline-none focus:ring-2 focus:ring-[#3b7df6]"
-                                                    value={postcode}
-                                                    onChange={(e) => {
-                                                        setPostcode(e.target.value);
+                                    {showStarterPack && (
+                                        <div className="border border-[#e7ebf1] rounded-[14px] p-4 mt-1 mb-5">
+                                            <div className="font-bold text-[14px] mb-3 flex flex-wrap items-center gap-2">
+                                                <Truck size={16} /> Delivery address <span className="font-medium text-[#6b7685] text-[14px]">— where should we send the starter pack?</span>
+                                            </div>
+                                            <div className="flex flex-col sm:flex-row items-stretch sm:items-end gap-3">
+                                                <div className="flex-1">
+                                                    <label className="block text-[14px] font-semibold mb-1.5">Postcode</label>
+                                                    <input
+                                                        className="w-full font-inherit text-[14px] border border-[#e7ebf1] rounded-[10px] px-3.5 py-3 focus:outline-none focus:ring-2 focus:ring-[#3b7df6]"
+                                                        value={postcode}
+                                                        onChange={(e) => {
+                                                            setPostcode(e.target.value);
+                                                            setAddressError("");
+                                                            setAddressList([]);
+                                                            setSelectedAddress("");
+                                                            setSelectedAddressData(null);
+                                                        }}
+                                                        placeholder="e.g. OX25 4JT"
+                                                    />
+                                                </div>
+                                                <button
+                                                    className="bg-[#3b7df6] text-white rounded-[12px] px-5 py-[11px] font-semibold text-[14px] whitespace-nowrap border border-[#3b7df6] disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto flex items-center justify-center"
+                                                    disabled={!postcode || addressLoading}
+                                                    onClick={async () => {
+                                                        setAddressLoading(true);
                                                         setAddressError("");
-                                                        setAddressList([]);
-                                                        setSelectedAddress("");
-                                                    }}
-                                                    placeholder="e.g. OX25 4JT"
-                                                />
-                                            </div>
-                                            <button
-                                                className="bg-[#3b7df6] text-white rounded-[12px] px-5 py-[11px] font-semibold text-[14px] whitespace-nowrap border border-[#3b7df6] disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto flex items-center justify-center"
-                                                disabled={!postcode || addressLoading}
-                                                onClick={async () => {
-                                                    setAddressLoading(true);
-                                                    setAddressError("");
-                                                    try {
-                                                        const result = await getAddressesByPostcode(postcode);
-                                                        if (result?.success) {
-                                                            setAddressList(result.addresses || []);
-                                                            setShowAddrSelect(true);
-                                                        } else {
-                                                            setAddressError(result?.message || "Could not find addresses for this postcode.");
+                                                        try {
+                                                            const result = await getAddressesByPostcode(postcode);
+                                                            if (result?.success) {
+                                                                setAddressList(result.addresses || []);
+                                                                setShowAddrSelect(true);
+                                                            } else {
+                                                                setAddressError(result?.message || "Could not find addresses for this postcode.");
+                                                                setShowAddrSelect(false);
+                                                            }
+                                                        } catch (err) {
+                                                            setAddressError(err?.message || "Could not find addresses for this postcode.");
                                                             setShowAddrSelect(false);
+                                                        } finally {
+                                                            setAddressLoading(false);
                                                         }
-                                                    } catch (err) {
-                                                        setAddressError(err?.message || "Could not find addresses for this postcode.");
-                                                        setShowAddrSelect(false);
-                                                    } finally {
-                                                        setAddressLoading(false);
-                                                    }
-                                                }}
-                                            >
-                                                {addressLoading ? "Searching..." : "Find address"}
-                                            </button>
-                                        </div>
-                                        {addressError && (
-                                            <div className="mt-3 text-[14px] text-[#e53e3e] bg-[#fff5f5] border border-[#feb2b2] rounded-lg px-3.5 py-2.5 flex items-start gap-2">
-                                                <AlertTriangle size={16} className="shrink-0 mt-0.5" />
-                                                <span>{addressError}</span>
+                                                    }}
+                                                >
+                                                    {addressLoading ? "Searching..." : "Find address"}
+                                                </button>
                                             </div>
-                                        )}
-                                        {showAddrSelect && addressOptions.length > 0 && (
-                                            <div className="mt-3">
-                                                <label className="block text-[14px] font-semibold mb-1.5">Select your address</label>
-                                                <Select
-                                                    styles={rsStyles(false)}
-                                                    options={addressOptions}
-                                                    value={addressOptions.find((o) => o.value === selectedAddress) || null}
-                                                    placeholder="Select from the list"
-                                                    onChange={(opt) => setSelectedAddress(opt?.value || "")}
-                                                />
-                                                {selectedAddress && (
-                                                    <div className="mt-3 text-[10.5px] text-[#0e7a4d] font-semibold bg-[#e7f8f0] rounded-lg px-3.5 py-2.5 flex items-center gap-2">
-                                                        <Check size={14} />
-                                                        Starter pack will ship here.
-                                                        <span className="text-[#3b7df6] cursor-pointer underline ml-1.5" onClick={() => setSelectedAddress("")}>Change</span>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        )}
-                                        {showAddrSelect && addressOptions.length === 0 && !addressLoading && (
-                                            <div className="mt-3 text-[14px] text-[#8a6d00] bg-[#fffcf0] border border-[#ffd21f] rounded-lg px-3.5 py-2.5 flex items-center gap-2">
-                                                <MapPin size={16} />
-                                                No addresses found for this postcode. Try a different one.
-                                            </div>
-                                        )}
-                                    </div>
+                                            {addressError && (
+                                                <div className="mt-3 text-[14px] text-[#e53e3e] bg-[#fff5f5] border border-[#feb2b2] rounded-lg px-3.5 py-2.5 flex items-start gap-2">
+                                                    <AlertTriangle size={16} className="shrink-0 mt-0.5" />
+                                                    <span>{addressError}</span>
+                                                </div>
+                                            )}
+                                            {showAddrSelect && addressOptions.length > 0 && (
+                                                <div className="mt-3">
+                                                    <label className="block text-[14px] font-semibold mb-1.5">Select your address</label>
+                                                    <Select
+                                                        styles={rsStyles(false)}
+                                                        options={addressOptions}
+                                                        value={addressOptions.find((o) => o.value === selectedAddress) || null}
+                                                        placeholder="Select from the list"
+                                                        onChange={(opt) => {
+                                                            setSelectedAddress(opt?.value || "");
+                                                            setSelectedAddressData(opt?.all || null);
+                                                        }}
+                                                    />
+                                                    {selectedAddress && (
+                                                        <div className="mt-3 text-[10.5px] text-[#0e7a4d] font-semibold bg-[#e7f8f0] rounded-lg px-3.5 py-2.5 flex items-center gap-2">
+                                                            <Check size={14} />
+                                                            Starter pack will ship here.
+                                                            <span className="text-[#3b7df6] cursor-pointer underline ml-1.5" onClick={() => { setSelectedAddress(""); setSelectedAddressData(null); }}>Change</span>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
+                                            {showAddrSelect && addressOptions.length === 0 && !addressLoading && (
+                                                <div className="mt-3 text-[14px] text-[#8a6d00] bg-[#fffcf0] border border-[#ffd21f] rounded-lg px-3.5 py-2.5 flex items-center gap-2">
+                                                    <MapPin size={16} />
+                                                    No addresses found for this postcode. Try a different one.
+                                                </div>
+                                            )}
+                                        </div>)
+                                    }
                                 </>
                             )}
 
@@ -1678,7 +1705,14 @@ const BookMembership = () => {
                             <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-[#e7ebf1] p-4 z-40 flex gap-3 w-full sm:relative sm:bottom-auto sm:left-auto sm:right-auto sm:bg-transparent sm:border-t-0 sm:p-0 sm:z-auto justify-center sm:mt-7 sm:w-auto">
                                 <button onClick={() => (isMulti ? setFlowStep("A") : navigate(-1))} className="sm:w-auto font-semibold text-[14px] rounded-[12px] md:px-8 py-3.5 border border-[#e7ebf1] text-[#1f2733] bg-white px-4">Cancel</button>
                                 <button
-                                    disabled={!membershipPlan || !selectedDate || (showStarterPack && !selectedAddress) || (showStarterPack && !parents?.[0]?.starterPackSize) || activeStudents.some((s) => !s.selectedClassData) || !!overCapacityInfo}
+                                    disabled={
+                                        !membershipPlan ||
+                                        !selectedDate ||
+                                        (showStarterPack && !selectedAddress) ||
+                                        (showStarterPack && activeStudents.some((s) => !studentSizes[s._tmpId])) ||
+                                        activeStudents.some((s) => !s.selectedClassData) ||
+                                        !!overCapacityInfo
+                                    }
                                     onClick={() => setFlowStep("C")}
                                     className="sm:w-auto font-semibold text-[14px] rounded-[12px] md:px-8 py-3.5 border border-[#3b7df6] text-white bg-[#3b7df6] disabled:opacity-50 hover:bg-[#2f6ae0] px-4">
                                     Continue to payment
@@ -1909,7 +1943,7 @@ const BookMembership = () => {
                                 <div className="p-4">
                                     {activeStudents.map((s, i) => (
                                         <div key={s._tmpId ?? i} className="flex items-center gap-3.5 py-2.5 font-semibold text-[14px]">
-                                            <User size={16} className="text-[#3b7df6]" /> {s.studentFirstName} {s.studentLastName} — {s.selectedClassData?.className || " (Beginner)"} {showStarterPack ? `· kit ${parents?.[0]?.starterPackSize || ""}` : ""}
+                                            <User size={16} className="text-[#3b7df6]" /> {s.studentFirstName} {s.studentLastName} — {s.selectedClassData?.className || " (Beginner)"} {showStarterPack ? `· kit ${studentSizes[s._tmpId] || ""}` : ""}
                                         </div>
                                     ))}
                                     <div className="flex items-center gap-3.5 py-2.5 font-semibold text-[14px]">

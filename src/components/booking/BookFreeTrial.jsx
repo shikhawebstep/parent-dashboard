@@ -32,32 +32,32 @@ import Loader from "../Loader";
 
 // ── Dropdown options ──────────────────────────────────────────────────────────
 const genderOptions = [
-    { value: "male",   label: "Male"   },
+    { value: "male", label: "Male" },
     { value: "female", label: "Female" },
 ];
 
 const relationOptions = [
-    { value: "Mother",   label: "Mother"   },
-    { value: "Father",   label: "Father"   },
+    { value: "Mother", label: "Mother" },
+    { value: "Father", label: "Father" },
     { value: "Guardian", label: "Guardian" },
 ];
 
 const interestReasonOptions = [
-    { value: "To build my child's confidence",                      label: "To build my child's confidence"                      },
-    { value: "To improve their technical football skills",          label: "To improve their technical football skills"          },
-    { value: "Because my child loves football",                     label: "Because my child loves football"                     },
+    { value: "To build my child's confidence", label: "To build my child's confidence" },
+    { value: "To improve their technical football skills", label: "To improve their technical football skills" },
+    { value: "Because my child loves football", label: "Because my child loves football" },
     { value: "To help my child make friends and build social skills", label: "To help my child make friends and build social skills" },
-    { value: "To keep my child active and healthy",                 label: "To keep my child active and healthy"                 },
-    { value: "High-quality coaching in a fun, positive environment",label: "High-quality coaching in a fun, positive environment"},
-    { value: "Other",                                               label: "Other"                                               },
+    { value: "To keep my child active and healthy", label: "To keep my child active and healthy" },
+    { value: "High-quality coaching in a fun, positive environment", label: "High-quality coaching in a fun, positive environment" },
+    { value: "Other", label: "Other" },
 ];
 
 const hearOptions = [
-    { value: "Google",    label: "Google"    },
-    { value: "Facebook",  label: "Facebook"  },
+    { value: "Google", label: "Google" },
+    { value: "Facebook", label: "Facebook" },
     { value: "Instagram", label: "Instagram" },
-    { value: "Friend",    label: "Friend"    },
-    { value: "Flyer",     label: "Flyer"     },
+    { value: "Friend", label: "Friend" },
+    { value: "Flyer", label: "Flyer" },
 ];
 
 // ── Module-level helper ───────────────────────────────────────────────────────
@@ -130,6 +130,7 @@ const createStudent = () => ({
     selectedClassId: "",
     selectedClassData: null,
     error: null,
+    isExisting: false,          // ← new
 });
 
 const createParent = () => ({
@@ -143,6 +144,7 @@ const createParent = () => ({
     relationToChild: "",
     howDidYouHear: "",
     isCustomReason: false,
+    isExisting: false,          // ← new
 });
 
 const INIT_EMERGENCY = {
@@ -151,7 +153,10 @@ const INIT_EMERGENCY = {
     emergencyLastName: "",
     emergencyPhoneNumber: "",
     emergencyRelation: "",
+    id: null,                   // ← new
+    isExisting: false,          // ← new
 };
+
 
 // ── Select styles (matches BookMembership) ────────────────────────────────────
 const selectStyles = (hasError) => ({
@@ -187,25 +192,29 @@ const BookFreeTrial = () => {
     const navigate = useNavigate();
     const location = useLocation();
 
+
+    // ── Reserved booking via URL (?bookingId=&venueId=&createdAt=) ──
+    const searchParams = new URLSearchParams(location.search);
+    const urlBookingId = searchParams.get("bookingId");
     // Booking passed from MyBookings ("Rebook Trial" / context navigation)
     const prefillBooking = location?.state?.booking ?? null;
 
     // ── Form state ────────────────────────────────────────────────────────────
-    const [selectedVenue, setSelectedVenue]   = useState(null);
-    const [selectedDate,  setSelectedDate]    = useState(null);
-    const [students,      setStudents]        = useState([createStudent()]);
-    const [parents,       setParents]         = useState([createParent()]);
-    const [emergency,     setEmergency]       = useState(INIT_EMERGENCY);
-    const [errors,        setErrors]          = useState({});
+    const [selectedVenue, setSelectedVenue] = useState(null);
+    const [selectedDate, setSelectedDate] = useState(null);
+    const [students, setStudents] = useState([createStudent()]);
+    const [parents, setParents] = useState([createParent()]);
+    const [emergency, setEmergency] = useState(INIT_EMERGENCY);
+    const [errors, setErrors] = useState({});
 
     // ── Wizard state ──────────────────────────────────────────────────────────
-    const [flowStep,            setFlowStep]            = useState("form");
-    const [selectedStudentIds,  setSelectedStudentIds]  = useState([]);
-    const [isChangingVenue,     setIsChangingVenue]     = useState(false);
+    const [flowStep, setFlowStep] = useState("form");
+    const [selectedStudentIds, setSelectedStudentIds] = useState([]);
+    const [isChangingVenue, setIsChangingVenue] = useState(false);
 
     // ── Add Child Modal state ─────────────────────────────────────────────────
     const [isAddChildOpen, setIsAddChildOpen] = useState(false);
-    const [newChildForm, setNewChildForm]     = useState({
+    const [newChildForm, setNewChildForm] = useState({
         studentFirstName: "",
         studentLastName: "",
         dob: "",
@@ -213,9 +222,9 @@ const BookFreeTrial = () => {
         medicalInfo: "",
     });
     const [newChildErrors, setNewChildErrors] = useState({});
-    const [isSavingChild, setIsSavingChild]   = useState(false);
-    const [isSubmitting,  setIsSubmitting]    = useState(false);
-    const [isDirty, setIsDirty]               = useState(false); // tracks unsaved changes
+    const [isSavingChild, setIsSavingChild] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isDirty, setIsDirty] = useState(false); // tracks unsaved changes
     const DRAFT_KEY = "bookFreeTrial_draft";
 
     // ── Profile prefill ───────────────────────────────────────────────────────
@@ -229,37 +238,40 @@ const BookFreeTrial = () => {
             return;
         }
 
-        const rawParents  = profile?.adminMeta?.parents  || [];
+        const rawParents = profile?.adminMeta?.parents || [];
         const rawStudents = profile?.adminMeta?.students || [];
 
         const normalizedParents = rawParents.map((p) => ({
             id: p?.id ?? Date.now() + Math.random(),
-            parentFirstName:    p?.parentFirstName    || "",
-            parentLastName:     p?.parentLastName     || "",
-            parentEmail:        p?.parentEmail        || "",
-            parentPhoneNumber:  p?.parentPhoneNumber  || p?.phoneNumber || "",
-            interestReason:     p?.interestReason     || "",
-            interestReasonOther:p?.interestReasonOther|| "",
-            relationToChild:    p?.relationToChild    || "",
-            howDidYouHear:      p?.howDidYouHear      || "",
-            isCustomReason:     p?.isCustomReason     || false,
+            parentFirstName: p?.parentFirstName || "",
+            parentLastName: p?.parentLastName || "",
+            parentEmail: p?.parentEmail || "",
+            parentPhoneNumber: p?.parentPhoneNumber || p?.phoneNumber || "",
+            interestReason: p?.interestReason || "",
+            interestReasonOther: p?.interestReasonOther || "",
+            relationToChild: p?.relationToChild || "",
+            howDidYouHear: p?.howDidYouHear || "",
+            isCustomReason: p?.isCustomReason || false,
+            isExisting: !!p?.id,        // ← new: only "real" if backend gave us an id
         }));
 
         const normalizedStudents = rawStudents.map((s) => ({
-            _tmpId:             s?.id ?? Date.now() + Math.random(),
-            studentFirstName:   s?.studentFirstName  || "",
-            studentLastName:    s?.studentLastName   || "",
-            dob:                s?.dob || formatDOBForDisplay(s?.dateOfBirth),
-            age:                s?.age ?? "",
-            gender:             s?.gender            || "",
-            medicalInfo:        s?.medicalInfo || s?.medicalInformation || "",
-            selectedClassId:    s?.selectedClassId   || "",
-            selectedClassData:  s?.selectedClassData || null,
-            error:              null,
+            _tmpId: s?.id ?? Date.now() + Math.random(),
+            id: s?.id,
+            studentFirstName: s?.studentFirstName || "",
+            studentLastName: s?.studentLastName || "",
+            dob: s?.dob || formatDOBForDisplay(s?.dateOfBirth),
+            age: s?.age ?? "",
+            gender: s?.gender || "",
+            medicalInfo: s?.medicalInfo || s?.medicalInformation || "",
+            selectedClassId: s?.selectedClassId || "",
+            selectedClassData: s?.selectedClassData || null,
+            error: null,
+            isExisting: !!s?.id,        // ← new
         }));
 
         const finalStudents = normalizedStudents.length ? normalizedStudents : [createStudent()];
-        const finalParents  = normalizedParents.length  ? normalizedParents  : [createParent()];
+        const finalParents = normalizedParents.length ? normalizedParents : [createParent()];
 
         setStudents(finalStudents);
         setParents(finalParents);
@@ -272,15 +284,17 @@ const BookFreeTrial = () => {
             const p0 = finalParents[0];
             const isSame =
                 !!p0 &&
-                (p0.parentFirstName || "").trim()   === (ec?.emergencyFirstName || "").trim()   &&
-                (p0.parentLastName || "").trim()    === (ec?.emergencyLastName || "").trim()    &&
+                (p0.parentFirstName || "").trim() === (ec?.emergencyFirstName || "").trim() &&
+                (p0.parentLastName || "").trim() === (ec?.emergencyLastName || "").trim() &&
                 (p0.parentPhoneNumber || "").trim() === (ec?.emergencyPhoneNumber || "").trim();
             setEmergency({
-                sameAsAbove:          isSame,
-                emergencyFirstName:   ec?.emergencyFirstName   || "",
-                emergencyLastName:    ec?.emergencyLastName    || "",
+                sameAsAbove: isSame,
+                emergencyFirstName: ec?.emergencyFirstName || "",
+                emergencyLastName: ec?.emergencyLastName || "",
                 emergencyPhoneNumber: ec?.emergencyPhoneNumber || "",
-                emergencyRelation:    ec?.emergencyRelation    || "",
+                emergencyRelation: ec?.emergencyRelation || "",
+                id: ec?.id ?? null,         // ← new
+                isExisting: !!ec?.id,       // ← new
             });
         } else {
             setEmergency(INIT_EMERGENCY);
@@ -298,7 +312,7 @@ const BookFreeTrial = () => {
         if (flowStep === "D") return; // don't mark dirty on success screen
         const hasData =
             selectedVenue ||
-            selectedDate  ||
+            selectedDate ||
             students.some((s) => s.studentFirstName || s.selectedClassId) ||
             parents.some((p) => p.parentFirstName || p.parentEmail);
         setIsDirty(!!hasData);
@@ -378,13 +392,13 @@ const BookFreeTrial = () => {
                 const classId = sched?.classScheduleId ?? sched?.id ?? sched?.classId ?? null;
                 return {
                     ...student,
-                    selectedClassId:   classId ? String(classId) : student.selectedClassId,
+                    selectedClassId: classId ? String(classId) : student.selectedClassId,
                     selectedClassData: sched ?? student.selectedClassData,
                 };
             });
 
             // Sort: booking students first, rest after
-            const inBooking  = enriched.filter((s) =>
+            const inBooking = enriched.filter((s) =>
                 bookingNames.has((s.studentFirstName || "").toLowerCase())
             );
             const notInBooking = enriched.filter(
@@ -427,14 +441,14 @@ const BookFreeTrial = () => {
             (cls || [])
                 .filter((c) => c && c.classId !== undefined && c.classId !== null)
                 .map((c) => ({
-                    id:          c.classId,
-                    className:   c.className || "Class",
-                    dayOfWeek:   day,
-                    startTime:   c.time?.split(" - ")[0] || "",
-                    endTime:     c.time?.split(" - ")[1] || "",
-                    capacity:    c.capacity ?? 0,
-                    level:       c.level || "",
-                    time:        c.time || "",
+                    id: c.classId,
+                    className: c.className || "Class",
+                    dayOfWeek: day,
+                    startTime: c.time?.split(" - ")[0] || "",
+                    endTime: c.time?.split(" - ")[1] || "",
+                    capacity: c.capacity ?? 0,
+                    level: c.level || "",
+                    time: c.time || "",
                 }))
         )
         : [];
@@ -449,6 +463,8 @@ const BookFreeTrial = () => {
 
     // ── Selected students ─────────────────────────────────────────────────────
     const activeStudents = students.filter((s) => selectedStudentIds.includes(s._tmpId));
+
+    console.log("activeStudents", activeStudents);
 
     const activeNames = activeStudents
         .map((s) => s?.studentFirstName || "Child")
@@ -612,11 +628,11 @@ const BookFreeTrial = () => {
         const p = parents?.[0] || {};
         setEmergency((prev) => ({
             ...prev,
-            sameAsAbove:          checked,
-            emergencyFirstName:   checked ? p.parentFirstName   || "" : "",
-            emergencyLastName:    checked ? p.parentLastName    || "" : "",
+            sameAsAbove: checked,
+            emergencyFirstName: checked ? p.parentFirstName || "" : "",
+            emergencyLastName: checked ? p.parentLastName || "" : "",
             emergencyPhoneNumber: checked ? p.parentPhoneNumber || "" : "",
-            emergencyRelation:    checked ? p.relationToChild   || "" : "",
+            emergencyRelation: checked ? p.relationToChild || "" : "",
         }));
         clearErr("e_firstName");
         clearErr("e_lastName");
@@ -635,10 +651,10 @@ const BookFreeTrial = () => {
             const p = parents[0];
             setEmergency((prev) => ({
                 ...prev,
-                emergencyFirstName:   p.parentFirstName   || "",
-                emergencyLastName:    p.parentLastName    || "",
+                emergencyFirstName: p.parentFirstName || "",
+                emergencyLastName: p.parentLastName || "",
                 emergencyPhoneNumber: p.parentPhoneNumber || "",
-                emergencyRelation:    p.relationToChild   || "",
+                emergencyRelation: p.relationToChild || "",
             }));
         }
     }, [emergency.sameAsAbove, parents]);
@@ -646,13 +662,13 @@ const BookFreeTrial = () => {
     const validate = () => {
         const errs = {};
         if (!selectedVenue) errs.venue = "Required";
-        if (!selectedDate)  errs.selectedDate = "Required";
+        if (!selectedDate) errs.selectedDate = "Required";
 
         const classSelections = {};
         activeStudents.forEach((student) => {
             const i = getStudentIdx(student);
-            if (!(student?.studentFirstName || "").trim())  errs[`s${i}_studentFirstName`] = "Required";
-            if (!(student?.studentLastName || "").trim())   errs[`s${i}_studentLastName`]  = "Required";
+            if (!(student?.studentFirstName || "").trim()) errs[`s${i}_studentFirstName`] = "Required";
+            if (!(student?.studentLastName || "").trim()) errs[`s${i}_studentLastName`] = "Required";
             if (!student?.dob) {
                 errs[`s${i}_dob`] = "Required";
             } else if (student.dob.length !== 10) {
@@ -670,8 +686,8 @@ const BookFreeTrial = () => {
                     errs[`s${i}_dob`] = "Date of birth cannot be in the future";
                 }
             }
-            if (!student?.gender)            errs[`s${i}_gender`]     = "Required";
-            if (!(student?.medicalInfo || "").trim())errs[`s${i}_medicalInfo`]= "Required (write 'None')";
+            if (!student?.gender) errs[`s${i}_gender`] = "Required";
+            if (!(student?.medicalInfo || "").trim()) errs[`s${i}_medicalInfo`] = "Required (write 'None')";
             if (!student?.selectedClassId) {
                 errs[`s${i}_selectedClassId`] = "Required";
             } else {
@@ -688,23 +704,23 @@ const BookFreeTrial = () => {
         });
 
         parents.forEach((p, i) => {
-            if (!(p?.parentFirstName || "").trim())  errs[`p${i}_parentFirstName`]  = "Required";
-            if (!(p?.parentLastName || "").trim())   errs[`p${i}_parentLastName`]   = "Required";
+            if (!(p?.parentFirstName || "").trim()) errs[`p${i}_parentFirstName`] = "Required";
+            if (!(p?.parentLastName || "").trim()) errs[`p${i}_parentLastName`] = "Required";
             if (!(p?.parentEmail || "").trim()) {
                 errs[`p${i}_parentEmail`] = "Required";
             } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(p.parentEmail)) {
                 errs[`p${i}_parentEmail`] = "Invalid email";
             }
             if (!(p?.parentPhoneNumber || "").trim()) errs[`p${i}_parentPhoneNumber`] = "Required";
-            if (!p?.relationToChild)           errs[`p${i}_relationToChild`]   = "Required";
-            if (!p?.interestReason)            errs[`p${i}_interestReason`]    = "Required";
-            if (!p?.howDidYouHear)             errs[`p${i}_howDidYouHear`]     = "Required";
+            if (!p?.relationToChild) errs[`p${i}_relationToChild`] = "Required";
+            if (!p?.interestReason) errs[`p${i}_interestReason`] = "Required";
+            if (!p?.howDidYouHear) errs[`p${i}_howDidYouHear`] = "Required";
         });
 
-        if (!(emergency?.emergencyFirstName || "").trim())   errs.e_firstName = "Required";
-        if (!(emergency?.emergencyLastName || "").trim())    errs.e_lastName  = "Required";
-        if (!(emergency?.emergencyPhoneNumber || "").trim()) errs.e_phone     = "Required";
-        if (!emergency?.emergencyRelation)            errs.e_relation  = "Required";
+        if (!(emergency?.emergencyFirstName || "").trim()) errs.e_firstName = "Required";
+        if (!(emergency?.emergencyLastName || "").trim()) errs.e_lastName = "Required";
+        if (!(emergency?.emergencyPhoneNumber || "").trim()) errs.e_phone = "Required";
+        if (!emergency?.emergencyRelation) errs.e_relation = "Required";
 
         setErrors(errs);
         return Object.keys(errs).length === 0;
@@ -722,46 +738,49 @@ const BookFreeTrial = () => {
         } catch {
             parentData = {};
         }
-        const parentId   = parentData?.id;
-        const token      = localStorage.getItem("parentToken");
+        const parentId = parentData?.id;
+        const token = localStorage.getItem("parentToken");
 
         const payload = {
-            venueId:       selectedVenue?.venueId,
-            trialDate:     toDateOnly(selectedDate),
+            venueId: selectedVenue?.venueId,
+            trialDate: toDateOnly(selectedDate),
             totalStudents: activeStudents.length,
             students: activeStudents.map((s) => ({
-                studentFirstName:  s?.studentFirstName || "",
-                studentLastName:   s?.studentLastName || "",
-                dateOfBirth:       toDateOnly(s?.dob),
-                age:               Number(s?.age) || 0,
-                gender:            s?.gender || "",
-                medicalInformation:s?.medicalInfo || "",
-                classScheduleId:   Number(s?.selectedClassId) || null,
+                ...(urlBookingId && s?.isExisting && s?.id ? { id: s.id } : {}),
+                studentFirstName: s?.studentFirstName || "",
+                studentLastName: s?.studentLastName || "",
+                dateOfBirth: toDateOnly(s?.dob),
+                age: Number(s?.age) || 0,
+                gender: s?.gender || "",
+                medicalInformation: s?.medicalInfo || "",
+                classScheduleId: Number(s?.selectedClassId) || null,
             })),
             parents: parents.map((p) => ({
-                parentFirstName:    p?.parentFirstName || "",
-                parentLastName:     p?.parentLastName || "",
-                parentEmail:        p?.parentEmail || "",
-                parentPhoneNumber:  p?.parentPhoneNumber || "",
-                relationToChild:    p?.relationToChild || "",
-                interestReason:     p?.interestReason || "",
+                ...(urlBookingId && p?.isExisting && p?.id ? { id: p.id } : {}),
+                parentFirstName: p?.parentFirstName || "",
+                parentLastName: p?.parentLastName || "",
+                parentEmail: p?.parentEmail || "",
+                parentPhoneNumber: p?.parentPhoneNumber || "",
+                relationToChild: p?.relationToChild || "",
+                interestReason: p?.interestReason || "",
                 interestReasonOther: p?.interestReasonOther || "NA",
-                howDidYouHear:      p?.howDidYouHear || "",
-                isCustomReason:     p?.isCustomReason || false,
+                howDidYouHear: p?.howDidYouHear || "",
+                isCustomReason: p?.isCustomReason || false,
             })),
             emergency: {
-                sameAsAbove:          emergency?.sameAsAbove || false,
-                emergencyFirstName:   emergency?.emergencyFirstName || "",
-                emergencyLastName:    emergency?.emergencyLastName || "",
+                ...(urlBookingId && emergency?.isExisting && emergency?.id ? { id: emergency.id } : {}),
+                sameAsAbove: emergency?.sameAsAbove || false,
+                emergencyFirstName: emergency?.emergencyFirstName || "",
+                emergencyLastName: emergency?.emergencyLastName || "",
                 emergencyPhoneNumber: emergency?.emergencyPhoneNumber || "",
-                emergencyRelation:    emergency?.emergencyRelation || "",
+                emergencyRelation: emergency?.emergencyRelation || "",
             },
         };
-
         try {
             const API_URL = import.meta.env.VITE_API_BASE_URL || "";
+            const url = prefillBooking ? `${API_URL}api/parent/booking/reebook-trial/${urlBookingId}` : `${API_URL}api/parent/booking/free-trial/create/${parentId}`;
             const response = await axios.post(
-                `${API_URL}api/parent/booking/free-trial/create/${parentId}`,
+                url,
                 payload,
                 {
                     headers: {
@@ -777,7 +796,7 @@ const BookFreeTrial = () => {
             console.error("Booking Error:", err);
             const msg =
                 err?.response?.data?.message ||
-                err?.response?.data?.error   ||
+                err?.response?.data?.error ||
                 "Something went wrong while booking the trial.";
             showError("Error", msg);
         } finally {
@@ -787,10 +806,9 @@ const BookFreeTrial = () => {
 
     // ── UI class helpers ──────────────────────────────────────────────────────
     const inputClass = (hasErr) =>
-        `w-full font-inherit text-[14px] border rounded-[10px] px-3.5 py-3 focus:outline-none focus:ring-2 transition-colors ${
-            hasErr
-                ? "border-[#e53e3e] focus:ring-[#e53e3e]/30 bg-[#fff5f5]"
-                : "border-[#e7ebf1] focus:ring-[#3b7df6]"
+        `w-full font-inherit text-[14px] border rounded-[10px] px-3.5 py-3 focus:outline-none focus:ring-2 transition-colors ${hasErr
+            ? "border-[#e53e3e] focus:ring-[#e53e3e]/30 bg-[#fff5f5]"
+            : "border-[#e7ebf1] focus:ring-[#3b7df6]"
         }`;
 
     const labelClass = "block text-[14px] font-semibold mb-1.5 text-[#1f2733]";
@@ -822,10 +840,10 @@ const BookFreeTrial = () => {
             <div className="max-w-[1140px] mx-auto md:px-6 pt-6 px-3">
                 {flowStep !== "D" ? (
                     <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-8 items-start">
-                        
+
                         {/* ── Left Column: Form Sections ── */}
                         <div className="flex flex-col gap-6">
-                            
+
                             {/* Card 1: Who's this trial for? */}
                             <div className="bg-white rounded-[20px] p-6 border border-[#e2e8f0] shadow-sm hover:shadow-md transition-shadow duration-300">
                                 <div className="flex items-center gap-2.5 mb-5">
@@ -843,8 +861,8 @@ const BookFreeTrial = () => {
                                         <CheckCircle2 size={14} />
                                         Select Existing Child
                                     </button>
-                                    <button 
-                                        onClick={handleAddStudents} 
+                                    <button
+                                        onClick={handleAddStudents}
                                         className="flex-1 sm:flex-none font-semibold text-[13px] rounded-[30px] px-5 py-2.5 bg-white text-[#6b7685] border border-[#e2e8f0] hover:border-[#3b7df6] hover:text-[#3b7df6] flex items-center justify-center gap-1.5 transition-all"
                                     >
                                         + Add a New Child
@@ -859,17 +877,15 @@ const BookFreeTrial = () => {
                                             <div
                                                 key={s._tmpId ?? i}
                                                 onClick={() => toggleStudent(s._tmpId)}
-                                                className={`border-[1.5px] rounded-[16px] p-4 cursor-pointer transition-all relative flex flex-col justify-between ${
-                                                    isSel
-                                                        ? "border-[#3b7df6] bg-blue-50/20 ring-4 ring-[#3b7df6]/5 shadow-sm"
-                                                        : "border-[#e2e8f0] hover:border-[#bcd0f5] bg-white"
-                                                }`}
+                                                className={`border-[1.5px] rounded-[16px] p-4 cursor-pointer transition-all relative flex flex-col justify-between ${isSel
+                                                    ? "border-[#3b7df6] bg-blue-50/20 ring-4 ring-[#3b7df6]/5 shadow-sm"
+                                                    : "border-[#e2e8f0] hover:border-[#bcd0f5] bg-white"
+                                                    }`}
                                             >
                                                 {/* Checkbox indicator */}
                                                 <div
-                                                    className={`absolute top-3.5 right-3.5 w-[20px] h-[20px] rounded-full border-2 flex items-center justify-center text-white text-[11px] transition-all ${
-                                                        isSel ? "bg-[#3b7df6] border-[#3b7df6]" : "border-[#e2e8f0]"
-                                                    }`}
+                                                    className={`absolute top-3.5 right-3.5 w-[20px] h-[20px] rounded-full border-2 flex items-center justify-center text-white text-[11px] transition-all ${isSel ? "bg-[#3b7df6] border-[#3b7df6]" : "border-[#e2e8f0]"
+                                                        }`}
                                                 >
                                                     {isSel && <Check size={11} />}
                                                 </div>
@@ -930,7 +946,7 @@ const BookFreeTrial = () => {
                                     </div>
 
                                     {isChangingVenue && (
-                                            <div className="border-b border-[#e2e8f0] px-5 py-4 bg-[#f8fafc] ">
+                                        <div className="border-b border-[#e2e8f0] px-5 py-4 bg-[#f8fafc] ">
                                             <label className="block text-[13px] font-semibold mb-1.5 text-[#1f2733]">Football Venue</label>
                                             <Select
                                                 styles={selectStyles(false)}
@@ -1175,9 +1191,8 @@ const BookFreeTrial = () => {
                                     <button
                                         disabled={parents.length >= 3}
                                         onClick={handleAddParent}
-                                        className={`bg-[#1e3a6e] text-white px-4 py-2 rounded-xl text-[12px] font-bold hover:bg-[#16306e] transition-colors flex items-center gap-1.5 shadow-sm ${
-                                            parents.length >= 3 ? "cursor-not-allowed opacity-50" : ""
-                                        }`}
+                                        className={`bg-[#1e3a6e] text-white px-4 py-2 rounded-xl text-[12px] font-bold hover:bg-[#16306e] transition-colors flex items-center gap-1.5 shadow-sm ${parents.length >= 3 ? "cursor-not-allowed opacity-50" : ""
+                                            }`}
                                     >
                                         + Add Guardian
                                     </button>
@@ -1474,7 +1489,7 @@ const BookFreeTrial = () => {
 
                         {/* ── Right Column: Sticky Summary Sidebar ── */}
                         <div className="lg:sticky lg:top-6 flex flex-col gap-5">
-                            
+
                             {/* Summary Card */}
                             <div className="bg-white rounded-[20px] p-6 border border-[#e2e8f0] shadow-sm">
                                 <h3 className="font-bold text-[16px] text-gray-900 mb-4 pb-2.5 border-b border-gray-100 flex items-center gap-2">
@@ -1520,8 +1535,8 @@ const BookFreeTrial = () => {
                                                                 {s.studentFirstName || "Unnamed child"}
                                                             </div>
                                                             <div className="text-[11px] text-gray-500 font-medium">
-                                                                {s.selectedClassData?.className 
-                                                                    ? `${s.selectedClassData.className} (${s.selectedClassData.dayOfWeek})` 
+                                                                {s.selectedClassData?.className
+                                                                    ? `${s.selectedClassData.className} (${s.selectedClassData.dayOfWeek})`
                                                                     : "No class selected"}
                                                             </div>
                                                         </div>
@@ -1533,7 +1548,7 @@ const BookFreeTrial = () => {
                                 </div>
 
                                 <div className="border-t border-gray-100 pt-4.5 mb-5">
-                                   
+
                                     <div className="flex items-center justify-between text-gray-900">
                                         <span className="font-bold text-[14px]">Free Trial Cost</span>
                                         <span className="text-emerald-500 font-extrabold text-[15px] bg-emerald-50 px-2 py-0.5 rounded-md uppercase tracking-wider">Free</span>
@@ -1554,7 +1569,7 @@ const BookFreeTrial = () => {
                                         "Confirm Free Trial Booking"
                                     )}
                                 </button>
-                                
+
                                 <button
                                     onClick={() => navigate(-1)}
                                     className="w-full mt-3 font-semibold text-[13.5px] text-gray-500 hover:text-gray-700 py-2.5 text-center transition-all bg-transparent border-0"
@@ -1562,7 +1577,7 @@ const BookFreeTrial = () => {
                                     Cancel & Return
                                 </button>
                             </div>
-                            
+
                             {/* Guarantee / Value Card */}
                             <div className="bg-[#f8fafc] rounded-2xl p-4.5 border border-dashed border-[#cbd5e1] text-gray-500 text-[12px] flex gap-3">
                                 <ShieldAlert size={18} className="text-[#3b7df6] shrink-0 mt-0.5" />
@@ -1590,13 +1605,13 @@ const BookFreeTrial = () => {
 
                         <div className="border border-[#e2e8f0] rounded-[20px] overflow-hidden text-left mb-6.5">
                             <div className="bg-gradient-to-r from-[#1e3a6e] to-[#2f5aa0] text-white px-5 py-4 font-bold text-[14.5px] flex items-center gap-2">
-                                <MapPin size={15} /> 
+                                <MapPin size={15} />
                                 {selectedVenue?.venueName || "Trinity Sports Centre"}
                             </div>
                             <div className="p-5 divide-y divide-gray-100 bg-[#fcfdfd]">
                                 {activeStudents.map((s, i) => (
                                     <div key={s._tmpId ?? i} className="flex items-start gap-3 py-3.5 first:pt-1">
-                                        <User size={15} className="text-[#3b7df6] mt-0.5 shrink-0" /> 
+                                        <User size={15} className="text-[#3b7df6] mt-0.5 shrink-0" />
                                         <div>
                                             <div className="text-[14px] font-bold text-gray-800">{s.studentFirstName} {s.studentLastName}</div>
                                             <div className="text-[12px] text-gray-500 font-medium">{s.selectedClassData?.className || "Class (Age Group)"}</div>
@@ -1604,7 +1619,7 @@ const BookFreeTrial = () => {
                                     </div>
                                 ))}
                                 <div className="flex items-center gap-3 py-3.5 last:pb-1">
-                                    <CalendarIcon size={15} className="text-[#3b7df6] shrink-0" /> 
+                                    <CalendarIcon size={15} className="text-[#3b7df6] shrink-0" />
                                     <div>
                                         <div className="text-[12px] text-gray-400 font-bold uppercase tracking-wide">Session Date</div>
                                         <div className="text-[14px] font-bold text-gray-800">

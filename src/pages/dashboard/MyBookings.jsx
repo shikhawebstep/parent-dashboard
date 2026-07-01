@@ -410,10 +410,10 @@ const MyBookings = () => {
                                                     </PillButton>
                                                     {/* {formatted.status ==="attended" && (
                                                     )} */}
-                                                    <PillButton color="green" onClick={() => navigate("/book-membership", { state: { booking } })}>
+                                                    <PillButton color="green" onClick={() => navigate("/book-membership?bookingId=" + booking.id, { state: { booking ,bookingsource: "trials" } })}>
                                                         Book Membership
                                                     </PillButton>
-                                                    {formatted.status ==="not attended" && (
+                                                    {formatted.status === "not attended" && (
                                                         <PillButton color="blue" onClick={() => navigate("/book-free-trial?bookingId=" + booking.id, { state: { booking } })}>
                                                             Rebook Trial
                                                         </PillButton>
