@@ -5,7 +5,14 @@ import {
     Trash2,
     Check,
     MapPin,
+    X,
+    Loader2,
+    PartyPopper,
+    Calendar as CalendarIcon,
+    Mail,
+    User,
 } from 'lucide-react';
+import { motion, AnimatePresence } from "framer-motion";
 import { useCommon } from "../../context/CommonContext";
 import PhoneNumberInput from "../../commom/PhoneNumberInput";
 import axios from "axios";
@@ -59,6 +66,56 @@ const formatDOBForDisplay = (isoDate) => {
     return `${d}/${m}/${y}`;
 };
 
+// ── DOB / Age helpers for Add Child modal ─────────────────
+const formatDOBInput = (raw = "") => {
+    const digits = raw.replace(/\D/g, "").slice(0, 8);
+    if (digits.length <= 2) return digits;
+    if (digits.length <= 4) return digits.slice(0, 2) + "/" + digits.slice(2);
+    return digits.slice(0, 2) + "/" + digits.slice(2, 4) + "/" + digits.slice(4);
+};
+
+const isValidDOB = (val = "") => {
+    if (!val || typeof val !== "string") return false;
+    const parts = val.split("/");
+    if (parts.length !== 3) return false;
+    const [d, m, y] = parts.map(Number);
+    if (!d || !m || !y || Number.isNaN(d) || Number.isNaN(m) || Number.isNaN(y)) return false;
+    const dob = new Date(y, m - 1, d);
+    if (Number.isNaN(dob.getTime())) return false;
+    if (dob.getDate() !== d || dob.getMonth() !== m - 1 || dob.getFullYear() !== y) return false;
+    return dob <= new Date(); // not in the future
+};
+
+const calculateAge = (val = "") => {
+    if (!isValidDOB(val)) return "";
+    const [d, m, y] = val.split("/").map(Number);
+    const dob = new Date(y, m - 1, d);
+    const today = new Date();
+    let age = today.getFullYear() - dob.getFullYear();
+    const monthDiff = today.getMonth() - dob.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())) age--;
+    return age >= 0 ? age : "";
+};
+
+const toDateOnly = (value) => {
+    if (!value) return "";
+    if (typeof value === "string") {
+        if (value.includes("/")) {
+            const [d, m, y] = value.split("/").map(Number);
+            if (!d || !m || !y) return "";
+            return `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+        }
+        const parsed = new Date(value);
+        if (isNaN(parsed.getTime())) return "";
+        value = parsed;
+    }
+    if (!(value instanceof Date) || Number.isNaN(value.getTime())) return "";
+    const y = value.getFullYear();
+    const m = String(value.getMonth() + 1).padStart(2, "0");
+    const d = String(value.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+};
+
 // ── Inits ─────────────────────────────────────────────────────────────────────
 const createStudent = () => ({
     _tmpId: Date.now() + Math.random(),
@@ -95,28 +152,31 @@ const INIT_EMERGENCY = {
 };
 
 // ── Select styles (matches BookMembership) ────────────────────────────────────
-const selectStyles = {
+const selectStyles = (hasError) => ({
     control: (base, state) => ({
         ...base,
-        minHeight: "44px",
-        borderRadius: "10px",
-        fontSize: "14px",
-        borderColor: state.isFocused ? "#3b7df6" : "#e7ebf1",
-        boxShadow: "none",
-        "&:hover": { borderColor: "#3b7df6" },
+        minHeight: 46,
+        borderRadius: 10,
+        borderColor: hasError ? "#e53e3e" : state.isFocused ? "#3b7df6" : "#e7ebf1",
+        boxShadow: state.isFocused ? `0 0 0 2px ${hasError ? "rgba(229,62,62,0.3)" : "rgba(59,125,246,0.3)"}` : "none",
+        backgroundColor: hasError ? "#fff5f5" : "#fff",
+        "&:hover": { borderColor: hasError ? "#e53e3e" : "#3b7df6" },
+        fontSize: 14,
+        fontFamily: "inherit",
     }),
-    placeholder: (base) => ({ ...base, color: "#9CA3AF" }),
-    menu: (base) => ({ ...base, zIndex: 9999 }),
-};
-
-const selectStylesError = {
-    ...selectStyles,
-    control: (base, state) => ({
-        ...selectStyles.control(base, state),
-        borderColor: "#e53e3e",
-        backgroundColor: "#fff5f5",
+    valueContainer: (base) => ({ ...base, padding: "2px 14px" }),
+    placeholder: (base) => ({ ...base, color: "#6b7685" }),
+    menu: (base) => ({ ...base, borderRadius: 10, overflow: "hidden", zIndex: 9999 }),
+    option: (base, state) => ({
+        ...base,
+        fontSize: 14,
+        backgroundColor: state.isSelected ? "#3b7df6" : state.isFocused ? "#eaf1fe" : "#fff",
+        color: state.isSelected ? "#fff" : "#1f2733",
+        cursor: "pointer",
     }),
-};
+    singleValue: (base) => ({ ...base, color: "#1f2733" }),
+    indicatorSeparator: () => ({ display: "none" }),
+});
 
 // ── Component ─────────────────────────────────────────────────────────────────
 const BookFreeTrial = () => {
@@ -138,6 +198,18 @@ const BookFreeTrial = () => {
     const [demoMode,            setDemoMode]            = useState("single");
     const [selectedStudentIds,  setSelectedStudentIds]  = useState([]);
     const [isChangingVenue,     setIsChangingVenue]     = useState(false);
+
+    // ── Add Child Modal state ─────────────────────────────────────────────────
+    const [isAddChildOpen, setIsAddChildOpen] = useState(false);
+    const [newChildForm, setNewChildForm]     = useState({
+        studentFirstName: "",
+        studentLastName: "",
+        dob: "",
+        gender: "",
+        medicalInfo: "",
+    });
+    const [newChildErrors, setNewChildErrors] = useState({});
+    const [isSavingChild, setIsSavingChild]   = useState(false);
 
     // ── Profile prefill ───────────────────────────────────────────────────────
     useEffect(() => {
@@ -395,6 +467,59 @@ const BookFreeTrial = () => {
         });
     };
 
+    const handleAddStudents = () => {
+        setNewChildForm({
+            studentFirstName: "",
+            studentLastName: "",
+            dob: "",
+            gender: "",
+            medicalInfo: "",
+        });
+        setNewChildErrors({});
+        setIsAddChildOpen(true);
+    };
+
+    const handleNewChildDOBChange = (e) => {
+        const formatted = formatDOBInput(e?.target?.value);
+        setNewChildForm((f) => ({ ...f, dob: formatted }));
+        if (newChildErrors.dob) setNewChildErrors((errs) => ({ ...errs, dob: "" }));
+    };
+
+    const validateNewChild = () => {
+        const errs = {};
+        if (!newChildForm.studentFirstName.trim()) errs.studentFirstName = "First name is required";
+        if (!newChildForm.studentLastName.trim()) errs.studentLastName = "Last name is required";
+        if (!isValidDOB(newChildForm.dob)) errs.dob = "Enter a valid date (DD/MM/YYYY)";
+        if (!newChildForm.gender) errs.gender = "Gender is required";
+        setNewChildErrors(errs);
+        return Object.keys(errs).length === 0;
+    };
+
+    const handleSaveNewChild = () => {
+        if (!validateNewChild()) return;
+        setIsSavingChild(true);
+
+        const newStudent = {
+            ...createStudent(),
+            studentFirstName: newChildForm.studentFirstName.trim(),
+            studentLastName: newChildForm.studentLastName.trim(),
+            dob: newChildForm.dob,
+            age: calculateAge(newChildForm.dob),
+            gender: newChildForm.gender,
+            medicalInfo: newChildForm.medicalInfo.trim() || "None",
+        };
+
+        setStudents((prev) => {
+            const next = [...prev, newStudent];
+            setSelectedStudentIds((sel) => [...sel, newStudent._tmpId]);
+            setNumStudents(String(next.length));
+            return next;
+        });
+
+        setIsSavingChild(false);
+        setIsAddChildOpen(false);
+    };
+
     const handleParentChange = (index, field, value) => {
         setParents((prev) => prev.map((p, i) => (i === index ? { ...p, [field]: value } : p)));
         clearErr(`p${index}_${field}`);
@@ -443,25 +568,6 @@ const BookFreeTrial = () => {
             }));
         }
     }, [emergency.sameAsAbove, parents]);
-
-    const toDateOnly = (value) => {
-        if (!value) return "";
-        if (typeof value === "string") {
-            if (value.includes("/")) {
-                const [d, m, y] = value.split("/").map(Number);
-                if (!d || !m || !y) return "";
-                return `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
-            }
-            const parsed = new Date(value);
-            if (isNaN(parsed.getTime())) return "";
-            value = parsed;
-        }
-        if (!(value instanceof Date) || Number.isNaN(value.getTime())) return "";
-        const y = value.getFullYear();
-        const m = String(value.getMonth() + 1).padStart(2, "0");
-        const d = String(value.getDate()).padStart(2, "0");
-        return `${y}-${m}-${d}`;
-    };
 
     const validate = () => {
         const errs = {};
@@ -564,7 +670,7 @@ const BookFreeTrial = () => {
                 parentPhoneNumber:  p?.parentPhoneNumber || "",
                 relationToChild:    p?.relationToChild || "",
                 interestReason:     p?.interestReason || "",
-                interestReasonOther:p?.interestReasonOther || "NA",
+                interestReasonOther: p?.interestReasonOther || "NA",
                 howDidYouHear:      p?.howDidYouHear || "",
                 isCustomReason:     p?.isCustomReason || false,
             })),
@@ -609,12 +715,11 @@ const BookFreeTrial = () => {
                 : "border-[#e7ebf1] focus:ring-[#3b7df6]"
         }`;
 
-    const labelClass = "block text-[13px] font-semibold mb-1.5 text-[#1f2733]";
+    const labelClass = "block text-[14px] font-semibold mb-1.5 text-[#1f2733]";
 
     // ── Render ────────────────────────────────────────────────────────────────
     return (
         <div className="min-h-screen booking-page bg-[#f4f6f9] text-[#1f2733] font-['Poppins',sans-serif] pb-28 sm:pb-16 pt-5">
-
 
             {/* ── Navy band ──────────────────────────────────────────────────── */}
             <div className="bg-[#1e3a6e] text-white mx-6 rounded-[14px] px-5 py-4 flex items-center gap-3 font-bold text-[18px]">
@@ -677,25 +782,12 @@ const BookFreeTrial = () => {
                                 Who's this trial for?
                             </div>
                             <div className="text-center text-[#6b7685] text-[14px] mb-6">
-                                Select the children you'd like to book a free trial for
+                                Select one or more children to enrol
                             </div>
 
-                            {/* Number of children picker */}
-                            <div className="flex justify-center mb-6">
-                                <div className="flex items-center gap-3 bg-[#f4f6f9] rounded-[12px] px-4 py-3">
-                                    <span className="text-[13px] font-semibold text-[#6b7685] whitespace-nowrap">
-                                        Number of children:
-                                    </span>
-                                    <div className="w-[90px]">
-                                        <Select
-                                            styles={selectStyles}
-                                            options={numStudentsOptions}
-                                            value={numStudentsOptions.find((o) => o.value === numStudents) || numStudentsOptions[0]}
-                                            isSearchable={false}
-                                            onChange={(option) => handleNumStudentsChange(option?.value || "1")}
-                                        />
-                                    </div>
-                                </div>
+                            <div className="flex flex-col sm:flex-row justify-center gap-2.5 mb-5 w-full max-w-md mx-auto sm:max-w-none">
+                                <button className="w-full sm:w-auto font-semibold text-[13px] rounded-[30px] px-4 py-2.5 bg-[#eaf1fe] text-[#3b7df6] border border-[#eaf1fe]">Select an existing child</button>
+                                <button onClick={handleAddStudents} className="w-full sm:w-auto font-semibold text-[13px] rounded-[30px] px-4 py-2.5 bg-white text-[#6b7685] border border-[#e7ebf1]">Add a new child</button>
                             </div>
 
                             {/* Student selection cards */}
@@ -776,7 +868,7 @@ const BookFreeTrial = () => {
                                 Book {activeNames}'s free trial
                             </div>
                             <div className="text-center text-[#6b7685] text-[14px] mb-6">
-                                Confirm the details below and we'll get you booked in
+                                Confirm the details below, and you're done
                             </div>
 
                             {/* ── Venue selector ─────────────────────────────────────────── */}
@@ -802,7 +894,7 @@ const BookFreeTrial = () => {
                                 {isChangingVenue && (
                                     <div className="border border-t-0 border-[#e7ebf1] px-5 py-3.5 bg-[#f4f6f9]">
                                         <Select
-                                            styles={selectStyles}
+                                            styles={selectStyles(false)}
                                             options={venueSelectOptions}
                                             value={venueSelectOptions.find((o) => o.value === selectedVenue?.venueId) || null}
                                             placeholder={venueSelectOptions.length ? "Select a venue…" : "No venues available"}
@@ -856,7 +948,7 @@ const BookFreeTrial = () => {
                                                     Select class for {s.studentFirstName || `Child ${idx + 1}`}
                                                 </label>
                                                 <Select
-                                                    styles={errors[`s${sIdx}_selectedClassId`] ? selectStylesError : selectStyles}
+                                                    styles={selectStyles(!!errors[`s${sIdx}_selectedClassId`])}
                                                     options={classSelectOptions}
                                                     value={classSelectOptions.find((o) => String(o.value) === String(s.selectedClassId)) || null}
                                                     isDisabled={!selectedVenue || classSelectOptions.length === 0}
@@ -996,7 +1088,7 @@ const BookFreeTrial = () => {
                                                 <div>
                                                     <label className={labelClass}>Gender</label>
                                                     <Select
-                                                        styles={errors[`s${sIdx}_gender`] ? selectStylesError : selectStyles}
+                                                        styles={selectStyles(!!errors[`s${sIdx}_gender`])}
                                                         placeholder="Select gender"
                                                         options={genderOptions}
                                                         value={
@@ -1146,7 +1238,7 @@ const BookFreeTrial = () => {
                                             <div>
                                                 <label className={labelClass}>Relation to child</label>
                                                 <Select
-                                                    styles={errors[`p${index}_relationToChild`] ? selectStylesError : selectStyles}
+                                                    styles={selectStyles(!!errors[`p${index}_relationToChild`])}
                                                     placeholder="Select relation"
                                                     options={relationOptions}
                                                     value={
@@ -1168,7 +1260,7 @@ const BookFreeTrial = () => {
                                             <div>
                                                 <label className={labelClass}>How did you hear about us?</label>
                                                 <Select
-                                                    styles={errors[`p${index}_howDidYouHear`] ? selectStylesError : selectStyles}
+                                                    styles={selectStyles(!!errors[`p${index}_howDidYouHear`])}
                                                     placeholder="Select how you heard"
                                                     options={hearOptions}
                                                     value={
@@ -1214,7 +1306,7 @@ const BookFreeTrial = () => {
                                                     </div>
                                                 ) : (
                                                     <Select
-                                                        styles={errors[`p${index}_interestReason`] ? selectStylesError : selectStyles}
+                                                        styles={selectStyles(!!errors[`p${index}_interestReason`])}
                                                         placeholder="Select your reason…"
                                                         options={interestReasonOptions}
                                                         value={
@@ -1325,7 +1417,7 @@ const BookFreeTrial = () => {
                                         <div>
                                             <label className={labelClass}>Relation to child</label>
                                             <Select
-                                                styles={errors.e_relation ? selectStylesError : selectStyles}
+                                                styles={selectStyles(!!errors.e_relation)}
                                                 placeholder="Select relation"
                                                 options={relationOptions}
                                                 isDisabled={emergency.sameAsAbove}
@@ -1361,7 +1453,7 @@ const BookFreeTrial = () => {
                                 </button>
                                 <button
                                     onClick={handleSubmit}
-                                    className="sm:w-auto font-semibold text-[15px] rounded-[12px] md:px-8 py-3.5 border border-[#1e3a6e] text-white bg-[#1e3a6e] hover:bg-[#16306e] transition-colors px-4"
+                                    className="sm:w-auto font-semibold text-[15px] rounded-[12px] md:px-8 py-3.5 border border-[#3b7df6] text-white bg-[#3b7df6] hover:bg-[#2f6ae0] transition-colors px-4"
                                 >
                                     Book FREE Trial
                                 </button>
@@ -1373,27 +1465,191 @@ const BookFreeTrial = () => {
                         SCREEN D  —  Success
                     ════════════════════════════════════════════════════════ */}
                     {flowStep === "D" && (
-                        <div className="text-center py-8">
-                            <div className="w-16 h-16 bg-[#e7f8f0] rounded-full flex items-center justify-center mx-auto mb-4">
-                                <Check size={32} className="text-[#21b573]" />
+                        <div>
+                            <div className="text-center text-[24px] font-bold mb-1.5 tracking-tight flex items-center justify-center gap-2">
+                                Free Trial Booked! <PartyPopper size={22} className="text-[#21b573]" />
                             </div>
-                            <div className="text-[26px] font-bold mb-2 tracking-tight">
-                                Free Trial Booked !
+                            <div className="text-center text-[#6b7685] text-[14px] mb-6">
+                                {activeNames}'s free trial is confirmed
                             </div>
-                            <div className="text-[#6b7685] text-[15px] mb-6 max-w-[440px] mx-auto">
-                                We've confirmed {activeNames}'s free trial. We'll be in touch with all the details shortly.
+
+                            <div className="max-w-[560px] mx-auto border border-[#e7ebf1] rounded-[16px] overflow-hidden">
+                                <div className="bg-[#3b7df6] text-white px-4 py-3.5 font-semibold text-[14px] flex items-center gap-2">
+                                    <MapPin size={16} /> {selectedVenue?.venueName || "Venue"}
+                                </div>
+                                <div className="p-4">
+                                    {activeStudents.map((s, i) => (
+                                        <div key={s._tmpId ?? i} className="flex items-center gap-3.5 py-2.5 font-semibold text-[14px]">
+                                            <User size={16} className="text-[#3b7df6]" /> {s.studentFirstName} {s.studentLastName} — {s.selectedClassData?.className || "Class"}
+                                        </div>
+                                    ))}
+                                    <div className="flex items-center gap-3.5 py-2.5 font-semibold text-[14px]">
+                                        <CalendarIcon size={16} className="text-[#3b7df6]" /> Trial Date: {selectedDate ? formatDOBForDisplay(toDateOnly(selectedDate)) || selectedDate.toLocaleDateString('en-GB') : "-"}
+                                    </div>
+                                </div>
                             </div>
-                            <button
-                                onClick={() => navigate(-1)}
-                                className="w-full sm:w-auto font-semibold text-[15px] rounded-[12px] px-8 py-3.5 bg-[#1e3a6e] text-white hover:bg-[#16306e] transition-colors"
-                            >
-                                Back to Dashboard
-                            </button>
+                            <div className="max-w-[560px] mx-auto text-[12px] text-[#6b7685] text-center mt-3.5 flex items-center justify-center gap-1.5">
+                                <Mail size={14} />
+                                A confirmation email with your trial booking details has been sent to your inbox.
+                            </div>
+
+                            <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-[#e7ebf1] p-4 z-40 flex gap-3 w-full sm:relative sm:bottom-auto sm:left-auto sm:right-auto sm:bg-transparent sm:border-t-0 sm:p-0 sm:z-auto justify-center sm:mt-7 sm:w-auto">
+                                <button
+                                    onClick={() => navigate(-1)}
+                                    className="sm:w-auto font-semibold text-[15px] rounded-[12px] px-11 py-3.5 border border-[#21b573] text-white bg-[#21b573] hover:bg-[#1a935d]"
+                                >
+                                    Finish
+                                </button>
+                            </div>
                         </div>
                     )}
 
                 </div>
             </div>
+
+            {/* ── Add Child Modal ── */}
+            <AnimatePresence>
+                {isAddChildOpen && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 overflow-y-auto"
+                        onClick={() => !isSavingChild && setIsAddChildOpen(false)}
+                    >
+                        <motion.div
+                            initial={{ scale: 0.95, y: 20 }}
+                            animate={{ scale: 1, y: 0 }}
+                            exit={{ scale: 0.95, y: 20 }}
+                            transition={{ type: "spring", duration: 0.4 }}
+                            className="bg-white rounded-3xl w-full max-w-[640px] shadow-2xl relative flex flex-col max-h-[90vh] overflow-hidden"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            {/* Header */}
+                            <div className="flex justify-between items-center px-7 py-5 border-b border-gray-100">
+                                <div>
+                                    <span className="text-[12px] uppercase tracking-wider text-[#3b7df6] font-bold">New child</span>
+                                    <h2 className="text-[20px] font-bold text-gray-900 leading-tight">Add a new child</h2>
+                                </div>
+                                <button
+                                    onClick={() => !isSavingChild && setIsAddChildOpen(false)}
+                                    className="p-2 hover:bg-gray-100 rounded-full transition-colors focus:outline-none"
+                                >
+                                    <X className="w-5 h-5 text-gray-400 hover:text-gray-600" />
+                                </button>
+                            </div>
+
+                            {/* Body */}
+                            <div className="p-7 overflow-y-auto">
+                                <div className="grid grid-cols-2 gap-x-5 gap-y-4">
+                                    {/* First name */}
+                                    <div>
+                                        <label className="block text-[14px] font-semibold mb-1.5">First name</label>
+                                        <input
+                                            className={inputClass(!!newChildErrors.studentFirstName)}
+                                            value={newChildForm.studentFirstName}
+                                            onChange={(e) => {
+                                                setNewChildForm((f) => ({ ...f, studentFirstName: e.target.value }));
+                                                if (newChildErrors.studentFirstName) setNewChildErrors((errs) => ({ ...errs, studentFirstName: "" }));
+                                            }}
+                                            placeholder="Enter first name"
+                                        />
+                                        {newChildErrors.studentFirstName && <p className="text-[12px] text-[#e53e3e] mt-1">{newChildErrors.studentFirstName}</p>}
+                                    </div>
+
+                                    {/* Last name */}
+                                    <div>
+                                        <label className="block text-[14px] font-semibold mb-1.5">Last name</label>
+                                        <input
+                                            className={inputClass(!!newChildErrors.studentLastName)}
+                                            value={newChildForm.studentLastName}
+                                            onChange={(e) => {
+                                                setNewChildForm((f) => ({ ...f, studentLastName: e.target.value }));
+                                                if (newChildErrors.studentLastName) setNewChildErrors((errs) => ({ ...errs, studentLastName: "" }));
+                                            }}
+                                            placeholder="Enter last name"
+                                        />
+                                        {newChildErrors.studentLastName && <p className="text-[12px] text-[#e53e3e] mt-1">{newChildErrors.studentLastName}</p>}
+                                    </div>
+
+                                    {/* Date of birth */}
+                                    <div>
+                                        <label className="block text-[14px] font-semibold mb-1.5">Date of birth</label>
+                                        <input
+                                            className={inputClass(!!newChildErrors.dob)}
+                                            value={newChildForm.dob}
+                                            onChange={handleNewChildDOBChange}
+                                            placeholder="DD/MM/YYYY"
+                                            inputMode="numeric"
+                                            maxLength={10}
+                                        />
+                                        {newChildErrors.dob && <p className="text-[12px] text-[#e53e3e] mt-1">{newChildErrors.dob}</p>}
+                                    </div>
+
+                                    {/* Age (auto) */}
+                                    <div>
+                                        <label className="block text-[14px] font-semibold mb-1.5">Age</label>
+                                        <input
+                                            className="w-full font-inherit text-[14px] border border-[#e7ebf1] bg-[#f4f6f9] text-[#6b7685] rounded-[10px] px-3.5 py-3 cursor-not-allowed"
+                                            value={calculateAge(newChildForm.dob)}
+                                            placeholder="Auto calculated"
+                                            disabled
+                                            readOnly
+                                        />
+                                    </div>
+
+                                    {/* Gender */}
+                                    <div>
+                                        <label className="block text-[14px] font-semibold mb-1.5">Gender</label>
+                                        <Select
+                                            styles={selectStyles(!!newChildErrors.gender)}
+                                            options={genderOptions}
+                                            value={genderOptions.find((o) => o.value === newChildForm.gender) || null}
+                                            placeholder="Select gender"
+                                            onChange={(opt) => {
+                                                setNewChildForm((f) => ({ ...f, gender: opt?.value || "" }));
+                                                if (newChildErrors.gender) setNewChildErrors((errs) => ({ ...errs, gender: "" }));
+                                            }}
+                                        />
+                                        {newChildErrors.gender && <p className="text-[12px] text-[#e53e3e] mt-1">{newChildErrors.gender}</p>}
+                                    </div>
+
+                                    {/* Medical information */}
+                                    <div>
+                                        <label className="block text-[14px] font-semibold mb-1.5">Medical information</label>
+                                        <input
+                                            className={inputClass(false)}
+                                            value={newChildForm.medicalInfo}
+                                            onChange={(e) => setNewChildForm((f) => ({ ...f, medicalInfo: e.target.value }))}
+                                            placeholder="e.g. Asthma, None"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Footer */}
+                            <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 px-7 py-5 border-t border-gray-100">
+                                <button
+                                    onClick={() => setIsAddChildOpen(false)}
+                                    disabled={isSavingChild}
+                                    className="w-full sm:w-auto font-semibold text-[14px] rounded-[12px] px-6 py-3 border border-[#e7ebf1] text-[#1f2733] bg-white"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={handleSaveNewChild}
+                                    disabled={isSavingChild}
+                                    className="w-full sm:w-auto font-semibold text-[14px] rounded-[12px] px-7 py-3 border border-[#3b7df6] text-white bg-[#3b7df6] disabled:opacity-50 hover:bg-[#2f6ae0] flex items-center justify-center gap-2"
+                                >
+                                    {isSavingChild && <Loader2 className="animate-spin w-4 h-4" />}
+                                    Add child
+                                </button>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
         </div>
     );
 };

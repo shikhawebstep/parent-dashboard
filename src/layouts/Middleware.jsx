@@ -5,40 +5,42 @@ import Loader from "../components/Loader";
 const Middleware = ({ children }) => {
     const [loading, setLoading] = useState(true);
 
-   useEffect(() => {
-    const verifyAuth = async () => {
-        const token = localStorage.getItem("parentToken");
-        const API_URL = import.meta.env.VITE_API_BASE_URL;
-        const currentPath = window.location.pathname;
+    useEffect(() => {
+        const verifyAuth = async () => {
+            const token = localStorage.getItem("parentToken");
+            const API_URL = import.meta.env.VITE_API_BASE_URL;
 
-        if (!token) {
-            window.location.replace(
-                `/auth/login?redirect=${encodeURIComponent(currentPath)}`
-            );
-            return;
-        }
+            // ✅ include the query string, not just the path
+            const currentPath = window.location.pathname + window.location.search;
 
-        try {
-            const result = await axios.get(          // ✅ was missing "const result ="
-                `${API_URL}api/parent/auth/login/verify`,
-                {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                    },
-                }
-            );
-            localStorage.setItem("parentData", JSON.stringify(result?.data?.admin));
-            setLoading(false);
-        } catch (error) {
-            localStorage.removeItem("parentToken");
-            window.location.replace(
-                `/auth/login?redirect=${encodeURIComponent(currentPath)}`
-            );
-        }
-    };
+            if (!token) {
+                window.location.replace(
+                    `/auth/login?redirect=${encodeURIComponent(currentPath)}`
+                );
+                return;
+            }
 
-    verifyAuth();
-}, []);
+            try {
+                const result = await axios.get(
+                    `${API_URL}api/parent/auth/login/verify`,
+                    {
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                        },
+                    }
+                );
+                localStorage.setItem("parentData", JSON.stringify(result?.data?.admin));
+                setLoading(false);
+            } catch (error) {
+                localStorage.removeItem("parentToken");
+                window.location.replace(
+                    `/auth/login?redirect=${encodeURIComponent(currentPath)}`
+                );
+            }
+        };
+
+        verifyAuth();
+    }, []);
 
     if (loading) return <Loader />;
 

@@ -14,9 +14,9 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
   const [showPassword, setShowPassword] = useState(false);
+
   useEffect(() => {
     const token = localStorage.getItem("parentToken");
-
     if (token) {
       window.location.href = "/";
     }
@@ -33,17 +33,14 @@ const Login = () => {
     }
   }, []);
 
-  // 🔹 HANDLE CHANGE
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-
     setFormData({
       ...formData,
       [name]: type === "checkbox" ? checked : value,
     });
   };
 
-  // 🔹 VALIDATION
   const validate = () => {
     let newErrors = {};
 
@@ -55,16 +52,11 @@ const Login = () => {
 
     if (!formData.password) {
       newErrors.password = "Password is required";
-    } 
-    // else if (formData.password.length < 6) {
-    //   newErrors.password = "Minimum 6 characters required";
-    // }
+    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
-  // 🔹 SUBMIT
-
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -72,6 +64,9 @@ const Login = () => {
     if (!validate()) return;
 
     const API_URL = import.meta.env.VITE_API_BASE_URL;
+
+    // ✅ This correctly decodes a fully-encoded redirect param,
+    // e.g. redirect=%2Fbook-membership%3FbookingId%3D1396%26venueId%3D65%26createdAt%3D...
     const params = new URLSearchParams(window.location.search);
     const redirectTo = params.get("redirect") || "/bookings";
 
@@ -96,7 +91,6 @@ const Login = () => {
         localStorage.setItem("parentPassword", formData.password);
       }
 
-
       window.location.replace(redirectTo);
 
     } catch (error) {
@@ -119,19 +113,18 @@ const Login = () => {
     }
   };
 
-
-
   return (
     <div className="w-full h-full overflow-auto bg-white flex items-center p-5 lg:p-10 xl:p-0">
       <div className="w-full flex flex-col items-center justify-center m-auto ">
         <div className="text-center w-full mb-6">
-          <div className="text-5xl font-bold text-blue-700 2xl:max-w-[80px] lg:max-w-[50px] max-w-[60px] m-auto"> <img src="/assets/sambaLogoBlue.png" alt="" className="w-full" /></div>
+          <div className="text-5xl font-bold text-blue-700 2xl:max-w-[80px] lg:max-w-[50px] max-w-[60px] m-auto">
+            <img src="/assets/sambaLogoBlue.png" alt="" className="w-full" />
+          </div>
           <h2 className="2xl:text-[51px] text-[38px] lg:text-[40px] font-semibold md:mt-3 mt-7">Welcome</h2>
           <p className="text-black md:text-[20px] text-[16px] font-semibold">Bookings made simple.</p>
         </div>
 
         <form onSubmit={handleSubmit} className="xl:w-[55%] w-full">
-          {/* EMAIL */}
           <div className="my-5">
             <label className="2xl:text-[18px] lg:text-[16px] font-medium">Email</label>
             <input
@@ -148,7 +141,6 @@ const Login = () => {
             )}
           </div>
 
-          {/* PASSWORD */}
           <div className="mb-1">
             <label className="2xl:text-[18px] lg:text-[16px] font-medium">Password</label>
             <div className="relative">
@@ -174,7 +166,6 @@ const Login = () => {
             )}
           </div>
 
-          {/* OPTIONS */}
           <div className="flex items-center justify-between mt-2 text-[16px] mb-10">
             <label className="flex items-center gap-2 m-0">
               <input
@@ -191,7 +182,6 @@ const Login = () => {
             </Link>
           </div>
 
-          {/* BUTTON */}
           <button
             type="submit"
             disabled={loading}
@@ -206,9 +196,7 @@ const Login = () => {
           <img src="/assets/sss-logo-parents.png" alt="" className="w-full" />
         </div>
       </div>
-
     </div>
-
   );
 };
 

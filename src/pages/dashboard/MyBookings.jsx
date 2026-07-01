@@ -394,7 +394,7 @@ const MyBookings = () => {
                                             <p className="text-[#9E9FAA] 2xl:text-[16px] text-[14px] mb-1">Class</p>
                                             <p className="text-[#5F5F6D] 2xl:text-[16px] text-[14px] font-semibold">{formatted.classType}</p>
                                         </div>
-                                     
+
 
                                         {/* Action Button */}
                                         <div className="self-start xl:w-[13%] w-full flex flex-wrap md:gap-4 gap-2 justify-end">
@@ -408,23 +408,31 @@ const MyBookings = () => {
                                                     <PillButton color="red" onClick={() => setCancelModal({ open: true, booking })}>
                                                         Cancel Trial
                                                     </PillButton>
-                                                    <PillButton color="blue" onClick={() => navigate("/book-membership", { state: { booking } })}>
+                                                    {formatted.status ==="attended" && (
+                                                    <PillButton color="green" onClick={() => navigate("/book-membership", { state: { booking } })}>
                                                         Book Membership
                                                     </PillButton>
+                                                    )}
+                                                    {formatted.status ==="not attended" && (
+                                                        <PillButton color="blue" onClick={() => navigate("/book-free-trial?bookingId=" + booking.id, { state: { booking } })}>
+                                                            Rebook Trial
+                                                        </PillButton>
+                                                    )}
+
                                                 </>
                                             )}
 
-                                            <PillButton
+                                            {/* <PillButton
                                                 className="capitalize cursor-default"
                                                 color={
                                                     formatted.status === "pending" ? "yellow" :
-                                                    formatted.status === "active" ? "green" :
-                                                    formatted.status === "cancelled" ? "red" :
-                                                    formatted.status === "completed" ? "blue" : "gray"
+                                                        formatted.status === "active" ? "green" :
+                                                            formatted.status === "cancelled" ? "red" :
+                                                                formatted.status === "completed" ? "blue" : "gray"
                                                 }
                                             >
                                                 {formatted.status}
-                                            </PillButton>
+                                            </PillButton> */}
 
                                             {formatted.serviceType === "weekly class membership" && (
                                                 <>

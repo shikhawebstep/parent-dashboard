@@ -559,7 +559,6 @@ const BookMembership = () => {
             });
             setIsApplied(true);
             setIsChecked(true);
-            setDiscountCode("RESERVED50");
         }
     }, [urlBookingId, showStarterPack, reservationExpired]);
 
@@ -1125,45 +1124,77 @@ const BookMembership = () => {
                                     </div>
 
                                     {/* Starter pack price + discount */}
-                                    <div className="border border-[#e7ebf1] rounded-[14px] p-4 mb-4">
-                                        <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
-                                            <div>
-                                                <div className="font-semibold text-[14px]">Starter pack</div>
-                                                <div className="text-[13px] text-[#6b7685]">£{starterPackPrice.toFixed(2)} + £3.99 delivery</div>
-                                            </div>
-                                            <div className="text-[18px] font-bold text-[#1e3a6e]">£{(starterPackPrice + 3.99).toFixed(2)}</div>
-                                        </div>
-                                        {/* Discount code */}
-                                        <div>
-                                            <label className="block text-[13px] font-semibold mb-1.5">Discount code (optional)</label>
-                                            <div className="flex flex-wrap gap-2">
-                                                <input
-                                                    className="flex-1 font-inherit text-[14px] border border-[#e7ebf1] rounded-[10px] px-3.5 py-3 focus:outline-none focus:ring-2 focus:ring-[#3b7df6]"
-                                                    value={discountCode}
-                                                    placeholder="Enter discount code"
-                                                    onChange={(e) => {
-                                                        setDiscountCode(e.target.value);
-                                                        setIsApplied(false);
-                                                        setAppliedDiscount(null);
-                                                        setIsChecked(false);
-                                                    }}
-                                                />
-                                                <button
-                                                    onClick={handleApplyDiscount}
-                                                    disabled={isDiscountLoading || !discountCode.trim()}
-                                                    className="bg-[#1e3a6e] text-white rounded-[10px] px-5 py-3 font-semibold text-[14px] disabled:opacity-50"
-                                                >
-                                                    {isDiscountLoading ? "Applying..." : "Apply"}
-                                                </button>
-                                            </div>
-                                            {isChecked && !isDiscountLoading && (
-                                                isApplied
-                                                    ? <p className="text-[#21b573] text-[12px] mt-1.5 flex items-center gap-1"><Check size={12} /> {appliedDiscount?.message || "Discount applied!"}</p>
-                                                    : <p className="text-[#e53e3e] text-[12px] mt-1.5">Invalid discount code</p>
-                                            )}
-                                        </div>
-                                    </div>
+                                    {/* Starter pack price + discount */}
+                                    {(() => {
+                                        const starterOfferActive = isApplied && !!appliedDiscount?.data;
+                                        const starterDiscountAmount = starterOfferActive
+                                            ? appliedDiscount.data.type === "percentage"
+                                                ? (starterPackPrice * Number(appliedDiscount.data.value)) / 100
+                                                : Number(appliedDiscount.data.discountAmount || 0)
+                                            : 0;
+                                        const starterPackOriginalTotal = starterPackPrice + 3.99;
+                                        const starterPackDiscountedTotal = Math.max(starterPackOriginalTotal - starterDiscountAmount, 0);
 
+                                        return (
+                                            <div className="border border-[#e7ebf1] rounded-[14px] p-4 mb-4 relative overflow-hidden">
+
+                                                <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+                                                    <div>
+                                                        <div className="font-semibold text-[14px] flex items-center gap-2">
+                                                            Starter pack
+                                                            {starterOfferActive && (
+                                                                <span className="bg-[#fff0f0] text-[#e53e3e] text-[10px] font-bold px-2 py-0.5 rounded-full">
+                                                                    {appliedDiscount.data.type === "percentage"
+                                                                        ? `${appliedDiscount.data.value}% OFF`
+                                                                        : "Discount applied"}
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                        <div className="text-[13px] text-[#6b7685]">£{starterPackPrice.toFixed(2)} + £3.99 delivery</div>
+                                                    </div>
+                                                    <div className="text-right">
+                                                        {starterOfferActive ? (
+                                                            <>
+                                                                <div className="text-[12px] text-[#a0a8b4] line-through">£{starterPackOriginalTotal.toFixed(2)}</div>
+                                                                <div className="text-[18px] font-bold text-[#21b573]">£{starterPackDiscountedTotal.toFixed(2)}</div>
+                                                            </>
+                                                        ) : (
+                                                            <div className="text-[18px] font-bold text-[#1e3a6e]">£{starterPackOriginalTotal.toFixed(2)}</div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                                {/* Discount code */}
+                                                <div>
+                                                    <label className="block text-[13px] font-semibold mb-1.5">Discount code (optional)</label>
+                                                    <div className="flex flex-wrap gap-2">
+                                                        <input
+                                                            className="flex-1 font-inherit text-[14px] border border-[#e7ebf1] rounded-[10px] px-3.5 py-3 focus:outline-none focus:ring-2 focus:ring-[#3b7df6]"
+                                                            value={discountCode}
+                                                            placeholder="Enter discount code"
+                                                            onChange={(e) => {
+                                                                setDiscountCode(e.target.value);
+                                                                setIsApplied(false);
+                                                                setAppliedDiscount(null);
+                                                                setIsChecked(false);
+                                                            }}
+                                                        />
+                                                        <button
+                                                            onClick={handleApplyDiscount}
+                                                            disabled={isDiscountLoading || !discountCode.trim()}
+                                                            className="bg-[#1e3a6e] text-white rounded-[10px] px-5 py-3 font-semibold text-[14px] disabled:opacity-50"
+                                                        >
+                                                            {isDiscountLoading ? "Applying..." : "Apply"}
+                                                        </button>
+                                                    </div>
+                                                    {isChecked && !isDiscountLoading && (
+                                                        isApplied
+                                                            ? <p className="text-[#21b573] text-[12px] mt-1.5 flex items-center gap-1"><Check size={12} /> {appliedDiscount?.message || "Discount applied!"}</p>
+                                                            : <p className="text-[#e53e3e] text-[12px] mt-1.5">Invalid discount code</p>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        );
+                                    })()}
                                     {/* Kit size per student */}
                                     <div className="text-[13px] font-bold uppercase tracking-[0.04em] text-[#6b7685] mb-3 mt-5">
                                         Kit size{" "}
