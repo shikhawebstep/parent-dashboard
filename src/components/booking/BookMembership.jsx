@@ -244,15 +244,24 @@ const BookMembership = () => {
     const { fetchVenues, venues, loading: commonLoading } = useCommon();
     const { profile, fetchProfileData, loading: profileLoading } = useProfile();
     const location = useLocation();
-    const booking = location?.state?.booking;
     const navigate = useNavigate();
-
-
-
 
     // ── Reserved booking via URL (?bookingId=&venueId=&createdAt=) ──
     const searchParams = new URLSearchParams(location.search);
     const urlBookingId = searchParams.get("bookingId");
+
+    const allProfileBookings = Array.isArray(profile?.bookings)
+        ? profile.bookings
+        : profile?.groupedBookings
+            ? Object.values(profile.groupedBookings).flat()
+            : profile?.combinedBookings || [];
+
+    const matchedBooking = urlBookingId
+        ? allProfileBookings.find((b) => String(b?.id || "") === String(urlBookingId) || String(b?.bookingId || "") === String(urlBookingId))
+        : null;
+
+    const booking = location?.state?.booking || matchedBooking;
+
     const urlVenueId = searchParams.get("venueId");
     const urlCreatedAt = searchParams.get("createdAt");
     const RESERVATION_DURATION_MS = 24 * 60 * 60 * 1000; // 24 hr
@@ -388,13 +397,36 @@ const BookMembership = () => {
                 opts.push({
                     value: c.classId,
                     label: `${c.className || "Class"} (${day}) ${c.time || ""} ${c.level ? `- ${c.level}` : ""}`.trim(),
-                    all: c,
+                    all: { ...c, day },
                 });
             });
         });
         return opts;
     };
     const classOptions = buildClassOptions();
+
+    const formatDateForDisplay = (isoDate) => {
+        if (!isoDate || typeof isoDate !== "string") return "";
+        if (isoDate.includes("/")) return isoDate; // already formatted
+        const [y, m, d] = isoDate.split("-");
+        if (!y || !m || !d) return isoDate;
+        return `${d}/${m}/${y}`;
+    };
+
+    const getProRataLabel = () => {
+        if (!selectedDate) return "Pro-rata";
+        const parts = selectedDate.split("-");
+        let dateObj;
+        if (parts.length === 3) {
+            // ISO format: YYYY-MM-DD
+            dateObj = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+        } else {
+            dateObj = new Date(selectedDate);
+        }
+        const monthShort = dateObj.toLocaleString("default", { month: "short" });
+        const sessions = pricingBreakdown.numberOfLessonsProRated || 0;
+        return `Pro-rata (${monthShort}: ${sessions} remaining session${sessions !== 1 ? "s" : ""})`;
+    };
 
     const addressOptions = (addressList || [])
         .filter((a) => a && a.address)
@@ -594,8 +626,9 @@ const BookMembership = () => {
         });
     };
     useEffect(() => {
-        if (!urlCreatedAt) return;
-        const createdTimeUTC = new Date(urlCreatedAt);
+        const targetCreatedAt = urlCreatedAt || booking?.createdAt;
+        if (!targetCreatedAt) return;
+        const createdTimeUTC = new Date(targetCreatedAt);
         if (Number.isNaN(createdTimeUTC.getTime())) return;
 
         // Convert createdAt to IST
@@ -616,7 +649,7 @@ const BookMembership = () => {
         tick();
         const interval = setInterval(tick, 1000);
         return () => clearInterval(interval);
-    }, [urlCreatedAt]);
+    }, [urlCreatedAt, booking?.createdAt]);
 
     useEffect(() => {
         if (!urlVenueId || selectedVenue) return;
@@ -1053,41 +1086,8 @@ const BookMembership = () => {
                 Booking
             </div>
 
-            {urlCreatedAt && !reservationExpired && (() => {
-                const t = formatTimeLeft(reservationTimeLeft);
-                const pad = (n) => String(n).padStart(2, "0");
-                return (
-                    <div className="max-w-[1040px] mx-auto md:px-6 px-2 mt-4">
-                        <div className="bg-[#fff4dd] border border-[#ffd98a] text-[#7a5210] rounded-[14px] px-5 py-3 flex items-center justify-center gap-3 flex-wrap text-[14px]">
-                            <Zap size={16} className="text-[#d98c00] shrink-0" fill="currentColor" />
-                            <span>
-                                Book within 24 hours for <strong>50% off</strong> the full Samba starter pack
-                            </span>
-                            <div className="flex items-center gap-1.5 ml-1">
-                                {[["h", t.h], ["m", t.m], ["s", t.s]].map(([unit, val], i) => (
-                                    <React.Fragment key={unit}>
-                                        <span className="bg-[#3b2a14] text-white font-bold text-[13px] rounded-[6px] px-2.5 py-1.5 tabular-nums">
-                                            {pad(val)}
-                                        </span>
-                                        {i < 2 && <span className="text-[#7a5210] font-bold">:</span>}
-                                    </React.Fragment>
-                                ))}
-                                <span className="text-[10px] text-[#9c7a3a] font-semibold ml-1 uppercase tracking-wide">Left</span>
-                            </div>
-                        </div>
-                    </div>
-                );
-            })()}
-            {urlCreatedAt && reservationExpired && (
-                <div className="max-w-[1040px] mx-auto md:px-6 px-2 mt-4">
-                    <div className="bg-[#fff5f5] border border-[#feb2b2] text-[#c53030] rounded-[14px] px-5 py-3.5 flex items-center gap-2.5 font-semibold text-[14px]">
-                        <AlertTriangle size={18} />
-                        Your reservation has expired — the 50% discount is no longer available, but you can still continue booking.
-                    </div>
-                </div>
-            )}
-
-            <div className="max-w-[1040px] mx-auto md:px-6 pt-5 px-2">
+         
+            <div className="max-w-[900px] mx-auto md:px-6 pt-5 px-2">
                 {/* Steps */}
                 <div className="hidden md:flex items-center justify-center gap-2 mb-5 flex-wrap">
                     {flowStates.map((fs, i) => {
@@ -1114,8 +1114,43 @@ const BookMembership = () => {
                     })}
                 </div>
 
+
+                 {(urlCreatedAt || booking?.createdAt) && !reservationExpired && (() => {
+                const t = formatTimeLeft(reservationTimeLeft);
+                const pad = (n) => String(n).padStart(2, "0");
+                return (
+                    <div className=" mx-auto md:px-6 px-2 mt-4">
+                        <div className="bg-[#fff4dd] border border-[#ffd98a] text-[#7a5210] rounded-[14px] px-5 py-3 flex items-center justify-center gap-3 flex-wrap text-[14px]">
+                            <Zap size={16} className="text-[#d98c00] shrink-0" fill="currentColor" />
+                            <span>
+                                Book within 24 hours for <strong>50% off</strong> the full Samba starter pack
+                            </span>
+                            <div className="flex items-center gap-1.5 ml-1">
+                                {[["h", t.h], ["m", t.m], ["s", t.s]].map(([unit, val], i) => (
+                                    <React.Fragment key={unit}>
+                                        <span className="bg-[#3b2a14] text-white font-bold text-[13px] rounded-[6px] px-2.5 py-1.5 tabular-nums">
+                                            {pad(val)}
+                                        </span>
+                                        {i < 2 && <span className="text-[#7a5210] font-bold">:</span>}
+                                    </React.Fragment>
+                                ))}
+                                <span className="text-[10px] text-[#9c7a3a] font-semibold ml-1 uppercase tracking-wide">Left</span>
+                            </div>
+                        </div>
+                    </div>
+                );
+            })()}
+            {(urlCreatedAt || booking?.createdAt) && reservationExpired && (
+                <div className=" mx-auto md:px-6 px-2 mt-4">
+                    <div className="bg-[#fff5f5] border border-[#feb2b2] text-[#c53030] rounded-[14px] px-5 py-3.5 flex items-center gap-2.5 font-semibold text-[14px]">
+                        <AlertTriangle size={18} />
+                        Your reservation has expired — the 50% discount is no longer available, but you can still continue booking.
+                    </div>
+                </div>
+            )}
+
                 {/* Screens */}
-                <div className="bg-white rounded-[16px] shadow-[0_8px_30px_rgba(20,40,80,0.08)] p-4 md:p-8">
+                <div className="bg-white mt-6 rounded-[16px] shadow-[0_8px_30px_rgba(20,40,80,0.08)] p-4 md:p-8">
 
                     {/* SCREEN A */}
                     {flowStep === "A" && (
@@ -1199,6 +1234,28 @@ const BookMembership = () => {
                                         </div>
                                     </div>
                                 )}
+
+                                {selectedVenue && urlBookingId && !reservationExpired && (() => {
+                                    const firstClass = activeStudents.find((s) => s.selectedClassData)?.selectedClassData;
+                                    const classDay = firstClass?.day || firstClass?.dayOfWeek || "";
+                                    const classTime = firstClass?.time || (firstClass?.startTime && firstClass?.endTime ? `${firstClass.startTime} – ${firstClass.endTime}` : "");
+                                    return (
+                                        <div className="flex gap-[26px] flex-wrap p-[14px_20px] border border-t-0 border-[#e7ebf1] bg-white">
+                                            <div className="flex flex-col gap-0.5">
+                                                <span className="text-[11.5px] uppercase tracking-[0.04em] text-[#6b7685] font-bold">Day</span>
+                                                <span className="text-[14px] font-bold text-[#1f2733]">{classDay || "-"}</span>
+                                            </div>
+                                            <div className="flex flex-col gap-0.5">
+                                                <span className="text-[11.5px] uppercase tracking-[0.04em] text-[#6b7685] font-bold">Time</span>
+                                                <span className="text-[14px] font-bold text-[#1f2733]">{classTime || "-"}</span>
+                                            </div>
+                                            <div className="flex flex-col gap-0.5">
+                                                <span className="text-[11.5px] uppercase tracking-[0.04em] text-[#6b7685] font-bold">Trial date</span>
+                                                <span className="text-[14px] font-bold text-[#1f2733]">{formatDateForDisplay(booking?.trialDate || selectedDate) || "-"}</span>
+                                            </div>
+                                        </div>
+                                    );
+                                })()}
 
                                 {/* Student class selectors */}
                                 {activeStudents.map((s, idx) => (
@@ -1344,7 +1401,7 @@ const BookMembership = () => {
                                     })()}
                                     {/* Kit size per student */}
                                     <div className="text-[13px] font-bold uppercase tracking-[0.04em] text-[#6b7685] mb-3 mt-5">
-                                        Kit size{" "}
+                                        Student & kit size{" "}
                                         <button
                                             type="button"
                                             onClick={() => setIsSizeChartOpen(true)}
@@ -1482,13 +1539,24 @@ const BookMembership = () => {
                                         <div className="grid md:grid-cols-2 gap-3.5 mb-2">
                                             {paymentPlanOptions.map((plan, idx) => {
                                                 const isSel = membershipPlan?.value === plan.value;
+                                                const titleLower = (plan.all?.title || "").toLowerCase();
+                                                const is12Month = titleLower.includes("12");
+                                                const is6Month = titleLower.includes("6");
                                                 return (
                                                     <div key={plan?.value ?? idx} onClick={() => setMembershipPlan(plan)} className={`border-[1.5px] rounded-[14px] p-4 cursor-pointer transition-all relative ${isSel ? "border-[#3b7df6] bg-[#f5f9ff] ring-4 ring-[#3b7df6]/10" : "border-[#e7ebf1] hover:border-[#bcd0f5]"}`}>
                                                         <span className={`absolute top-4 right-4 w-5 h-5 rounded-full border-2 ${isSel ? "border-[#3b7df6] bg-white ring-inset ring-4 ring-[#3b7df6]" : "border-[#e7ebf1]"}`} />
-                                                        <div className="text-[12px] text-[#6b7685] font-semibold">{plan.all?.title || "Plan"}</div>
+                                                        <div className="text-[12px] text-[#6b7685] font-semibold">
+                                                            {is12Month
+                                                                ? "Best value"
+                                                                : is6Month
+                                                                    ? "More flexible · not a rolling commitment"
+                                                                    : "Standard Plan"}
+                                                        </div>
                                                         <div className="text-[17px] font-bold my-0.5 mb-1.5">{plan.all?.title || "Plan"}</div>
                                                         <div className="text-[22px] font-bold text-[#1e3a6e]">£{plan.all?.price ?? 0}<small className="text-[13px] text-[#6b7685] font-medium"> / month</small></div>
-                                                        <span className="inline-block mt-2 bg-[#e7f8f0] text-[#0e7a4d] text-[11px] font-bold px-2.5 py-1 rounded-[20px]">Save £60 / year</span>
+                                                        {is12Month && (
+                                                            <span className="inline-block mt-2 bg-[#e7f8f0] text-[#0e7a4d] text-[11px] font-bold px-2.5 py-1 rounded-[20px]">Save £60 / year</span>
+                                                        )}
                                                     </div>
                                                 );
                                             })}
@@ -1602,7 +1670,7 @@ const BookMembership = () => {
                                         </>
                                     )}
                                     <div className="flex justify-between items-center text-[14px] py-1.5"><span className="text-[#6b7685]">Joining fee</span><span className="font-semibold">No joining fee</span></div>
-                                    <div className="flex justify-between items-center text-[14px] py-1.5"><span className="text-[#6b7685]">Pro-rata</span><span className="font-semibold">£{(pricingBreakdown.finalProRataCost || 0).toFixed(2)}</span></div>
+                                    <div className="flex justify-between items-center text-[14px] py-1.5"><span className="text-[#6b7685]">{getProRataLabel()}</span><span className="font-semibold">£{(pricingBreakdown.finalProRataCost || 0).toFixed(2)}</span></div>
                                     <div className="h-[1px] bg-[#e7ebf1] my-2.5" />
                                     <div className="flex justify-between items-center text-[17px] font-bold pt-2"><span className="text-[#1f2733]">Due today</span><span className="text-[#1e3a6e]">£{(pricingBreakdown.totalAmountToday || 0).toFixed(2)}</span></div>
                                     <div className="text-[12px] text-[#6b7685] bg-[#eef5ff] rounded-lg p-3 mt-2.5 leading-[1.6]">
@@ -1878,6 +1946,9 @@ const BookMembership = () => {
                     </button>
                 </div>
             </div>
+
+              
+
 
             {/* ── Size Chart Modal ── */}
             <AnimatePresence>
