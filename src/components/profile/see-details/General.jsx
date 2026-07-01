@@ -733,6 +733,16 @@ export default function General({ booking: propBooking, details, loading: mainLo
                                     <PillButton color="green" onClick={() => navigate("/book-membership", { state: { booking } })}>
                                         Book Membership
                                     </PillButton>
+                                    {booking?.status === "not attended" && (
+                                        <PillButton
+                                            color="blue"
+                                            onClick={() =>
+                                                navigate("/book-free-trial?bookingId=" + booking.id, { state: { booking } })
+                                            }
+                                        >
+                                            Rebook Trial
+                                        </PillButton>
+                                    )}
                                 </>
                             )}
 

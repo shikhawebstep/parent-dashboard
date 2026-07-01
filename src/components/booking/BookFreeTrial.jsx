@@ -26,7 +26,7 @@ import PhoneNumberInput from "../../commom/PhoneNumberInput";
 import axios from "axios";
 import Select from "react-select";
 import { useProfile } from "../../context/ProfileContext";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { showSuccess, showError } from "../../../utils/swalHelper";
 
 // ── Dropdown options ──────────────────────────────────────────────────────────
@@ -184,6 +184,10 @@ const BookFreeTrial = () => {
     const { fetchVenues, venues } = useCommon();
     const { profile, fetchProfileData } = useProfile();
     const navigate = useNavigate();
+    const location = useLocation();
+
+    // Booking passed from MyBookings ("Rebook Trial" / context navigation)
+    const prefillBooking = location?.state?.booking ?? null;
 
     // ── Form state ────────────────────────────────────────────────────────────
     const [selectedVenue, setSelectedVenue]   = useState(null);
@@ -209,6 +213,8 @@ const BookFreeTrial = () => {
     });
     const [newChildErrors, setNewChildErrors] = useState({});
     const [isSavingChild, setIsSavingChild]   = useState(false);
+    const [isDirty, setIsDirty]               = useState(false); // tracks unsaved changes
+    const DRAFT_KEY = "bookFreeTrial_draft";
 
     // ── Profile prefill ───────────────────────────────────────────────────────
     useEffect(() => {
@@ -284,6 +290,112 @@ const BookFreeTrial = () => {
         fetchVenues?.();
         fetchProfileData?.();
     }, [fetchVenues]);
+
+    // ── Mark form dirty whenever key fields change ─────────────────────────────
+    useEffect(() => {
+        if (flowStep === "D") return; // don't mark dirty on success screen
+        const hasData =
+            selectedVenue ||
+            selectedDate  ||
+            students.some((s) => s.studentFirstName || s.selectedClassId) ||
+            parents.some((p) => p.parentFirstName || p.parentEmail);
+        setIsDirty(!!hasData);
+    }, [selectedVenue, selectedDate, students, parents, flowStep]);
+
+    // ── Save draft to sessionStorage when form data changes ───────────────────
+    useEffect(() => {
+        if (!isDirty || flowStep === "D") return;
+        try {
+            sessionStorage.setItem(
+                DRAFT_KEY,
+                JSON.stringify({
+                    students,
+                    parents,
+                    emergency,
+                    selectedStudentIds,
+                    savedAt: Date.now(),
+                })
+            );
+        } catch { /* storage quota exceeded — silently ignore */ }
+    }, [isDirty, students, parents, emergency, selectedStudentIds]);
+
+    // ── Warn on browser close/refresh when form has unsaved data ─────────────
+    useEffect(() => {
+        const handler = (e) => {
+            if (!isDirty || flowStep === "D") return;
+            e.preventDefault();
+            e.returnValue = "";
+        };
+        window.addEventListener("beforeunload", handler);
+        return () => window.removeEventListener("beforeunload", handler);
+    }, [isDirty, flowStep]);
+
+    // ── Clear draft on successful submit (called inside handleSubmit) ─────────
+    const clearDraft = () => {
+        try { sessionStorage.removeItem(DRAFT_KEY); } catch { /* ignore */ }
+        setIsDirty(false);
+    };
+
+    // ── Prefill venue + classes from MyBookings navigation ───────────────────
+    // Runs once venues are loaded and a prefillBooking exists in location.state.
+    // Students IN that booking are sorted first and pre-selected only for them.
+    useEffect(() => {
+        if (!prefillBooking || !venues?.capacityVenues?.length) return;
+
+        // ── 1. Auto-select venue ──────────────────────────────────────────────
+        const sourceVenueId = prefillBooking?.venue?.id ?? prefillBooking?.venueId;
+        if (sourceVenueId && !selectedVenue) {
+            const match = venues.capacityVenues.find(
+                (v) => String(v.venueId) === String(sourceVenueId)
+            );
+            if (match) {
+                // Set raw venue object — same shape as `setSelectedVenue(option.all)` in onChange
+                setSelectedVenue(match);
+            }
+        }
+
+        // ── 2. Reorder students + prefill class from their classSchedule ──────
+        const bookingStudents = prefillBooking?.students || [];
+        if (!bookingStudents.length) return;
+
+        // Build a set of first-names that appear in this booking (lowercased)
+        const bookingNames = new Set(
+            bookingStudents.map((bs) => (bs?.studentFirstName || "").toLowerCase())
+        );
+
+        setStudents((prev) => {
+            // Enrich each student with class data from booking if matched
+            const enriched = prev.map((student) => {
+                const match = bookingStudents.find(
+                    (bs) =>
+                        (bs?.studentFirstName || "").toLowerCase() ===
+                        (student.studentFirstName || "").toLowerCase()
+                );
+                if (!match) return student;
+                const sched = match?.classSchedule || match?.holidayClassSchedules || null;
+                const classId = sched?.classScheduleId ?? sched?.id ?? sched?.classId ?? null;
+                return {
+                    ...student,
+                    selectedClassId:   classId ? String(classId) : student.selectedClassId,
+                    selectedClassData: sched ?? student.selectedClassData,
+                };
+            });
+
+            // Sort: booking students first, rest after
+            const inBooking  = enriched.filter((s) =>
+                bookingNames.has((s.studentFirstName || "").toLowerCase())
+            );
+            const notInBooking = enriched.filter(
+                (s) => !bookingNames.has((s.studentFirstName || "").toLowerCase())
+            );
+            const reordered = [...inBooking, ...notInBooking];
+
+            // Only pre-select students from this booking
+            setSelectedStudentIds(inBooking.map((s) => s._tmpId));
+
+            return reordered;
+        });
+    }, [prefillBooking, venues]);
 
     // ── Venue derived ─────────────────────────────────────────────────────────
     const sessionDates = (selectedVenue?.terms || []).flatMap((t) =>
@@ -656,6 +768,7 @@ const BookFreeTrial = () => {
                 }
             );
             showSuccess("Success", response?.data?.message || "Free Trial Booked Successfully");
+            clearDraft(); // remove saved draft on success
             setFlowStep("D");
         } catch (err) {
             console.error("Booking Error:", err);

@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 
 import './App.css'
 import AccountInformation from "./pages/dashboard/AccountInformation";
@@ -27,6 +27,12 @@ import BookMembership from "./components/booking/BookMembership";
 import { PhoneInputProvider } from "./context/PhoneInputContext";
 import { CommonProvider } from "./context/CommonContext";
 import HolidayWaitingList from "./components/booking/HolidayWaitingList";
+
+// Layout wrapper route — renders sidebar + header around its children
+function LayoutRoute({ children }) {
+  return <Layout>{children}</Layout>;
+}
+
 function App() {
   return (
     <StepProvider>
@@ -35,38 +41,39 @@ function App() {
           <FeedbackProvider>
             <PhoneInputProvider>
               <BrowserRouter>
-              <CommonProvider>
-
-                <Layout>
+                <CommonProvider>
                   <Routes>
-                    <Route path="/" element={<AccountInformation />} />
-                    <Route path="/booking" element={<Booking />} />
-                    <Route path="/one-to-one-booking" element={<OneToOneBookingForm />} />
-                    <Route path="/book-free-trial" element={<BookFreeTrial />} />
-                    <Route path="/waiting-list" element={<AddToWaitingList />} />
-                    <Route path="/holiday-waiting-list" element={<HolidayWaitingList />} />
-                    <Route path="/book-membership" element={<BookMembership />} />
-                    <Route path="/auth/login" element={<LoginPage />} />
+
+                    {/* ── Auth pages — NO sidebar/header ── */}
+                    <Route path="/auth/login"           element={<LoginPage />} />
                     <Route path="/auth/forgot-password" element={<ForgotPasswordPage />} />
-                    <Route path="/auth/reset-password" element={<ResetPasswordPage />} />
-                    <Route path="/auth/set-password" element={<SetPassword />} />
-                    <Route path="/bookings" element={<MyBookings />} />
-                    <Route path="/refer" element={<ReferFriend />} />
-                    <Route path="/surveys" element={<Surveys />} />
-                    <Route path="/surveys/:id" element={<SurveyDetail />} />
-                    <Route path="/account-information/see-details" element={<Detail />} />
-                    <Route path="/skills/:id" element={<SkillDetail />} />
-                    <Route path="/settings" element={<Settings />} />
+                    <Route path="/auth/reset-password"  element={<ResetPasswordPage />} />
+                    <Route path="/auth/set-password"    element={<SetPassword />} />
+
+                    {/* ── 404 — NO sidebar/header ── */}
                     <Route path="*" element={<NotFound />} />
+
+                    {/* ── Dashboard routes — WITH sidebar/header via Layout ── */}
+                    <Route element={<LayoutRoute><Surveys /></LayoutRoute>} path="/surveys" />
+                    <Route element={<LayoutRoute><SurveyDetail /></LayoutRoute>} path="/surveys/:id" />
+                    <Route element={<LayoutRoute><AccountInformation /></LayoutRoute>} path="/" />
+                    <Route element={<LayoutRoute><Booking /></LayoutRoute>} path="/booking" />
+                    <Route element={<LayoutRoute><OneToOneBookingForm /></LayoutRoute>} path="/one-to-one-booking" />
+                    <Route element={<LayoutRoute><BookFreeTrial /></LayoutRoute>} path="/book-free-trial" />
+                    <Route element={<LayoutRoute><AddToWaitingList /></LayoutRoute>} path="/waiting-list" />
+                    <Route element={<LayoutRoute><HolidayWaitingList /></LayoutRoute>} path="/holiday-waiting-list" />
+                    <Route element={<LayoutRoute><BookMembership /></LayoutRoute>} path="/book-membership" />
+                    <Route element={<LayoutRoute><MyBookings /></LayoutRoute>} path="/bookings" />
+                    <Route element={<LayoutRoute><ReferFriend /></LayoutRoute>} path="/refer" />
+                    <Route element={<LayoutRoute><Detail /></LayoutRoute>} path="/account-information/see-details" />
+                    <Route element={<LayoutRoute><SkillDetail /></LayoutRoute>} path="/skills/:id" />
+                    <Route element={<LayoutRoute><Settings /></LayoutRoute>} path="/settings" />
+
                   </Routes>
-                </Layout>
-
-              </CommonProvider>
-
+                </CommonProvider>
               </BrowserRouter>
             </PhoneInputProvider>
           </FeedbackProvider>
-
         </SkillProvider>
       </ProfileProvider>
     </StepProvider>
