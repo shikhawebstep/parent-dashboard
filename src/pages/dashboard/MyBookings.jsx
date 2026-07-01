@@ -408,11 +408,11 @@ const MyBookings = () => {
                                                     <PillButton color="red" onClick={() => setCancelModal({ open: true, booking })}>
                                                         Cancel Trial
                                                     </PillButton>
-                                                    {formatted.status ==="attended" && (
+                                                    {/* {formatted.status ==="attended" && (
+                                                    )} */}
                                                     <PillButton color="green" onClick={() => navigate("/book-membership", { state: { booking } })}>
                                                         Book Membership
                                                     </PillButton>
-                                                    )}
                                                     {formatted.status ==="not attended" && (
                                                         <PillButton color="blue" onClick={() => navigate("/book-free-trial?bookingId=" + booking.id, { state: { booking } })}>
                                                             Rebook Trial

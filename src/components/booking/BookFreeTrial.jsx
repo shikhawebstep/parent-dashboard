@@ -1411,10 +1411,7 @@ const BookFreeTrial = () => {
                                 </div>
 
                                 <div className="border-t border-gray-100 pt-4.5 mb-5">
-                                    <div className="flex items-center justify-between text-gray-900 mb-1">
-                                        <span className="font-bold text-[14px]">Registration Fee</span>
-                                        <span className="text-[#6b7685] line-through text-[13px]">£20.00</span>
-                                    </div>
+                                   
                                     <div className="flex items-center justify-between text-gray-900">
                                         <span className="font-bold text-[14px]">Free Trial Cost</span>
                                         <span className="text-emerald-500 font-extrabold text-[15px] bg-emerald-50 px-2 py-0.5 rounded-md uppercase tracking-wider">Free</span>

@@ -1,10 +1,29 @@
 import React, { useState, useEffect } from "react";
-import { ChevronLeft, Trash2, Check, MapPin } from "lucide-react";
+import {
+    ChevronLeft,
+    Trash2,
+    Check,
+    MapPin,
+    X,
+    Loader2,
+    PartyPopper,
+    Mail,
+    User,
+    Users,
+    Smile,
+    ShieldAlert,
+    Sparkles,
+    CheckCircle2,
+    Phone,
+    Info,
+} from 'lucide-react';
+import { motion, AnimatePresence } from "framer-motion";
 import { useCommon } from "../../context/CommonContext";
 import PhoneNumberInput from "../../commom/PhoneNumberInput";
 import { useProfile } from "../../context/ProfileContext";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import Select from "react-select";
 import { showSuccess, showError } from "../../../utils/swalHelper";
 
 // ── Dropdown options ──────────────────────────────────────────────────────────
@@ -45,6 +64,56 @@ const formatDOBForDisplay = (isoDate) => {
     return `${d}/${m}/${y}`;
 };
 
+// ── DOB / Age helpers for Add Child modal ─────────────────
+const formatDOBInput = (raw = "") => {
+    const digits = raw.replace(/\D/g, "").slice(0, 8);
+    if (digits.length <= 2) return digits;
+    if (digits.length <= 4) return digits.slice(0, 2) + "/" + digits.slice(2);
+    return digits.slice(0, 2) + "/" + digits.slice(2, 4) + "/" + digits.slice(4);
+};
+
+const isValidDOB = (val = "") => {
+    if (!val || typeof val !== "string") return false;
+    const parts = val.split("/");
+    if (parts.length !== 3) return false;
+    const [d, m, y] = parts.map(Number);
+    if (!d || !m || !y || Number.isNaN(d) || Number.isNaN(m) || Number.isNaN(y)) return false;
+    const dob = new Date(y, m - 1, d);
+    if (Number.isNaN(dob.getTime())) return false;
+    if (dob.getDate() !== d || dob.getMonth() !== m - 1 || dob.getFullYear() !== y) return false;
+    return dob <= new Date(); // not in the future
+};
+
+const calculateAge = (val = "") => {
+    if (!isValidDOB(val)) return "";
+    const [d, m, y] = val.split("/").map(Number);
+    const dob = new Date(y, m - 1, d);
+    const today = new Date();
+    let age = today.getFullYear() - dob.getFullYear();
+    const monthDiff = today.getMonth() - dob.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())) age--;
+    return age >= 0 ? age : "";
+};
+
+const toDateOnly = (value) => {
+    if (!value) return "";
+    if (typeof value === "string") {
+        if (value.includes("/")) {
+            const [d, m, y] = value.split("/").map(Number);
+            if (!d || !m || !y) return "";
+            return `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+        }
+        const parsed = new Date(value);
+        if (isNaN(parsed.getTime())) return "";
+        value = parsed;
+    }
+    if (!(value instanceof Date) || Number.isNaN(value.getTime())) return "";
+    const y = value.getFullYear();
+    const m = String(value.getMonth() + 1).padStart(2, "0");
+    const d = String(value.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+};
+
 // ── Inits ─────────────────────────────────────────────────────────────────────
 const createStudent = () => ({
     _tmpId:           Date.now() + Math.random(),
@@ -79,6 +148,33 @@ const INIT_EMERGENCY = {
     emergencyRelation:    "",
 };
 
+// ── Select styles (matches BookMembership) ────────────────────────────────────
+const selectStyles = (hasError) => ({
+    control: (base, state) => ({
+        ...base,
+        minHeight: 46,
+        borderRadius: 10,
+        borderColor: hasError ? "#e53e3e" : state.isFocused ? "#3b7df6" : "#e7ebf1",
+        boxShadow: state.isFocused ? `0 0 0 2px ${hasError ? "rgba(229,62,62,0.3)" : "rgba(59,125,246,0.3)"}` : "none",
+        backgroundColor: hasError ? "#fff5f5" : "#fff",
+        "&:hover": { borderColor: hasError ? "#e53e3e" : "#3b7df6" },
+        fontSize: 14,
+        fontFamily: "inherit",
+    }),
+    valueContainer: (base) => ({ ...base, padding: "2px 14px" }),
+    placeholder: (base) => ({ ...base, color: "#6b7685" }),
+    menu: (base) => ({ ...base, borderRadius: 10, overflow: "hidden", zIndex: 9999 }),
+    option: (base, state) => ({
+        ...base,
+        fontSize: 14,
+        backgroundColor: state.isSelected ? "#3b7df6" : state.isFocused ? "#eaf1fe" : "#fff",
+        color: state.isSelected ? "#fff" : "#1f2733",
+        cursor: "pointer",
+    }),
+    singleValue: (base) => ({ ...base, color: "#1f2733" }),
+    indicatorSeparator: () => ({ display: "none" }),
+});
+
 // ── Component ─────────────────────────────────────────────────────────────────
 export default function AddToWaitingList() {
     const { fetchVenues, venues } = useCommon();
@@ -87,7 +183,6 @@ export default function AddToWaitingList() {
 
     // ── Form state ────────────────────────────────────────────────────────────
     const [selectedVenue,    setSelectedVenue]    = useState(null);
-    const [numberOfStudents, setNumberOfStudents] = useState("1");
     const [students,         setStudents]         = useState([createStudent()]);
     const [parents,          setParents]          = useState([createParent()]);
     const [emergency,        setEmergency]        = useState(INIT_EMERGENCY);
@@ -96,10 +191,21 @@ export default function AddToWaitingList() {
     const [submitting,       setSubmitting]       = useState(false);
 
     // ── Wizard state ──────────────────────────────────────────────────────────
-    const [flowStep,           setFlowStep]           = useState("B");
-    const [demoMode,           setDemoMode]           = useState("single");
+    const [flowStep,           setFlowStep]           = useState("form");
     const [selectedStudentIds, setSelectedStudentIds] = useState([]);
     const [isChangingVenue,    setIsChangingVenue]    = useState(false);
+
+    // ── Add Child Modal state ─────────────────────────────────────────────────
+    const [isAddChildOpen, setIsAddChildOpen] = useState(false);
+    const [newChildForm, setNewChildForm]     = useState({
+        studentFirstName: "",
+        studentLastName: "",
+        dob: "",
+        gender: "",
+        medicalInfo: "",
+    });
+    const [newChildErrors, setNewChildErrors] = useState({});
+    const [isSavingChild, setIsSavingChild]   = useState(false);
 
     // ── Profile prefill ───────────────────────────────────────────────────────
     useEffect(() => {
@@ -145,26 +251,17 @@ export default function AddToWaitingList() {
 
         setStudents(finalStudents);
         setParents(finalParents);
-        setNumberOfStudents(String(finalStudents.length));
         setSelectedStudentIds(finalStudents.map((s) => s._tmpId));
-
-        if (finalStudents.length > 1) {
-            setDemoMode("multi");
-            setFlowStep("A");
-        } else {
-            setDemoMode("single");
-            setFlowStep("B");
-        }
+        setFlowStep("form");
 
         const ec = profile?.adminMeta?.emergency;
-    console.log('ec',ec)
         if (ec) {
             const p0     = finalParents[0];
             const isSame =
                 !!p0 &&
-                p0.parentFirstName?.trim()   === ec.emergencyFirstName?.trim()   &&
-                p0.parentLastName?.trim()    === ec.emergencyLastName?.trim()    &&
-                p0.parentPhoneNumber?.trim() === ec.emergencyPhoneNumber?.trim();
+                (p0.parentFirstName || "").trim()   === (ec.emergencyFirstName || "").trim()   &&
+                (p0.parentLastName || "").trim()    === (ec.emergencyLastName || "").trim()    &&
+                (p0.parentPhoneNumber || "").trim() === (ec.emergencyPhoneNumber || "").trim();
             setEmergency({
                 sameAsAbove:          isSame,
                 emergencyFirstName:   ec.emergencyFirstName   || "",
@@ -186,7 +283,7 @@ export default function AddToWaitingList() {
     // ── Venue derived ─────────────────────────────────────────────────────────
     const allClasses = selectedVenue
         ? Object.entries(selectedVenue.classes || {}).flatMap(([day, cls]) =>
-            cls.map((c) => ({
+            (cls || []).map((c) => ({
                 id:        c.classId,
                 className: c.className,
                 dayOfWeek: day,
@@ -197,24 +294,25 @@ export default function AddToWaitingList() {
         )
         : [];
 
-    // ── Wizard derived ────────────────────────────────────────────────────────
-    const isMulti = demoMode === "multi";
+    const buildClassSelectOptions = () =>
+        allClasses.map((c) => ({
+            value: c.id,
+            label: `${c.className} (${c.dayOfWeek}) ${c.time}${c.level ? ` – ${c.level}` : ""}`.trim(),
+            all: c,
+        }));
+    const classSelectOptions = buildClassSelectOptions();
 
-    const activeStudents = isMulti
-        ? students.filter((s) => selectedStudentIds.includes(s._tmpId))
-        : students.slice(0, 1);
+    // ── Venue dropdown options ──────────────────────────────────────────────
+    const venueSelectOptions = (venues?.noCapacityVenues || venues?.capacityVenues || [])
+        .filter((v) => v && v.venueId !== undefined && v.venueId !== null)
+        .map((v) => ({ value: v.venueId, label: v.venueName || "Unnamed venue", all: v }));
+
+    // ── Selected students ─────────────────────────────────────────────────────
+    const activeStudents = students.filter((s) => selectedStudentIds.includes(s._tmpId));
 
     const activeNames = activeStudents
         .map((s) => s.studentFirstName || "Child")
         .join(" & ") || "your child";
-
-    const fullFlowStates   = ["A", "B", "D"];
-    const singleFlowStates = ["B", "D"];
-    const flowStates       = isMulti ? fullFlowStates : singleFlowStates;
-    const stepsLabels      = isMulti
-        ? ["Children", "Waiting list details", "Done"]
-        : ["Waiting list details", "Done"];
-    const currentStepIndex = flowStates.indexOf(flowStep);
 
     // ── Helpers ───────────────────────────────────────────────────────────────
     const getStudentIdx = (student) =>
@@ -229,22 +327,6 @@ export default function AddToWaitingList() {
         setSelectedStudentIds((prev) =>
             prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
         );
-    };
-
-    const handleNumStudentsChange = (val) => {
-        const count = Number(val) || 1;
-        setNumberOfStudents(String(count));
-        setStudents((prev) => {
-            let next;
-            if (count > prev.length) {
-                next = [...prev, ...Array.from({ length: count - prev.length }, createStudent)];
-            } else {
-                next = prev.slice(0, count);
-            }
-            setSelectedStudentIds(next.map((s) => s._tmpId));
-            return next;
-        });
-        setDemoMode(count > 1 ? "multi" : "single");
     };
 
     const handleDOBChange = (index, value) => {
@@ -294,15 +376,56 @@ export default function AddToWaitingList() {
         clearError(`s${index}_${field}`);
     };
 
-    const handleRemoveStudent = (index) => {
-        setStudents((prev) => {
-            const next   = prev.filter((_, i) => i !== index);
-            const result = next.length ? next : [createStudent()];
-            setSelectedStudentIds(result.map((s) => s._tmpId));
-            setNumberOfStudents(String(result.length));
-            if (result.length <= 1) setDemoMode("single");
-            return result;
+    const handleAddStudents = () => {
+        setNewChildForm({
+            studentFirstName: "",
+            studentLastName: "",
+            dob: "",
+            gender: "",
+            medicalInfo: "",
         });
+        setNewChildErrors({});
+        setIsAddChildOpen(true);
+    };
+
+    const handleNewChildDOBChange = (e) => {
+        const formatted = formatDOBInput(e?.target?.value);
+        setNewChildForm((f) => ({ ...f, dob: formatted }));
+        if (newChildErrors.dob) setNewChildErrors((errs) => ({ ...errs, dob: "" }));
+    };
+
+    const validateNewChild = () => {
+        const errs = {};
+        if (!newChildForm.studentFirstName.trim()) errs.studentFirstName = "First name is required";
+        if (!newChildForm.studentLastName.trim()) errs.studentLastName = "Last name is required";
+        if (!isValidDOB(newChildForm.dob)) errs.dob = "Enter a valid date (DD/MM/YYYY)";
+        if (!newChildForm.gender) errs.gender = "Gender is required";
+        setNewChildErrors(errs);
+        return Object.keys(errs).length === 0;
+    };
+
+    const handleSaveNewChild = () => {
+        if (!validateNewChild()) return;
+        setIsSavingChild(true);
+
+        const newStudent = {
+            ...createStudent(),
+            studentFirstName: newChildForm.studentFirstName.trim(),
+            studentLastName: newChildForm.studentLastName.trim(),
+            dob: newChildForm.dob,
+            age: calculateAge(newChildForm.dob),
+            gender: newChildForm.gender,
+            medicalInfo: newChildForm.medicalInfo.trim() || "None",
+        };
+
+        setStudents((prev) => {
+            const next = [...prev, newStudent];
+            setSelectedStudentIds((sel) => [...sel, newStudent._tmpId]);
+            return next;
+        });
+
+        setIsSavingChild(false);
+        setIsAddChildOpen(false);
     };
 
     const handleParentChange = (index, field, value) => {
@@ -352,18 +475,6 @@ export default function AddToWaitingList() {
             }));
         }
     }, [emergency.sameAsAbove, parents]);
-
-    const toDateOnly = (value) => {
-        if (!value) return "";
-        if (typeof value === "string") {
-            if (value.includes("/")) {
-                const [d, m, y] = value.split("/").map(Number);
-                if (!d || !m || !y) return "";
-                return `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
-            }
-        }
-        return value;
-    };
 
     const validate = () => {
         const errs = {};
@@ -418,18 +529,8 @@ export default function AddToWaitingList() {
         return Object.keys(errs).length === 0;
     };
 
-    const handleCancel = () => {
-        setSelectedVenue(null);
-        setNumberOfStudents("1");
-        setStudents([createStudent()]);
-        setParents([createParent()]);
-        setEmergency(INIT_EMERGENCY);
-        setLevelOfInterest("Low");
-        setErrors({});
-    };
-
     const handleSubmit = async (e) => {
-        e.preventDefault();
+        if (e) e.preventDefault();
         if (!validate()) {
             alert("Please check the form for errors.");
             return;
@@ -508,477 +609,356 @@ export default function AddToWaitingList() {
                 : "border-[#e7ebf1] focus:ring-[#3b7df6]"
         }`;
 
-    const labelClass  = "block text-[13px] font-semibold mb-1.5 text-[#1f2733]";
-
-    const nativeSelectClass =
-        "w-full font-inherit text-[14px] font-medium text-[#1f2733] border border-[#e7ebf1] rounded-[10px] px-3.5 py-[11px] bg-white focus:outline-none focus:ring-2 focus:ring-[#3b7df6] appearance-none";
-
-    const chevronBg =
-        `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236b7685' stroke-width='1.6' fill='none' stroke-linecap='round'/%3E%3C/svg%3E")`;
+    const labelClass  = "block text-[14px] font-semibold mb-1.5 text-[#1f2733]";
 
     // ── Render ────────────────────────────────────────────────────────────────
     return (
-        <div className="min-h-screen bg-[#f4f6f9] booking-page text-[#1f2733] font-['Poppins',sans-serif] pb-28 sm:pb-16">
-
-         
-
+        <div className="min-h-screen booking-page bg-[#f8fafc] text-[#1f2733] font-['Poppins',sans-serif] pb-28 sm:pb-16 pt-5">
             {/* ── Navy band ──────────────────────────────────────────────────── */}
-            <div className="bg-[#1e3a6e] text-white mx-6 rounded-[14px] px-5 py-4 flex items-center gap-3 font-bold text-[18px]">
-                <span
-                    className="cursor-pointer opacity-90 flex items-center"
-                    onClick={() => {
-                        if (currentStepIndex > 0) setFlowStep(flowStates[currentStepIndex - 1]);
-                        else navigate(-1);
-                    }}
-                >
-                    <ChevronLeft size={20} />
-                </span>
-                Add to Waiting List
+            <div className="bg-[#1e3a6e] text-white mx-6 rounded-[16px] px-6 py-4.5 flex items-center justify-between gap-3 font-bold text-[18px] shadow-md">
+                <div className="flex items-center gap-3">
+                    <span
+                        className="cursor-pointer opacity-90 hover:opacity-100 flex items-center p-1 hover:bg-white/10 rounded-lg transition-all"
+                        onClick={() => navigate(-1)}
+                    >
+                        <ChevronLeft size={22} />
+                    </span>
+                    <span>Add to Waiting List</span>
+                </div>
+                <div className="bg-[#3b7df6] text-white text-[12px] font-semibold px-3 py-1 rounded-full flex items-center gap-1.5 shadow-sm">
+                    <Sparkles size={13} />
+                    <span>Waiting List</span>
+                </div>
             </div>
 
-            <div className="max-w-[1040px] mx-auto md:px-6 pt-5 px-2">
-
-                {/* ── Steps indicator ────────────────────────────────────────── */}
-                <div className="hidden md:flex items-center justify-center gap-2 mb-5 flex-wrap">
-                    {flowStates.map((fs, i) => {
-                        const isActive = fs === flowStep;
-                        const isDone   = i < currentStepIndex;
-                        return (
-                            <React.Fragment key={fs}>
-                                <div
-                                    className={`flex items-center gap-2 text-[13px] font-semibold ${
-                                        isActive ? "text-[#1f2733]" : "text-[#6b7685]"
-                                    }`}
-                                >
-                                    <span
-                                        className={`w-6 h-6 rounded-full border-[1.5px] flex items-center justify-center text-[12px] ${
-                                            isActive
-                                                ? "bg-[#21b573] border-[#21b573] text-white"
-                                                : isDone
-                                                ? "bg-[#cdeede] border-[#cdeede] text-[#21b573]"
-                                                : "bg-white border-[#e7ebf1]"
-                                        }`}
-                                    >
-                                        {isDone ? <Check size={13} /> : i + 1}
-                                    </span>
-                                    {stepsLabels[i]}
-                                </div>
-                                {i < flowStates.length - 1 && (
-                                    <span className="w-8 h-[2px] bg-[#e7ebf1] rounded-[2px]" />
-                                )}
-                            </React.Fragment>
-                        );
-                    })}
-                </div>
-
-                {/* ── Main white card ────────────────────────────────────────── */}
-                <div className="bg-white rounded-[16px] shadow-[0_8px_30px_rgba(20,40,80,0.08)] md:p-8 p-4">
-
-                    {/* ════════════════════════════════════════════════════════
-                        SCREEN A  —  Who's this for? (multi only)
-                    ════════════════════════════════════════════════════════ */}
-                    {flowStep === "A" && (
-                        <div>
-                            <div className="text-center text-[24px] font-bold mb-1.5 tracking-tight">
-                                Who's this for?
-                            </div>
-                            <div className="text-center text-[#6b7685] text-[14px] mb-6">
-                                Select the children you'd like to add to the waiting list
-                            </div>
-
-                            {/* Number of children picker */}
-                            <div className="flex justify-center mb-6">
-                                <div className="flex items-center gap-3 bg-[#f4f6f9] rounded-[12px] px-4 py-3">
-                                    <span className="text-[13px] font-semibold text-[#6b7685]">
-                                        Number of children:
-                                    </span>
-                                    <select
-                                        className="font-inherit text-[14px] font-medium border border-[#e7ebf1] rounded-[10px] px-3.5 py-2 pr-8 bg-white focus:outline-none focus:ring-2 focus:ring-[#3b7df6] appearance-none"
-                                        style={{ backgroundImage: chevronBg, backgroundRepeat: "no-repeat", backgroundPosition: "right 10px center" }}
-                                        value={numberOfStudents}
-                                        onChange={(e) => handleNumStudentsChange(e.target.value)}
-                                    >
-                                        <option value="1">1</option>
-                                        <option value="2">2</option>
-                                        <option value="3">3</option>
-                                        <option value="4">4</option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            {/* Student selection cards */}
-                            <div className="flex justify-center gap-4 flex-wrap mb-2">
-                                {students.map((s, i) => {
-                                    const isSel = selectedStudentIds.includes(s._tmpId);
-                                    return (
-                                        <div
-                                            key={s._tmpId ?? i}
-                                            onClick={() => toggleStudent(s._tmpId)}
-                                            className={`w-[230px] border-[1.5px] rounded-[14px] p-4 cursor-pointer transition-all relative ${
-                                                isSel
-                                                    ? "border-[#3b7df6] ring-4 ring-[#3b7df6]/10"
-                                                    : "border-[#e7ebf1] hover:border-[#bcd0f5]"
-                                            }`}
-                                        >
-                                            {/* Checkbox indicator */}
-                                            <div
-                                                className={`absolute top-3.5 right-3.5 w-[22px] h-[22px] rounded-full border-2 flex items-center justify-center text-white text-[12px] ${
-                                                    isSel ? "bg-[#3b7df6] border-[#3b7df6]" : "border-[#e7ebf1]"
-                                                }`}
-                                            >
-                                                {isSel && <Check size={13} />}
-                                            </div>
-
-                                            <div className="text-[#3b7df6] font-bold text-[16px] mb-3">
-                                                {s.studentFirstName || `Child ${i + 1}`}
-                                            </div>
-
-                                            <div className="grid grid-cols-2 gap-y-3 gap-x-2">
-                                                <div>
-                                                    <div className="text-[11px] text-[#6b7685]">Date of birth</div>
-                                                    <div className="text-[14px] font-semibold">{s.dob || "–"}</div>
-                                                </div>
-                                                <div>
-                                                    <div className="text-[11px] text-[#6b7685]">Age</div>
-                                                    <div className="text-[14px] font-semibold">{s.age || "–"}</div>
-                                                </div>
-                                                <div>
-                                                    <div className="text-[11px] text-[#6b7685]">Gender</div>
-                                                    <div className="text-[14px] font-semibold">{s.gender || "–"}</div>
-                                                </div>
-                                                <div>
-                                                    <div className="text-[11px] text-[#6b7685]">Medical</div>
-                                                    <div className="text-[14px] font-semibold truncate">{s.medicalInfo || "–"}</div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    );
-                                })}
-                            </div>
-
-                            {/* Actions */}
-                            <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-[#e7ebf1] p-4 z-40 flex gap-3 w-full sm:relative sm:bottom-auto sm:left-auto sm:right-auto sm:bg-transparent sm:border-t-0 sm:p-0 sm:z-auto justify-center sm:mt-7 sm:w-auto">
-                                <button
-                                    type="button"
-                                    onClick={() => navigate(-1)}
-                                    className="sm:w-auto font-semibold text-[15px] rounded-[12px] md:px-8 py-3.5 border border-[#e7ebf1] text-[#1f2733] bg-white px-4"
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    type="button"
-                                    disabled={selectedStudentIds.length === 0}
-                                    onClick={() => setFlowStep("B")}
-                                    className="sm:w-auto font-semibold text-[15px] rounded-[12px] md:px-8 py-3.5 border border-[#3b7df6] text-white bg-[#3b7df6] disabled:opacity-50 hover:bg-[#2f6ae0] px-4"
-                                >
-                                    Next
-                                </button>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* ════════════════════════════════════════════════════════
-                        SCREEN B  —  Main form
-                    ════════════════════════════════════════════════════════ */}
-                    {flowStep === "B" && (
-                        <form onSubmit={handleSubmit} noValidate>
-                            <div className="text-center text-[24px] font-bold mb-1.5 tracking-tight">
-                                Add {activeNames} to the waiting list
-                            </div>
-                            <div className="text-center text-[#6b7685] text-[14px] mb-6">
-                                Fill in the details below and we'll notify you when a spot opens up
-                            </div>
-
-                            {/* ── Venue selector ─────────────────────────────────────────── */}
-                            <div className="mb-6">
-                                {/* Gradient header */}
-                                <div
-                                    style={{ background: "linear-gradient(120deg, #1e3a6e, #2f5aa0)" }}
-                                    className="text-white px-5 py-4 rounded-t-[14px] flex items-center justify-between gap-3 flex-wrap"
-                                >
-                                    <div className="flex items-center gap-2.5 font-semibold text-[15px]">
-                                        <MapPin size={16} />
-                                        {selectedVenue?.venueName || "Select a venue…"}
+            <div className="max-w-[1140px] mx-auto md:px-6 pt-6 px-3">
+                {flowStep !== "D" ? (
+                    <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-8 items-start">
+                        
+                        {/* ── Left Column: Form Sections ── */}
+                        <div className="flex flex-col gap-6">
+                            
+                            {/* Card 1: Who's this waiting list for? */}
+                            <div className="bg-white rounded-[20px] p-6 border border-[#e2e8f0] shadow-sm hover:shadow-md transition-shadow duration-300">
+                                <div className="flex items-center gap-2.5 mb-5">
+                                    <div className="w-9 h-9 rounded-xl bg-blue-50 flex items-center justify-center text-[#3b7df6]">
+                                        <Users size={18} />
                                     </div>
-                                    <button
-                                        type="button"
-                                        onClick={() => setIsChangingVenue(!isChangingVenue)}
-                                        className="bg-white/15 border border-white/35 text-white rounded-[20px] px-3.5 py-1.5 text-[12px] font-semibold"
+                                    <div>
+                                        <h3 className="font-bold text-[16px] text-gray-900">Who is this for?</h3>
+                                        <p className="text-[12px] text-[#6b7685]">Select children or add a new child profile</p>
+                                    </div>
+                                </div>
+
+                                <div className="flex flex-col sm:flex-row gap-3 mb-6">
+                                    <button className="flex-1 sm:flex-none font-semibold text-[13px] rounded-[30px] px-5 py-2.5 bg-[#eaf1fe] text-[#3b7df6] border border-[#eaf1fe] flex items-center justify-center gap-1.5 transition-all">
+                                        <CheckCircle2 size={14} />
+                                        Select Existing Child
+                                    </button>
+                                    <button 
+                                        onClick={handleAddStudents} 
+                                        className="flex-1 sm:flex-none font-semibold text-[13px] rounded-[30px] px-5 py-2.5 bg-white text-[#6b7685] border border-[#e2e8f0] hover:border-[#3b7df6] hover:text-[#3b7df6] flex items-center justify-center gap-1.5 transition-all"
                                     >
-                                        {isChangingVenue ? "Cancel" : "Change venue"}
+                                        + Add a New Child
                                     </button>
                                 </div>
 
-                                {/* Venue dropdown (visible when changing) */}
-                                {isChangingVenue && (
-                                    <div className="border border-t-0 border-[#e7ebf1] px-5 py-3.5 bg-[#f4f6f9]">
-                                        <select
-                                            className={nativeSelectClass}
-                                            style={{ backgroundImage: chevronBg, backgroundRepeat: "no-repeat", backgroundPosition: "right 14px center" }}
-                                            value={selectedVenue?.venueId || ""}
-                                            onChange={(e) => {
-                                                const vId = Number(e.target.value);
-                                                const v   = venues?.noCapacityVenues?.find((x) => x.venueId === vId)
-                                                         || venues?.capacityVenues?.find((x) => x.venueId === vId);
-                                                if (v) {
-                                                    setSelectedVenue(v);
+                                {/* Student cards grid */}
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    {students.map((s, i) => {
+                                        const isSel = selectedStudentIds.includes(s._tmpId);
+                                        return (
+                                            <div
+                                                key={s._tmpId ?? i}
+                                                onClick={() => toggleStudent(s._tmpId)}
+                                                className={`border-[1.5px] rounded-[16px] p-4 cursor-pointer transition-all relative flex flex-col justify-between ${
+                                                    isSel
+                                                        ? "border-[#3b7df6] bg-blue-50/20 ring-4 ring-[#3b7df6]/5 shadow-sm"
+                                                        : "border-[#e2e8f0] hover:border-[#bcd0f5] bg-white"
+                                                }`}
+                                            >
+                                                {/* Checkbox indicator */}
+                                                <div
+                                                    className={`absolute top-3.5 right-3.5 w-[20px] h-[20px] rounded-full border-2 flex items-center justify-center text-white text-[11px] transition-all ${
+                                                        isSel ? "bg-[#3b7df6] border-[#3b7df6]" : "border-[#e2e8f0]"
+                                                    }`}
+                                                >
+                                                    {isSel && <Check size={11} />}
+                                                </div>
+
+                                                <div className="flex items-center gap-2.5 mb-3.5">
+                                                    <div className="w-[36px] h-[36px] rounded-full bg-[#eaf1fe] flex items-center justify-center font-bold text-[#3b7df6] text-[14px]">
+                                                        {(s.studentFirstName || "?")[0].toUpperCase()}
+                                                    </div>
+                                                    <div>
+                                                        <h4 className="font-bold text-[15px] text-gray-800 leading-tight">
+                                                            {s.studentFirstName || `Child ${i + 1}`}
+                                                        </h4>
+                                                        <span className="text-[11px] text-gray-400 capitalize">{s.gender || "Gender —"}</span>
+                                                    </div>
+                                                </div>
+
+                                                <div className="grid grid-cols-2 gap-2 pt-2.5 border-t border-gray-100">
+                                                    <div>
+                                                        <div className="text-[10px] text-[#6b7685] uppercase tracking-wider font-semibold">Age</div>
+                                                        <div className="text-[13px] font-bold text-gray-700">{s.age ? `${s.age} yrs` : "–"}</div>
+                                                    </div>
+                                                    <div>
+                                                        <div className="text-[10px] text-[#6b7685] uppercase tracking-wider font-semibold">Medical</div>
+                                                        <div className="text-[13px] font-bold text-gray-700 truncate" title={s.medicalInfo}>{s.medicalInfo || "–"}</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+
+                            {/* Card 2: Venue & Class select */}
+                            <div className="bg-white rounded-[20px] p-6 border border-[#e2e8f0] shadow-sm hover:shadow-md transition-shadow duration-300">
+                                <div className="flex items-center gap-2.5 mb-5">
+                                    <div className="w-9 h-9 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-500">
+                                        <MapPin size={18} />
+                                    </div>
+                                    <div>
+                                        <h3 className="font-bold text-[16px] text-gray-900">Venue & Class schedules</h3>
+                                        <p className="text-[12px] text-[#6b7685]">Choose the school and classes to waitlist for</p>
+                                    </div>
+                                </div>
+
+                                <div className="border border-[#e2e8f0] rounded-[16px]  bg-gray-50/30">
+                                    {/* Venue Banner */}
+                                    <div className="bg-[#2f5aa0] text-white px-5 py-4 rounded-tl-[16px] rounded-tr-[16px] flex items-center justify-between gap-3 flex-wrap">
+                                        <div className="flex items-center gap-2.5 font-bold text-[14px]">
+                                            <MapPin size={15} />
+                                            {selectedVenue?.venueName || "Select a Football Venue…"}
+                                        </div>
+                                        <button
+                                            onClick={() => setIsChangingVenue(!isChangingVenue)}
+                                            className="bg-white/20 border border-white/30 text-white rounded-full px-4 py-1.5 text-[11px] font-bold hover:bg-white/30 transition-all"
+                                        >
+                                            {isChangingVenue ? "Cancel" : "Change Venue"}
+                                        </button>
+                                    </div>
+
+                                    {isChangingVenue && (
+                                        <div className="border-b border-[#e2e8f0] px-5 py-4 bg-[#f8fafc]">
+                                            <label className="block text-[13px] font-semibold mb-1.5 text-[#1f2733]">Football Venue</label>
+                                            <Select
+                                                styles={selectStyles(false)}
+                                                options={venueSelectOptions}
+                                                value={venueSelectOptions.find((o) => o.value === selectedVenue?.venueId) || null}
+                                                placeholder={venueSelectOptions.length ? "Select a venue…" : "No venues available"}
+                                                isDisabled={venueSelectOptions.length === 0}
+                                                onChange={(option) => {
+                                                    if (!option) return;
+                                                    setSelectedVenue(option.all);
                                                     setStudents((prev) =>
                                                         prev.map((s) => ({ ...s, selectedClassId: "", selectedClassData: null }))
                                                     );
                                                     setIsChangingVenue(false);
                                                     clearError("venue");
-                                                }
-                                            }}
-                                        >
-                                            <option value="" disabled>Select a venue…</option>
-                                            {(venues?.noCapacityVenues || venues?.capacityVenues || []).map((v) => (
-                                                <option key={v.venueId} value={v.venueId}>{v.venueName}</option>
-                                            ))}
-                                        </select>
-                                    </div>
-                                )}
+                                                }}
+                                            />
+                                        </div>
+                                    )}
 
-                                {/* Per-student class selectors */}
-                                {activeStudents.map((s, idx) => {
-                                    const sIdx = getStudentIdx(s);
-                                    return (
-                                        <div
-                                            key={s._tmpId ?? idx}
-                                            className={`border border-t-0 border-[#e7ebf1] p-3.5 px-5 flex flex-col gap-3 ${
-                                                idx === activeStudents.length - 1 ? "rounded-b-[14px]" : ""
-                                            }`}
-                                        >
-                                            {/* Student avatar row */}
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-[38px] h-[38px] rounded-full bg-[#eaf1fe] flex items-center justify-center font-bold text-[#3b7df6] shrink-0">
-                                                    {(s.studentFirstName || "?")[0].toUpperCase()}
-                                                </div>
-                                                <div>
-                                                    <div className="font-semibold text-[15px]">
-                                                        {s.studentFirstName
-                                                            ? `${s.studentFirstName} ${s.studentLastName}`
-                                                            : `Child ${idx + 1}`}
-                                                    </div>
-                                                    {s.selectedClassData && (
-                                                        <div className="text-[12px] text-[#6b7685]">
-                                                            Class: {s.selectedClassData.className}
-                                                            {s.selectedClassData.level ? ` (${s.selectedClassData.level})` : ""}
+                                    {/* Per-student Class List */}
+                                    {activeStudents.length === 0 ? (
+                                        <div className="p-6 text-center text-[#6b7685] text-[13.5px] bg-white">
+                                            Please select a child profile above to configure waitlist schedules.
+                                        </div>
+                                    ) : (
+                                        <div className=" divide-y divide-gray-100">
+                                            {activeStudents.map((s, idx) => {
+                                                const sIdx = getStudentIdx(s);
+                                                return (
+                                                    <div key={s._tmpId ?? idx} className="p-5 flex flex-col gap-3.5">
+                                                        <div className="flex items-center gap-2.5">
+                                                            <div className="w-[30px] h-[30px] rounded-full bg-blue-50 text-[#3b7df6] flex items-center justify-center font-bold text-[12px]">
+                                                                {(s.studentFirstName || "?")[0].toUpperCase()}
+                                                            </div>
+                                                            <span className="font-bold text-[14px] text-gray-800">
+                                                                {s.studentFirstName || "Child"}
+                                                            </span>
                                                         </div>
-                                                    )}
-                                                </div>
-                                            </div>
-
-                                            {/* Class picker */}
-                                            <div>
-                                                <label className="block text-[13px] capitalize font-semibold mb-1.5">
-                                                    Select class for {s.studentFirstName || `Child ${idx + 1}`}
-                                                </label>
-                                                <select
-                                                    className={`w-full capitalize font-inherit text-[14px] border rounded-[10px] px-3.5 py-[11px] appearance-none focus:outline-none focus:ring-2 ${
-                                                        !selectedVenue
-                                                            ? "border-[#e7ebf1] bg-[#f4f6f9] text-[#9CA3AF] cursor-not-allowed"
-                                                            : "border-[#ffd21f] bg-[#fffcf0] focus:ring-[#ffd21f]"
-                                                    }`}
-                                                    style={{ backgroundImage: chevronBg, backgroundRepeat: "no-repeat", backgroundPosition: "right 14px center" }}
-                                                    disabled={!selectedVenue}
-                                                    value={s.selectedClassId || ""}
-                                                    onChange={(e) => handleStudentChange(sIdx, "selectedClassId", e.target.value)}
-                                                >
-                                                    <option value="" disabled>
-                                                        {selectedVenue ? "Choose a class…" : "Select a venue first"}
-                                                    </option>
-                                                    {allClasses.map((c) => (
-                                                        <option key={c.id} value={c.id}>
-                                                            {c.className} ({c.dayOfWeek}) {c.time}
-                                                            {c.level ? ` – ${c.level}` : ""}
-                                                        </option>
-                                                    ))}
-                                                </select>
-                                                {errors[`s${sIdx}_selectedClassId`] && (
-                                                    <p className="text-[12px] text-[#e53e3e] mt-1">
-                                                        {errors[`s${sIdx}_selectedClassId`]}
-                                                    </p>
-                                                )}
-                                            </div>
+                                                        <div>
+                                                            <label className="block text-[12px] font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">
+                                                                Choose Class to Waitlist
+                                                            </label>
+                                                            <Select
+                                                                styles={selectStyles(!!errors[`s${sIdx}_selectedClassId`])}
+                                                                options={classSelectOptions}
+                                                                value={classSelectOptions.find((o) => String(o.value) === String(s.selectedClassId)) || null}
+                                                                isDisabled={!selectedVenue || classSelectOptions.length === 0}
+                                                                placeholder={!selectedVenue ? "Select a venue first" : classSelectOptions.length ? "Choose a class…" : "No classes available"}
+                                                                onChange={(option) =>
+                                                                    handleStudentChange(sIdx, "selectedClassId", option?.value ?? "")
+                                                                }
+                                                            />
+                                                            {errors[`s${sIdx}_selectedClassId`] && (
+                                                                <p className="text-[12px] text-[#e53e3e] mt-1.5 flex items-center gap-1">
+                                                                    <Info size={12} />
+                                                                    {errors[`s${sIdx}_selectedClassId`]}
+                                                                </p>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
                                         </div>
-                                    );
-                                })}
-
+                                    )}
+                                </div>
                                 {errors.venue && (
-                                    <p className="text-[12px] text-[#e53e3e] mt-2">{errors.venue}</p>
+                                    <p className="text-[12px] text-[#e53e3e] mt-2 flex items-center gap-1"><Info size={12} />{errors.venue}</p>
                                 )}
                             </div>
 
-                            {/* ── Student detail forms ────────────────────────────────────── */}
-                            <div className="mb-6">
-                                <div className="text-[13px] font-bold uppercase tracking-[0.04em] text-[#6b7685] mb-3">
-                                    Student details
-                                </div>
-
-                                {activeStudents.map((student, idx) => {
-                                    const sIdx = getStudentIdx(student);
-                                    return (
-                                        <div
-                                            key={student._tmpId ?? idx}
-                                            className="border border-[#e7ebf1] rounded-[14px] p-5 mb-4 relative"
-                                        >
-                                            {/* Remove button (multi only) */}
-                                            {activeStudents.length > 1 && (
-                                                <button
-                                                    type="button"
-                                                    onClick={() => handleRemoveStudent(sIdx)}
-                                                    className="absolute top-4 right-4 flex items-center gap-1 text-[12px] font-semibold text-[#e53e3e] hover:text-red-600 transition"
-                                                >
-                                                    <Trash2 className="h-3.5 w-3.5" />
-                                                    Remove
-                                                </button>
-                                            )}
-
-                                            {/* Card header */}
-                                            <div className="flex items-center gap-3 mb-4">
-                                                <div className="w-[38px] h-[38px] rounded-full bg-[#eaf1fe] flex items-center justify-center font-bold text-[#3b7df6] shrink-0">
-                                                    {(student.studentFirstName || "?")[0].toUpperCase()}
-                                                </div>
-                                                <div className="font-bold text-[15px]">
-                                                    {activeStudents.length > 1
-                                                        ? `Child ${idx + 1} Information`
-                                                        : "Student Information"}
-                                                </div>
-                                            </div>
-
-                                            {/* Fields grid */}
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                <div>
-                                                    <label className={labelClass}>First name</label>
-                                                    <input
-                                                        placeholder="Enter first name"
-                                                        className={inputClass(errors[`s${sIdx}_studentFirstName`])}
-                                                        value={student.studentFirstName}
-                                                        onChange={(e) =>
-                                                            handleStudentChange(sIdx, "studentFirstName", e.target.value)
-                                                        }
-                                                    />
-                                                    {errors[`s${sIdx}_studentFirstName`] && (
-                                                        <p className="text-[12px] text-[#e53e3e] mt-1">
-                                                            {errors[`s${sIdx}_studentFirstName`]}
-                                                        </p>
-                                                    )}
-                                                </div>
-
-                                                <div>
-                                                    <label className={labelClass}>Last name</label>
-                                                    <input
-                                                        placeholder="Enter last name"
-                                                        className={inputClass(errors[`s${sIdx}_studentLastName`])}
-                                                        value={student.studentLastName}
-                                                        onChange={(e) =>
-                                                            handleStudentChange(sIdx, "studentLastName", e.target.value)
-                                                        }
-                                                    />
-                                                    {errors[`s${sIdx}_studentLastName`] && (
-                                                        <p className="text-[12px] text-[#e53e3e] mt-1">
-                                                            {errors[`s${sIdx}_studentLastName`]}
-                                                        </p>
-                                                    )}
-                                                </div>
-
-                                                <div>
-                                                    <label className={labelClass}>Date of birth</label>
-                                                    <input
-                                                        type="text"
-                                                        placeholder="DD/MM/YYYY"
-                                                        maxLength={10}
-                                                        className={inputClass(errors[`s${sIdx}_dob`])}
-                                                        value={student.dob}
-                                                        onChange={(e) => handleDOBChange(sIdx, e.target.value)}
-                                                    />
-                                                    {errors[`s${sIdx}_dob`] && (
-                                                        <p className="text-[12px] text-[#e53e3e] mt-1">
-                                                            {errors[`s${sIdx}_dob`]}
-                                                        </p>
-                                                    )}
-                                                </div>
-
-                                                <div>
-                                                    <label className={labelClass}>Age</label>
-                                                    <input
-                                                        disabled
-                                                        placeholder="Automatic entry"
-                                                        className={`${inputClass(false)} bg-[#f4f6f9] text-[#6b7685]`}
-                                                        value={student.age}
-                                                    />
-                                                </div>
-
-                                                <div>
-                                                    <label className={labelClass}>Gender</label>
-                                                    <select
-                                                        className={`w-full font-inherit text-[14px] border rounded-[10px] px-3.5 py-[11px] appearance-none focus:outline-none focus:ring-2 ${
-                                                            errors[`s${sIdx}_gender`]
-                                                                ? "border-[#e53e3e] focus:ring-[#e53e3e]/30 bg-[#fff5f5]"
-                                                                : "border-[#e7ebf1] focus:ring-[#3b7df6] bg-white"
-                                                        }`}
-                                                        style={{ backgroundImage: chevronBg, backgroundRepeat: "no-repeat", backgroundPosition: "right 14px center" }}
-                                                        value={student.gender}
-                                                        onChange={(e) =>
-                                                            handleStudentChange(sIdx, "gender", e.target.value)
-                                                        }
-                                                    >
-                                                        <option value="">Select gender</option>
-                                                        {genderOptions.map((o) => (
-                                                            <option key={o.value} value={o.value}>{o.label}</option>
-                                                        ))}
-                                                    </select>
-                                                    {errors[`s${sIdx}_gender`] && (
-                                                        <p className="text-[12px] text-[#e53e3e] mt-1">
-                                                            {errors[`s${sIdx}_gender`]}
-                                                        </p>
-                                                    )}
-                                                </div>
-
-                                                <div>
-                                                    <label className={labelClass}>Medical information</label>
-                                                    <input
-                                                        placeholder="e.g. Asthma, None"
-                                                        className={inputClass(errors[`s${sIdx}_medicalInfo`])}
-                                                        value={student.medicalInfo}
-                                                        onChange={(e) =>
-                                                            handleStudentChange(sIdx, "medicalInfo", e.target.value)
-                                                        }
-                                                    />
-                                                    {errors[`s${sIdx}_medicalInfo`] && (
-                                                        <p className="text-[12px] text-[#e53e3e] mt-1">
-                                                            {errors[`s${sIdx}_medicalInfo`]}
-                                                        </p>
-                                                    )}
-                                                </div>
-
-                                                <div className="col-span-2">
-                                                    <label className={labelClass}>Time</label>
-                                                    <input
-                                                        disabled
-                                                        readOnly
-                                                        placeholder="Automatic entry"
-                                                        className={`${inputClass(false)} bg-[#f4f6f9] text-[#6b7685]`}
-                                                        value={student.selectedClassData?.time || ""}
-                                                    />
-                                                </div>
-                                            </div>
+                            {/* Card 3: Student detail inputs */}
+                            {activeStudents.length > 0 && (
+                                <div className="bg-white rounded-[20px] p-6 border border-[#e2e8f0] shadow-sm hover:shadow-md transition-shadow duration-300">
+                                    <div className="flex items-center gap-2.5 mb-6">
+                                        <div className="w-9 h-9 rounded-xl bg-orange-50 flex items-center justify-center text-orange-500">
+                                            <Smile size={18} />
                                         </div>
-                                    );
-                                })}
-                            </div>
+                                        <div>
+                                            <h3 className="font-bold text-[16px] text-gray-900">Configure child profiles</h3>
+                                            <p className="text-[12px] text-[#6b7685]">Enter information for waiting list entry</p>
+                                        </div>
+                                    </div>
 
-                            {/* ── Parent / Guardian information ───────────────────────────── */}
-                            <div className="mb-6">
-                                <div className="flex items-center justify-between mb-3">
-                                    <div className="text-[13px] font-bold uppercase tracking-[0.04em] text-[#6b7685]">
-                                        Parent / Guardian information
+                                    <div className="flex flex-col gap-6">
+                                        {activeStudents.map((student, idx) => {
+                                            const sIdx = getStudentIdx(student);
+                                            return (
+                                                <div
+                                                    key={student._tmpId ?? idx}
+                                                    className="border border-[#e2e8f0] rounded-[16px] p-5 bg-gray-50/10 relative"
+                                                >
+                                                    {/* Card sub header */}
+                                                    <div className="flex items-center gap-2.5 mb-5.5 pb-3 border-b border-gray-100">
+                                                        <div className="w-[30px] h-[30px] rounded-full bg-blue-50 text-[#3b7df6] flex items-center justify-center font-bold text-[12px]">
+                                                            {(student.studentFirstName || "?")[0].toUpperCase()}
+                                                        </div>
+                                                        <span className="font-bold text-[14px] text-gray-800">
+                                                            {student.studentFirstName || `Child ${idx + 1}`} details
+                                                        </span>
+                                                    </div>
+
+                                                    {/* Fields grid */}
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                        <div>
+                                                            <label className={labelClass}>First name</label>
+                                                            <input
+                                                                placeholder="Enter first name"
+                                                                className={inputClass(errors[`s${sIdx}_studentFirstName`])}
+                                                                value={student.studentFirstName}
+                                                                onChange={(e) => handleStudentChange(sIdx, "studentFirstName", e.target.value)}
+                                                            />
+                                                            {errors[`s${sIdx}_studentFirstName`] && (
+                                                                <p className="text-[12px] text-[#e53e3e] mt-1.5 flex items-center gap-1"><Info size={12} />{errors[`s${sIdx}_studentFirstName`]}</p>
+                                                            )}
+                                                        </div>
+
+                                                        <div>
+                                                            <label className={labelClass}>Last name</label>
+                                                            <input
+                                                                placeholder="Enter last name"
+                                                                className={inputClass(errors[`s${sIdx}_studentLastName`])}
+                                                                value={student.studentLastName}
+                                                                onChange={(e) => handleStudentChange(sIdx, "studentLastName", e.target.value)}
+                                                            />
+                                                            {errors[`s${sIdx}_studentLastName`] && (
+                                                                <p className="text-[12px] text-[#e53e3e] mt-1.5 flex items-center gap-1"><Info size={12} />{errors[`s${sIdx}_studentLastName`]}</p>
+                                                            )}
+                                                        </div>
+
+                                                        <div>
+                                                            <label className={labelClass}>Date of birth</label>
+                                                            <input
+                                                                type="text"
+                                                                placeholder="DD/MM/YYYY"
+                                                                maxLength={10}
+                                                                className={inputClass(errors[`s${sIdx}_dob`])}
+                                                                value={student.dob}
+                                                                onChange={(e) => handleDOBChange(sIdx, e.target.value)}
+                                                            />
+                                                            {errors[`s${sIdx}_dob`] && (
+                                                                <p className="text-[12px] text-[#e53e3e] mt-1.5 flex items-center gap-1"><Info size={12} />{errors[`s${sIdx}_dob`]}</p>
+                                                            )}
+                                                        </div>
+
+                                                        <div>
+                                                            <label className={labelClass}>Age (Automatic)</label>
+                                                            <input
+                                                                disabled
+                                                                placeholder="Automatic entry"
+                                                                className={`${inputClass(false)} bg-[#f8fafc] text-[#6b7685] border-dashed cursor-not-allowed`}
+                                                                value={student.age}
+                                                            />
+                                                        </div>
+
+                                                        <div>
+                                                            <label className={labelClass}>Gender</label>
+                                                            <Select
+                                                                styles={selectStyles(!!errors[`s${sIdx}_gender`])}
+                                                                placeholder="Select gender"
+                                                                options={genderOptions}
+                                                                value={
+                                                                    student.gender
+                                                                        ? {
+                                                                            value: student.gender,
+                                                                            label: genderOptions.find((g) => g.value === student.gender)?.label || "",
+                                                                        }
+                                                                        : null
+                                                                }
+                                                                onChange={(option) =>
+                                                                    handleStudentChange(sIdx, "gender", option?.value || "")
+                                                                }
+                                                            />
+                                                            {errors[`s${sIdx}_gender`] && (
+                                                                <p className="text-[12px] text-[#e53e3e] mt-1.5 flex items-center gap-1"><Info size={12} />{errors[`s${sIdx}_gender`]}</p>
+                                                            )}
+                                                        </div>
+
+                                                        <div>
+                                                            <label className={labelClass}>Medical info / Allergies</label>
+                                                            <input
+                                                                placeholder="e.g. Asthma, or write 'None'"
+                                                                className={inputClass(errors[`s${sIdx}_medicalInfo`])}
+                                                                value={student.medicalInfo}
+                                                                onChange={(e) =>
+                                                                    handleStudentChange(sIdx, "medicalInfo", e.target.value)
+                                                                }
+                                                            />
+                                                            {errors[`s${sIdx}_medicalInfo`] && (
+                                                                <p className="text-[12px] text-[#e53e3e] mt-1.5 flex items-center gap-1"><Info size={12} />{errors[`s${sIdx}_medicalInfo`]}</p>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Card 4: Parent details */}
+                            <div className="bg-white rounded-[20px] p-6 border border-[#e2e8f0] shadow-sm hover:shadow-md transition-shadow duration-300">
+                                <div className="flex items-center justify-between mb-5 pb-3 border-b border-gray-100 flex-wrap gap-3">
+                                    <div className="flex items-center gap-2.5">
+                                        <div className="w-9 h-9 rounded-xl bg-purple-50 flex items-center justify-center text-purple-500">
+                                            <User size={18} />
+                                        </div>
+                                        <div>
+                                            <h3 className="font-bold text-[16px] text-gray-900">Parent / Guardian details</h3>
+                                            <p className="text-[12px] text-[#6b7685]">Who should we contact when slots open up?</p>
+                                        </div>
                                     </div>
                                     <button
-                                        type="button"
                                         disabled={parents.length >= 3}
                                         onClick={addParent}
-                                        className={`bg-[#1e3a6e] text-white px-3.5 py-1.5 rounded-[10px] text-[12px] font-semibold hover:bg-[#16306e] transition-colors ${
+                                        className={`bg-[#1e3a6e] text-white px-4 py-2 rounded-xl text-[12px] font-bold hover:bg-[#16306e] transition-colors flex items-center gap-1.5 shadow-sm ${
                                             parents.length >= 3 ? "cursor-not-allowed opacity-50" : ""
                                         }`}
                                     >
@@ -986,237 +966,215 @@ export default function AddToWaitingList() {
                                     </button>
                                 </div>
 
-                                {parents.map((parent, index) => (
-                                    <div
-                                        key={parent.id}
-                                        className="border border-[#e7ebf1] rounded-[14px] p-5 mb-4 relative"
-                                    >
-                                        {/* Remove button */}
-                                        {index > 0 && (
-                                            <button
-                                                type="button"
-                                                onClick={() => removeParent(parent.id)}
-                                                className="absolute right-4 top-4 text-[#e53e3e] hover:text-red-700 flex items-center gap-1 text-[12px] font-semibold"
-                                            >
-                                                <Trash2 size={14} />
-                                                Remove
-                                            </button>
-                                        )}
-
-                                        <div className="text-[12px] font-bold uppercase tracking-[0.04em] text-[#6b7685] mb-4">
-                                            Parent / Guardian {index + 1}
-                                        </div>
-
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            <div>
-                                                <label className={labelClass}>First name</label>
-                                                <input
-                                                    placeholder="Enter first name"
-                                                    className={inputClass(errors[`p${index}_parentFirstName`])}
-                                                    value={parent.parentFirstName}
-                                                    onChange={(e) =>
-                                                        handleParentChange(index, "parentFirstName", e.target.value.replace(/[^A-Za-z\s]/g, ""))
-                                                    }
-                                                />
-                                                {errors[`p${index}_parentFirstName`] && (
-                                                    <p className="text-[12px] text-[#e53e3e] mt-1">
-                                                        {errors[`p${index}_parentFirstName`]}
-                                                    </p>
-                                                )}
-                                            </div>
-
-                                            <div>
-                                                <label className={labelClass}>Last name</label>
-                                                <input
-                                                    placeholder="Enter last name"
-                                                    className={inputClass(errors[`p${index}_parentLastName`])}
-                                                    value={parent.parentLastName}
-                                                    onChange={(e) =>
-                                                        handleParentChange(index, "parentLastName", e.target.value.replace(/[^A-Za-z\s]/g, ""))
-                                                    }
-                                                />
-                                                {errors[`p${index}_parentLastName`] && (
-                                                    <p className="text-[12px] text-[#e53e3e] mt-1">
-                                                        {errors[`p${index}_parentLastName`]}
-                                                    </p>
-                                                )}
-                                            </div>
-
-                                            <div>
-                                                <label className={labelClass}>Email</label>
-                                                <input
-                                                    type="email"
-                                                    placeholder="Enter email address"
-                                                    className={inputClass(errors[`p${index}_parentEmail`])}
-                                                    value={parent.parentEmail}
-                                                    onChange={(e) =>
-                                                        handleParentChange(index, "parentEmail", e.target.value)
-                                                    }
-                                                />
-                                                {errors[`p${index}_parentEmail`] && (
-                                                    <p className="text-[12px] text-[#e53e3e] mt-1">
-                                                        {errors[`p${index}_parentEmail`]}
-                                                    </p>
-                                                )}
-                                            </div>
-
-                                            <div>
-                                                <label className={labelClass}>Phone number</label>
-                                                <PhoneNumberInput
-                                                    value={parent.parentPhoneNumber}
-                                                    onChange={(v) => handleParentChange(index, "parentPhoneNumber", v)}
-                                                    placeholder="Enter phone number"
-                                                    className={errors[`p${index}_parentPhoneNumber`] ? "border-[#e53e3e] bg-[#fff5f5]" : ""}
-                                                />
-                                                {errors[`p${index}_parentPhoneNumber`] && (
-                                                    <p className="text-[12px] text-[#e53e3e] mt-1">
-                                                        {errors[`p${index}_parentPhoneNumber`]}
-                                                    </p>
-                                                )}
-                                            </div>
-
-                                            <div>
-                                                <label className={labelClass}>Relation to child</label>
-                                                <select
-                                                    className={`w-full font-inherit text-[14px] border rounded-[10px] px-3.5 py-[11px] appearance-none focus:outline-none focus:ring-2 ${
-                                                        errors[`p${index}_relationToChild`]
-                                                            ? "border-[#e53e3e] focus:ring-[#e53e3e]/30 bg-[#fff5f5]"
-                                                            : "border-[#e7ebf1] focus:ring-[#3b7df6] bg-white"
-                                                    }`}
-                                                    style={{ backgroundImage: chevronBg, backgroundRepeat: "no-repeat", backgroundPosition: "right 14px center" }}
-                                                    value={parent.relationToChild}
-                                                    onChange={(e) =>
-                                                        handleParentChange(index, "relationToChild", e.target.value)
-                                                    }
+                                <div className="flex flex-col gap-6">
+                                    {parents.map((parent, index) => (
+                                        <div
+                                            key={parent.id}
+                                            className="border border-[#e2e8f0] rounded-[16px] p-5 relative bg-[#fdfdfd]"
+                                        >
+                                            {/* Remove button */}
+                                            {index > 0 && (
+                                                <button
+                                                    onClick={() => removeParent(parent.id)}
+                                                    className="absolute right-4 top-4 text-[#e53e3e] hover:text-red-700 flex items-center gap-1 text-[12px] font-bold transition-all"
                                                 >
-                                                    <option value="">Select relation</option>
-                                                    {relationOptions.map((o) => (
-                                                        <option key={o.value} value={o.value}>{o.label}</option>
-                                                    ))}
-                                                </select>
-                                                {errors[`p${index}_relationToChild`] && (
-                                                    <p className="text-[12px] text-[#e53e3e] mt-1">
-                                                        {errors[`p${index}_relationToChild`]}
-                                                    </p>
-                                                )}
+                                                    <Trash2 size={13} />
+                                                    Remove
+                                                </button>
+                                            )}
+
+                                            <div className="text-[11px] font-bold uppercase tracking-wider text-gray-400 mb-4">
+                                                Parent / Guardian #{index + 1}
                                             </div>
 
-                                            <div>
-                                                <label className={labelClass}>How did you hear about us?</label>
-                                                <select
-                                                    className={`w-full font-inherit text-[14px] border rounded-[10px] px-3.5 py-[11px] appearance-none focus:outline-none focus:ring-2 ${
-                                                        errors[`p${index}_howDidYouHear`]
-                                                            ? "border-[#e53e3e] focus:ring-[#e53e3e]/30 bg-[#fff5f5]"
-                                                            : "border-[#e7ebf1] focus:ring-[#3b7df6] bg-white"
-                                                    }`}
-                                                    style={{ backgroundImage: chevronBg, backgroundRepeat: "no-repeat", backgroundPosition: "right 14px center" }}
-                                                    value={parent.howDidYouHear}
-                                                    onChange={(e) =>
-                                                        handleParentChange(index, "howDidYouHear", e.target.value)
-                                                    }
-                                                >
-                                                    <option value="">Select</option>
-                                                    {hearOptions.map((o) => (
-                                                        <option key={o.value} value={o.value}>{o.label}</option>
-                                                    ))}
-                                                </select>
-                                                {errors[`p${index}_howDidYouHear`] && (
-                                                    <p className="text-[12px] text-[#e53e3e] mt-1">
-                                                        {errors[`p${index}_howDidYouHear`]}
-                                                    </p>
-                                                )}
-                                            </div>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <div>
+                                                    <label className={labelClass}>First name</label>
+                                                    <input
+                                                        placeholder="Enter first name"
+                                                        className={inputClass(errors[`p${index}_parentFirstName`])}
+                                                        value={parent.parentFirstName}
+                                                        onChange={(e) =>
+                                                            handleParentChange(index, "parentFirstName", e.target.value.replace(/[^A-Za-z\s]/g, ""))
+                                                        }
+                                                    />
+                                                    {errors[`p${index}_parentFirstName`] && (
+                                                        <p className="text-[12px] text-[#e53e3e] mt-1.5 flex items-center gap-1"><Info size={12} />{errors[`p${index}_parentFirstName`]}</p>
+                                                    )}
+                                                </div>
 
-                                            <div className="md:col-span-2">
-                                                <label className={labelClass}>
-                                                    What's the main reason you're interested in Samba Soccer Schools?
-                                                </label>
-                                                {parent.isCustomReason ? (
-                                                    <div className="relative">
-                                                        <input
-                                                            placeholder="Please specify your reason"
-                                                            className={inputClass(errors[`p${index}_interestReason`])}
-                                                            value={parent.interestReason}
-                                                            onChange={(e) =>
-                                                                handleParentChange(index, "interestReason", e.target.value)
+                                                <div>
+                                                    <label className={labelClass}>Last name</label>
+                                                    <input
+                                                        placeholder="Enter last name"
+                                                        className={inputClass(errors[`p${index}_parentLastName`])}
+                                                        value={parent.parentLastName}
+                                                        onChange={(e) =>
+                                                            handleParentChange(index, "parentLastName", e.target.value.replace(/[^A-Za-z\s]/g, ""))
+                                                        }
+                                                    />
+                                                    {errors[`p${index}_parentLastName`] && (
+                                                        <p className="text-[12px] text-[#e53e3e] mt-1.5 flex items-center gap-1"><Info size={12} />{errors[`p${index}_parentLastName`]}</p>
+                                                    )}
+                                                </div>
+
+                                                <div>
+                                                    <label className={labelClass}>Email address</label>
+                                                    <input
+                                                        type="email"
+                                                        placeholder="Enter email address"
+                                                        className={inputClass(errors[`p${index}_parentEmail`])}
+                                                        value={parent.parentEmail}
+                                                        onChange={(e) => handleParentChange(index, "parentEmail", e.target.value)}
+                                                    />
+                                                    {errors[`p${index}_parentEmail`] && (
+                                                        <p className="text-[12px] text-[#e53e3e] mt-1.5 flex items-center gap-1"><Info size={12} />{errors[`p${index}_parentEmail`]}</p>
+                                                    )}
+                                                </div>
+
+                                                <div>
+                                                    <label className={labelClass}>Phone number</label>
+                                                    <PhoneNumberInput
+                                                        value={parent.parentPhoneNumber}
+                                                        onChange={(v) => handleParentChange(index, "parentPhoneNumber", v)}
+                                                        placeholder="Enter phone number"
+                                                        className={errors[`p${index}_parentPhoneNumber`] ? "border-[#e53e3e] bg-[#fff5f5]" : ""}
+                                                    />
+                                                    {errors[`p${index}_parentPhoneNumber`] && (
+                                                        <p className="text-[12px] text-[#e53e3e] mt-1.5 flex items-center gap-1"><Info size={12} />{errors[`p${index}_parentPhoneNumber`]}</p>
+                                                    )}
+                                                </div>
+
+                                                <div>
+                                                    <label className={labelClass}>Relation to child</label>
+                                                    <Select
+                                                        styles={selectStyles(!!errors[`p${index}_relationToChild`])}
+                                                        placeholder="Select relation"
+                                                        options={relationOptions}
+                                                        value={
+                                                            parent.relationToChild
+                                                                ? { value: parent.relationToChild, label: parent.relationToChild }
+                                                                : null
+                                                        }
+                                                        onChange={(option) =>
+                                                            handleParentChange(index, "relationToChild", option?.value || "")
+                                                        }
+                                                    />
+                                                    {errors[`p${index}_relationToChild`] && (
+                                                        <p className="text-[12px] text-[#e53e3e] mt-1.5 flex items-center gap-1"><Info size={12} />{errors[`p${index}_relationToChild`]}</p>
+                                                    )}
+                                                </div>
+
+                                                <div>
+                                                    <label className={labelClass}>How did you hear about us?</label>
+                                                    <Select
+                                                        styles={selectStyles(!!errors[`p${index}_howDidYouHear`])}
+                                                        placeholder="Select option"
+                                                        options={hearOptions}
+                                                        value={
+                                                            parent.howDidYouHear
+                                                                ? { value: parent.howDidYouHear, label: parent.howDidYouHear }
+                                                                : null
+                                                        }
+                                                        onChange={(option) =>
+                                                            handleParentChange(index, "howDidYouHear", option?.value || "")
+                                                        }
+                                                    />
+                                                    {errors[`p${index}_howDidYouHear`] && (
+                                                        <p className="text-[12px] text-[#e53e3e] mt-1.5 flex items-center gap-1"><Info size={12} />{errors[`p${index}_howDidYouHear`]}</p>
+                                                    )}
+                                                </div>
+
+                                                <div className="md:col-span-2">
+                                                    <label className={labelClass}>
+                                                        What's the main reason you're interested in Samba Soccer Schools?
+                                                    </label>
+                                                    {parent.isCustomReason ? (
+                                                        <div className="relative">
+                                                            <input
+                                                                placeholder="Please specify your reason"
+                                                                className={inputClass(errors[`p${index}_interestReason`])}
+                                                                value={parent.interestReason}
+                                                                onChange={(e) =>
+                                                                    handleParentChange(index, "interestReason", e.target.value)
+                                                                }
+                                                            />
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => {
+                                                                    handleParentChange(index, "interestReason", "");
+                                                                    handleParentChange(index, "isCustomReason", false);
+                                                                }}
+                                                                className="absolute right-3 top-1/2 -translate-y-1/2 text-[12px] text-[#3b7df6] font-bold"
+                                                            >
+                                                                ← Back to List
+                                                            </button>
+                                                        </div>
+                                                    ) : (
+                                                        <Select
+                                                            styles={selectStyles(!!errors[`p${index}_interestReason`])}
+                                                            placeholder="Select your reason…"
+                                                            options={interestReasonOptions}
+                                                            value={
+                                                                parent.interestReason
+                                                                    ? { value: parent.interestReason, label: parent.interestReason }
+                                                                    : null
                                                             }
-                                                        />
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => {
-                                                                handleParentChange(index, "interestReason", "");
-                                                                handleParentChange(index, "isCustomReason", false);
+                                                            onChange={(option) => {
+                                                                if (option?.value === "Other") {
+                                                                    handleParentChange(index, "interestReason", "");
+                                                                    handleParentChange(index, "isCustomReason", true);
+                                                                } else {
+                                                                    handleParentChange(index, "interestReason", option?.value || "");
+                                                                    handleParentChange(index, "isCustomReason", false);
+                                                                }
                                                             }}
-                                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-[12px] text-[#3b7df6] font-semibold"
-                                                        >
-                                                            ← Back
-                                                        </button>
-                                                    </div>
-                                                ) : (
-                                                    <select
-                                                        className={`w-full font-inherit text-[14px] border rounded-[10px] px-3.5 py-[11px] appearance-none focus:outline-none focus:ring-2 ${
-                                                            errors[`p${index}_interestReason`]
-                                                                ? "border-[#e53e3e] focus:ring-[#e53e3e]/30 bg-[#fff5f5]"
-                                                                : "border-[#e7ebf1] focus:ring-[#3b7df6] bg-white"
-                                                        }`}
-                                                        style={{ backgroundImage: chevronBg, backgroundRepeat: "no-repeat", backgroundPosition: "right 14px center" }}
-                                                        value={parent.interestReason}
-                                                        onChange={(e) => {
-                                                            const val = e.target.value;
-                                                            if (val === "Other") {
-                                                                handleParentChange(index, "interestReason", "");
-                                                                handleParentChange(index, "isCustomReason", true);
-                                                            } else {
-                                                                handleParentChange(index, "interestReason", val);
-                                                                handleParentChange(index, "isCustomReason", false);
-                                                            }
-                                                        }}
-                                                    >
-                                                        <option value="">Select a reason</option>
-                                                        {interestReasonOptions.map((o) => (
-                                                            <option key={o.value} value={o.value}>{o.label}</option>
-                                                        ))}
-                                                    </select>
-                                                )}
-                                                {errors[`p${index}_interestReason`] && (
-                                                    <p className="text-[12px] text-[#e53e3e] mt-1">
-                                                        {errors[`p${index}_interestReason`]}
-                                                    </p>
-                                                )}
-                                            </div>
+                                                        />
+                                                    )}
+                                                    {errors[`p${index}_interestReason`] && (
+                                                        <p className="text-[12px] text-[#e53e3e] mt-1.5 flex items-center gap-1"><Info size={12} />{errors[`p${index}_interestReason`]}</p>
+                                                    )}
+                                                </div>
 
-                                            <div className="md:col-span-2">
-                                                <label className={labelClass}>Tell us a bit more (optional)</label>
-                                                <textarea
-                                                    placeholder="Anything else you'd like to share?"
-                                                    className={`${inputClass(false)} h-24 resize-none`}
-                                                    value={parent.interestReasonOther}
-                                                    onChange={(e) =>
-                                                        handleParentChange(index, "interestReasonOther", e.target.value)
-                                                    }
-                                                />
+                                                <div className="md:col-span-2">
+                                                    <label className={labelClass}>Tell us a bit more (optional)</label>
+                                                    <textarea
+                                                        placeholder="Anything else you'd like to share with the coaches?"
+                                                        className={`${inputClass(false)} h-24 resize-none`}
+                                                        value={parent.interestReasonOther}
+                                                        onChange={(e) =>
+                                                            handleParentChange(index, "interestReasonOther", e.target.value)
+                                                        }
+                                                    />
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
-                                ))}
+                                    ))}
+                                </div>
                             </div>
 
-                            {/* ── Emergency contact ───────────────────────────────────────── */}
-                            <div className="mb-6">
-                                <div className="text-[13px] font-bold uppercase tracking-[0.04em] text-[#6b7685] mb-3">
-                                    Emergency contact
+                            {/* Card 5: Emergency details */}
+                            <div className="bg-white rounded-[20px] p-6 border border-[#e2e8f0] shadow-sm hover:shadow-md transition-shadow duration-300">
+                                <div className="flex items-center gap-2.5 mb-5 pb-3 border-b border-gray-100">
+                                    <div className="w-9 h-9 rounded-xl bg-rose-50 flex items-center justify-center text-rose-500">
+                                        <ShieldAlert size={18} />
+                                    </div>
+                                    <div>
+                                        <h3 className="font-bold text-[16px] text-gray-900">Emergency contact</h3>
+                                        <p className="text-[12px] text-[#6b7685]">Required for student safety during training</p>
+                                    </div>
                                 </div>
 
-                                <div className="border border-[#e7ebf1] rounded-[14px] p-5">
-                                    <label className="flex items-center gap-2 cursor-pointer mb-4">
+                                <div className="border border-[#e2e8f0] rounded-[16px] p-5 bg-[#fdfdfd]">
+                                    <label className="flex items-center gap-2.5 cursor-pointer mb-4.5 select-none">
                                         <input
                                             type="checkbox"
                                             checked={emergency.sameAsAbove}
                                             onChange={handleSameAsAboveChange}
-                                            className="rounded border-[#e7ebf1] text-[#3b7df6] focus:ring-[#3b7df6]"
+                                            className="rounded border-[#e2e8f0] text-[#3b7df6] focus:ring-[#3b7df6] w-4.5 h-4.5"
                                         />
-                                        <span className="text-[13px] text-[#6b7685] font-medium">
-                                            Same as parent / guardian above
+                                        <span className="text-[13px] text-[#6b7685] font-semibold">
+                                            Same as Parent / Guardian #1 above
                                         </span>
                                     </label>
 
@@ -1233,7 +1191,7 @@ export default function AddToWaitingList() {
                                                 }
                                             />
                                             {errors.e_firstName && (
-                                                <p className="text-[12px] text-[#e53e3e] mt-1">{errors.e_firstName}</p>
+                                                <p className="text-[12px] text-[#e53e3e] mt-1.5 flex items-center gap-1"><Info size={12} />{errors.e_firstName}</p>
                                             )}
                                         </div>
 
@@ -1249,7 +1207,7 @@ export default function AddToWaitingList() {
                                                 }
                                             />
                                             {errors.e_lastName && (
-                                                <p className="text-[12px] text-[#e53e3e] mt-1">{errors.e_lastName}</p>
+                                                <p className="text-[12px] text-[#e53e3e] mt-1.5 flex items-center gap-1"><Info size={12} />{errors.e_lastName}</p>
                                             )}
                                         </div>
 
@@ -1263,59 +1221,67 @@ export default function AddToWaitingList() {
                                                 className={errors.e_phone ? "border-[#e53e3e] bg-[#fff5f5]" : ""}
                                             />
                                             {errors.e_phone && (
-                                                <p className="text-[12px] text-[#e53e3e] mt-1">{errors.e_phone}</p>
+                                                <p className="text-[12px] text-[#e53e3e] mt-1.5 flex items-center gap-1"><Info size={12} />{errors.e_phone}</p>
                                             )}
                                         </div>
 
                                         <div>
                                             <label className={labelClass}>Relation to child</label>
-                                            <select
-                                                className={`w-full font-inherit text-[14px] border rounded-[10px] px-3.5 py-[11px] appearance-none focus:outline-none focus:ring-2 ${
-                                                    errors.e_relation
-                                                        ? "border-[#e53e3e] focus:ring-[#e53e3e]/30 bg-[#fff5f5]"
-                                                        : "border-[#e7ebf1] focus:ring-[#3b7df6] bg-white"
-                                                }`}
-                                                style={{ backgroundImage: chevronBg, backgroundRepeat: "no-repeat", backgroundPosition: "right 14px center" }}
-                                                value={emergency.emergencyRelation}
-                                                disabled={emergency.sameAsAbove}
-                                                onChange={(e) =>
-                                                    handleEmergencyChange("emergencyRelation", e.target.value)
+                                            <Select
+                                                styles={selectStyles(!!errors.e_relation)}
+                                                placeholder="Select relation"
+                                                options={relationOptions}
+                                                isDisabled={emergency.sameAsAbove}
+                                                value={
+                                                    emergency.emergencyRelation
+                                                        ? {
+                                                            value: emergency.emergencyRelation,
+                                                            label:
+                                                                relationOptions.find((o) => o.value === emergency.emergencyRelation)?.label ||
+                                                                emergency.emergencyRelation,
+                                                        }
+                                                        : null
                                                 }
-                                            >
-                                                <option value="">Select relation</option>
-                                                {relationOptions.map((o) => (
-                                                    <option key={o.value} value={o.value}>{o.label}</option>
-                                                ))}
-                                            </select>
+                                                onChange={(option) =>
+                                                    handleEmergencyChange("emergencyRelation", option?.value || "")
+                                                }
+                                            />
                                             {errors.e_relation && (
-                                                <p className="text-[12px] text-[#e53e3e] mt-1">{errors.e_relation}</p>
+                                                <p className="text-[12px] text-[#e53e3e] mt-1.5 flex items-center gap-1"><Info size={12} />{errors.e_relation}</p>
                                             )}
                                         </div>
                                     </div>
                                 </div>
                             </div>
 
-                            {/* ── Level of interest ───────────────────────────────────────── */}
-                            <div className="mb-6">
-                                <div className="text-[13px] font-bold uppercase tracking-[0.04em] text-[#6b7685] mb-3">
-                                    Level of interest
+                            {/* Card 6: Level of Interest */}
+                            <div className="bg-white rounded-[20px] p-6 border border-[#e2e8f0] shadow-sm hover:shadow-md transition-shadow duration-300">
+                                <div className="flex items-center gap-2.5 mb-5 pb-3 border-b border-gray-100">
+                                    <div className="w-9 h-9 rounded-xl bg-orange-50 flex items-center justify-center text-orange-500">
+                                        <Sparkles size={18} />
+                                    </div>
+                                    <div>
+                                        <h3 className="font-bold text-[16px] text-gray-900">Level of Interest</h3>
+                                        <p className="text-[12px] text-[#6b7685]">How eager are you to join Samba Soccer Schools?</p>
+                                    </div>
                                 </div>
-                                <div className="border border-[#e7ebf1] rounded-[14px] p-5 flex items-center gap-6 flex-wrap">
+
+                                <div className="border border-[#e2e8f0] rounded-[16px] p-5 flex items-center gap-6 flex-wrap bg-[#fdfdfd]">
                                     {["Low", "Medium", "High"].map((level) => {
                                         const isActive = levelOfInterest === level;
                                         const colors   = {
-                                            Low:    { bg: "#fff7ed", ring: "#fb923c", text: "#c2410c" },
-                                            Medium: { bg: "#fefce8", ring: "#facc15", text: "#a16207" },
-                                            High:   { bg: "#f0fdf4", ring: "#4ade80", text: "#166534" },
+                                            Low:    { bg: "bg-orange-50/50", ring: "border-orange-300", text: "text-orange-700" },
+                                            Medium: { bg: "bg-yellow-50/50", ring: "border-yellow-300", text: "text-yellow-700" },
+                                            High:   { bg: "bg-emerald-50/50", ring: "border-emerald-300", text: "text-emerald-700" },
                                         };
                                         const c = colors[level];
                                         return (
                                             <label
                                                 key={level}
-                                                className={`flex items-center gap-2 cursor-pointer px-4 py-2 rounded-[10px] border-[1.5px] transition-all text-[14px] font-semibold ${
+                                                className={`flex items-center gap-2.5 cursor-pointer px-4.5 py-2.5 rounded-[12px] border-[1.5px] transition-all text-[14px] font-bold ${
                                                     isActive
-                                                        ? `border-[${c.ring}] bg-[${c.bg}] text-[${c.text}]`
-                                                        : "border-[#e7ebf1] text-[#6b7685]"
+                                                        ? `${c.ring} ${c.bg} ${c.text}`
+                                                        : "border-[#e2e8f0] text-gray-500 hover:border-gray-300 bg-white"
                                                 }`}
                                             >
                                                 <input
@@ -1324,7 +1290,7 @@ export default function AddToWaitingList() {
                                                     value={level}
                                                     checked={isActive}
                                                     onChange={() => setLevelOfInterest(level)}
-                                                    className="h-4 w-4"
+                                                    className="h-4.5 w-4.5 text-[#3b7df6] focus:ring-[#3b7df6] border-gray-300"
                                                 />
                                                 {level}
                                             </label>
@@ -1332,53 +1298,307 @@ export default function AddToWaitingList() {
                                     })}
                                 </div>
                             </div>
-
-                            {/* ── Actions ─────────────────────────────────────────────────── */}
-                            <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-[#e7ebf1] p-4 z-40 flex gap-3 w-full sm:relative sm:bottom-auto sm:left-auto sm:right-auto sm:bg-transparent sm:border-t-0 sm:p-0 sm:z-auto justify-center sm:mt-7 sm:w-auto">
-                                <button
-                                    type="button"
-                                    onClick={() => (isMulti ? setFlowStep("A") : navigate(-1))}
-                                    className="sm:w-auto font-semibold text-[15px] rounded-[12px] md:px-8 py-3.5 border border-[#e7ebf1] text-[#1f2733] bg-white px-4"
-                                >
-                                    {isMulti ? "Back" : "Cancel"}
-                                </button>
-                                <button
-                                    type="submit"
-                                    disabled={submitting}
-                                    className="sm:w-auto font-semibold text-[15px] rounded-[12px] md:px-8 py-3.5 border border-[#1e3a6e] text-white bg-[#1e3a6e] hover:bg-[#16306e] transition-colors px-4 disabled:opacity-50"
-                                >
-                                    {submitting ? "Adding…" : "Add to Waiting List"}
-                                </button>
-                            </div>
-                        </form>
-                    )}
-
-                    {/* ════════════════════════════════════════════════════════
-                        SCREEN D  —  Success
-                    ════════════════════════════════════════════════════════ */}
-                    {flowStep === "D" && (
-                        <div className="text-center py-8">
-                            <div className="w-16 h-16 bg-[#e7f8f0] rounded-full flex items-center justify-center mx-auto mb-4">
-                                <Check size={32} className="text-[#21b573]" />
-                            </div>
-                            <div className="text-[26px] font-bold mb-2 tracking-tight">
-                                You're on the list! 🎉
-                            </div>
-                            <div className="text-[#6b7685] text-[15px] mb-6 max-w-[440px] mx-auto">
-                                {activeNames} ha{activeStudents.length > 1 ? "ve" : "s"} been added to the waiting list.
-                                We'll contact you as soon as a spot becomes available.
-                            </div>
-                            <button
-                                onClick={() => navigate(-1)}
-                                className="w-full sm:w-auto font-semibold text-[15px] rounded-[12px] px-8 py-3.5 bg-[#1e3a6e] text-white hover:bg-[#16306e] transition-colors"
-                            >
-                                Back to Dashboard
-                            </button>
                         </div>
-                    )}
 
-                </div>
+                        {/* ── Right Column: Sticky Summary Sidebar ── */}
+                        <div className="lg:sticky lg:top-6 flex flex-col gap-5">
+                            
+                            {/* Summary Card */}
+                            <div className="bg-white rounded-[20px] p-6 border border-[#e2e8f0] shadow-sm">
+                                <h3 className="font-bold text-[16px] text-gray-900 mb-4 pb-2.5 border-b border-gray-100 flex items-center gap-2">
+                                    <Sparkles size={16} className="text-[#3b7df6]" />
+                                    Waitlist Summary
+                                </h3>
+
+                                <div className="flex flex-col gap-4 mb-5">
+                                    {/* Venue */}
+                                    <div className="flex gap-3 items-start">
+                                        <MapPin className="text-[#3b7df6] w-4 h-4 mt-0.5 shrink-0" />
+                                        <div>
+                                            <div className="text-[11px] font-bold uppercase text-gray-400 tracking-wider">Venue</div>
+                                            <div className="text-[13px] font-bold text-gray-700 leading-tight">
+                                                {selectedVenue?.venueName || "Not selected"}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Children & waitlisted classes */}
+                                    <div className="flex gap-3 items-start">
+                                        <User className="text-[#3b7df6] w-4 h-4 mt-0.5 shrink-0" />
+                                        <div className="w-full">
+                                            <div className="text-[11px] font-bold uppercase text-gray-400 tracking-wider">Attendees & classes</div>
+                                            {activeStudents.length === 0 ? (
+                                                <div className="text-[13px] text-[#6b7685] italic">No child selected</div>
+                                            ) : (
+                                                <div className="flex flex-col gap-2 mt-1">
+                                                    {activeStudents.map((s, i) => (
+                                                        <div key={s._tmpId ?? i} className="bg-gray-50 rounded-lg p-2.5 border border-gray-100/50">
+                                                            <div className="text-[13px] font-bold text-gray-800 leading-none mb-1">
+                                                                {s.studentFirstName || "Unnamed child"}
+                                                            </div>
+                                                            <div className="text-[11px] text-gray-500 font-medium">
+                                                                {s.selectedClassData?.className 
+                                                                    ? `${s.selectedClassData.className} (${s.selectedClassData.dayOfWeek})` 
+                                                                    : "No class selected"}
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {/* Level of Interest */}
+                                    <div className="flex gap-3 items-start">
+                                        <Info className="text-[#3b7df6] w-4 h-4 mt-0.5 shrink-0" />
+                                        <div>
+                                            <div className="text-[11px] font-bold uppercase text-gray-400 tracking-wider">Level of interest</div>
+                                            <div className="text-[13px] font-bold text-gray-700 leading-tight capitalize">
+                                                {levelOfInterest}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="border-t border-gray-100 pt-4.5 mb-5">
+                                    <div className="flex items-center justify-between text-gray-900">
+                                        <span className="font-bold text-[14px]">Waitlist Registration</span>
+                                        <span className="text-emerald-500 font-extrabold text-[15px] bg-emerald-50 px-2 py-0.5 rounded-md uppercase tracking-wider">Free</span>
+                                    </div>
+                                </div>
+
+                                <button
+                                    onClick={handleSubmit}
+                                    disabled={submitting || activeStudents.length === 0}
+                                    className="w-full font-bold text-[14.5px] rounded-2xl py-4 border border-[#3b7df6] text-white bg-[#3b7df6] hover:bg-[#2f6ae0] disabled:opacity-50 disabled:cursor-not-allowed hover:scale-[1.01] active:scale-[0.99] transition-all flex items-center justify-center gap-2 shadow-md shadow-[#3b7df6]/10"
+                                >
+                                    {submitting ? (
+                                        <>
+                                            <Loader2 size={16} className="animate-spin" />
+                                            Adding to waitlist…
+                                        </>
+                                    ) : (
+                                        "Add to Waiting List"
+                                    )}
+                                </button>
+                                
+                                <button
+                                    onClick={() => navigate(-1)}
+                                    className="w-full mt-3 font-semibold text-[13.5px] text-gray-500 hover:text-gray-700 py-2.5 text-center transition-all bg-transparent border-0"
+                                >
+                                    Cancel & Return
+                                </button>
+                            </div>
+                            
+                            {/* Guarantee / Value Card */}
+                            <div className="bg-[#f8fafc] rounded-2xl p-4.5 border border-dashed border-[#cbd5e1] text-gray-500 text-[12px] flex gap-3">
+                                <ShieldAlert size={18} className="text-[#3b7df6] shrink-0 mt-0.5" />
+                                <div>
+                                    <h4 className="font-bold text-gray-700 mb-0.5">Samba Waiting List</h4>
+                                    <p className="leading-relaxed">Waitlisted profiles are monitored daily. As soon as a slot opens up matching your age bracket, our admin team will reach out immediately.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                ) : (
+                    /* ════════════════════════════════════════════════════════
+                        Success Screen D
+                    ════════════════════════════════════════════════════════ */
+                    <div className="max-w-[580px] mx-auto bg-white rounded-[24px] border border-[#e2e8f0] p-8 shadow-sm text-center">
+                        <div className="w-14 h-14 bg-emerald-50 rounded-2xl flex items-center justify-center mx-auto mb-5 text-[#21b573]">
+                            <PartyPopper size={28} />
+                        </div>
+                        <h2 className="text-[22px] font-extrabold text-gray-900 leading-tight mb-1 flex items-center justify-center gap-2">
+                            Added to Waiting List!
+                        </h2>
+                        <p className="text-gray-500 text-[14px] mb-6 max-w-[420px] mx-auto">
+                            Fantastic! {activeNames} ha{activeStudents.length > 1 ? "ve" : "s"} been successfully registered. We will contact you immediately when a space becomes available.
+                        </p>
+
+                        <div className="border border-[#e2e8f0] rounded-[20px] overflow-hidden text-left mb-6.5">
+                            <div className="bg-gradient-to-r from-[#1e3a6e] to-[#2f5aa0] text-white px-5 py-4 font-bold text-[14.5px] flex items-center gap-2">
+                                <MapPin size={15} /> 
+                                {selectedVenue?.venueName || "Trinity Sports Centre"}
+                            </div>
+                            <div className="p-5 divide-y divide-gray-100 bg-[#fcfdfd]">
+                                {activeStudents.map((s, i) => (
+                                    <div key={s._tmpId ?? i} className="flex items-start gap-3 py-3.5 first:pt-1">
+                                        <User size={15} className="text-[#3b7df6] mt-0.5 shrink-0" /> 
+                                        <div>
+                                            <div className="text-[14px] font-bold text-gray-800">{s.studentFirstName} {s.studentLastName}</div>
+                                            <div className="text-[12px] text-gray-500 font-medium">{s.selectedClassData?.className || "Class (Age Group)"}</div>
+                                        </div>
+                                    </div>
+                                ))}
+                                <div className="flex items-center gap-3 py-3.5 last:pb-1">
+                                    <Info size={15} className="text-[#3b7df6] shrink-0" /> 
+                                    <div>
+                                        <div className="text-[12px] text-gray-400 font-bold uppercase tracking-wide">Interest level</div>
+                                        <div className="text-[14px] font-bold text-gray-800 capitalize">
+                                            {levelOfInterest} Priority
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="bg-blue-50/30 rounded-xl p-4 text-[12.5px] text-gray-600 mb-8 flex items-start gap-2.5 text-left border border-blue-50/50">
+                            <Mail size={15} className="text-[#3b7df6] shrink-0 mt-0.5" />
+                            <span>A copy of your waiting list preferences and registration receipt has been sent to your email.</span>
+                        </div>
+
+                        <button
+                            onClick={() => navigate(-1)}
+                            className="w-full sm:w-auto font-bold text-[14.5px] rounded-xl px-12 py-3.5 border border-[#21b573] text-white bg-[#21b573] hover:bg-[#1a935d] hover:scale-[1.01] active:scale-[0.99] transition-all shadow-md shadow-emerald-500/10"
+                        >
+                            Finish & Return
+                        </button>
+                    </div>
+                )}
             </div>
+
+            {/* ── Add Child Modal ── */}
+            <AnimatePresence>
+                {isAddChildOpen && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 overflow-y-auto"
+                        onClick={() => !isSavingChild && setIsAddChildOpen(false)}
+                    >
+                        <motion.div
+                            initial={{ scale: 0.95, y: 20 }}
+                            animate={{ scale: 1, y: 0 }}
+                            exit={{ scale: 0.95, y: 20 }}
+                            transition={{ type: "spring", duration: 0.4 }}
+                            className="bg-white rounded-3xl w-full max-w-[600px] shadow-2xl relative flex flex-col max-h-[90vh] overflow-hidden"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            {/* Header */}
+                            <div className="flex justify-between items-center px-7 py-5 border-b border-gray-100">
+                                <div>
+                                    <span className="text-[12px] uppercase tracking-wider text-[#3b7df6] font-bold">New Child Profile</span>
+                                    <h2 className="text-[20px] font-bold text-gray-900 leading-tight">Add a new child</h2>
+                                </div>
+                                <button
+                                    onClick={() => !isSavingChild && setIsAddChildOpen(false)}
+                                    className="p-2 hover:bg-gray-100 rounded-full transition-colors focus:outline-none"
+                                >
+                                    <X className="w-5 h-5 text-gray-400 hover:text-gray-600" />
+                                </button>
+                            </div>
+
+                            {/* Body */}
+                            <div className="p-7 overflow-y-auto">
+                                <div className="grid grid-cols-2 gap-x-5 gap-y-4">
+                                    {/* First name */}
+                                    <div>
+                                        <label className="block text-[14px] font-semibold mb-1.5">First name</label>
+                                        <input
+                                            className={inputClass(!!newChildErrors.studentFirstName)}
+                                            value={newChildForm.studentFirstName}
+                                            onChange={(e) => {
+                                                setNewChildForm((f) => ({ ...f, studentFirstName: e.target.value }));
+                                                if (newChildErrors.studentFirstName) setNewChildErrors((errs) => ({ ...errs, studentFirstName: "" }));
+                                            }}
+                                            placeholder="Enter first name"
+                                        />
+                                        {newChildErrors.studentFirstName && <p className="text-[12px] text-[#e53e3e] mt-1">{newChildErrors.studentFirstName}</p>}
+                                    </div>
+
+                                    {/* Last name */}
+                                    <div>
+                                        <label className="block text-[14px] font-semibold mb-1.5">Last name</label>
+                                        <input
+                                            className={inputClass(!!newChildErrors.studentLastName)}
+                                            value={newChildForm.studentLastName}
+                                            onChange={(e) => {
+                                                setNewChildForm((f) => ({ ...f, studentLastName: e.target.value }));
+                                                if (newChildErrors.studentLastName) setNewChildErrors((errs) => ({ ...errs, studentLastName: "" }));
+                                            }}
+                                            placeholder="Enter last name"
+                                        />
+                                        {newChildErrors.studentLastName && <p className="text-[12px] text-[#e53e3e] mt-1">{newChildErrors.studentLastName}</p>}
+                                    </div>
+
+                                    {/* Date of birth */}
+                                    <div>
+                                        <label className="block text-[14px] font-semibold mb-1.5">Date of birth</label>
+                                        <input
+                                            className={inputClass(!!newChildErrors.dob)}
+                                            value={newChildForm.dob}
+                                            onChange={handleNewChildDOBChange}
+                                            placeholder="DD/MM/YYYY"
+                                            inputMode="numeric"
+                                            maxLength={10}
+                                        />
+                                        {newChildErrors.dob && <p className="text-[12px] text-[#e53e3e] mt-1">{newChildErrors.dob}</p>}
+                                    </div>
+
+                                    {/* Age (auto) */}
+                                    <div>
+                                        <label className="block text-[14px] font-semibold mb-1.5">Age</label>
+                                        <input
+                                            className="w-full font-inherit text-[14px] border border-[#e7ebf1] bg-[#f4f6f9] text-[#6b7685] rounded-[10px] px-3.5 py-3 cursor-not-allowed"
+                                            value={calculateAge(newChildForm.dob)}
+                                            placeholder="Auto calculated"
+                                            disabled
+                                            readOnly
+                                        />
+                                    </div>
+
+                                    {/* Gender */}
+                                    <div>
+                                        <label className="block text-[14px] font-semibold mb-1.5">Gender</label>
+                                        <Select
+                                            styles={selectStyles(!!newChildErrors.gender)}
+                                            options={genderOptions}
+                                            value={genderOptions.find((o) => o.value === newChildForm.gender) || null}
+                                            placeholder="Select gender"
+                                            onChange={(opt) => {
+                                                setNewChildForm((f) => ({ ...f, gender: opt?.value || "" }));
+                                                if (newChildErrors.gender) setNewChildErrors((errs) => ({ ...errs, gender: "" }));
+                                            }}
+                                        />
+                                        {newChildErrors.gender && <p className="text-[12px] text-[#e53e3e] mt-1">{newChildErrors.gender}</p>}
+                                    </div>
+
+                                    {/* Medical information */}
+                                    <div>
+                                        <label className="block text-[14px] font-semibold mb-1.5">Medical information</label>
+                                        <input
+                                            className={inputClass(false)}
+                                            value={newChildForm.medicalInfo}
+                                            onChange={(e) => setNewChildForm((f) => ({ ...f, medicalInfo: e.target.value }))}
+                                            placeholder="e.g. Asthma, None"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Footer */}
+                            <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 px-7 py-5 border-t border-gray-100">
+                                <button
+                                    onClick={() => setIsAddChildOpen(false)}
+                                    disabled={isSavingChild}
+                                    className="w-full sm:w-auto font-semibold text-[14px] rounded-[12px] px-6 py-3 border border-[#e7ebf1] text-[#1f2733] bg-white"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={handleSaveNewChild}
+                                    disabled={isSavingChild}
+                                    className="w-full sm:w-auto font-semibold text-[14px] rounded-[12px] px-7 py-3 border border-[#3b7df6] text-white bg-[#3b7df6] disabled:opacity-50 hover:bg-[#2f6ae0] flex items-center justify-center gap-2"
+                                >
+                                    {isSavingChild && <Loader2 className="animate-spin w-4 h-4" />}
+                                    Add Child
+                                </button>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 }
