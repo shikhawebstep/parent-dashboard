@@ -262,7 +262,6 @@ const BookMembership = () => {
 
     const booking = location?.state?.booking || matchedBooking;
     const bookingSource = location?.state?.bookingsource || null;
-    console.log("booking", booking, location?.state);
 
     const urlVenueId = searchParams.get("venueId");
     const urlBooking = searchParams.get("bookingId");
@@ -1139,7 +1138,7 @@ const BookMembership = () => {
                 </div>
 
 
-                {(urlCreatedAt || !bookingSource) && !reservationExpired && (() => {
+                {(urlCreatedAt && !bookingSource) && !reservationExpired && (() => {
                     const t = formatTimeLeft(reservationTimeLeft);
                     const pad = (n) => String(n).padStart(2, "0");
                     return (
@@ -1164,7 +1163,7 @@ const BookMembership = () => {
                         </div>
                     );
                 })()}
-                {(urlCreatedAt || !bookingSource) && reservationExpired && (
+                {(urlCreatedAt && !bookingSource) && reservationExpired && (
                     <div className=" mx-auto md:px-6 px-2 mt-4">
                         <div className="bg-[#fff5f5] border border-[#feb2b2] text-[#c53030] rounded-[14px] px-5 py-3.5 flex items-center gap-2.5 font-semibold text-[14px]">
                             <AlertTriangle size={18} />
