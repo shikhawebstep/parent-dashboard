@@ -25,6 +25,7 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import Select from "react-select";
 import { showSuccess, showError } from "../../../utils/swalHelper";
+import Loader from "../Loader";
 
 // ── Dropdown options ──────────────────────────────────────────────────────────
 const genderOptions = [
@@ -177,8 +178,8 @@ const selectStyles = (hasError) => ({
 
 // ── Component ─────────────────────────────────────────────────────────────────
 export default function AddToWaitingList() {
-    const { fetchVenues, venues } = useCommon();
-    const { profile, fetchProfileData } = useProfile();
+    const { fetchVenues, venues, loading: commonLoading } = useCommon();
+    const { profile, fetchProfileData, loading: profileLoading } = useProfile();
     const navigate = useNavigate();
 
     // ── Form state ────────────────────────────────────────────────────────────
@@ -612,6 +613,10 @@ export default function AddToWaitingList() {
     const labelClass  = "block text-[14px] font-semibold mb-1.5 text-[#1f2733]";
 
     // ── Render ────────────────────────────────────────────────────────────────
+    if (!venues || (profile === null && profileLoading)) {
+        return <Loader />;
+    }
+
     return (
         <div className="min-h-screen booking-page bg-[#f8fafc] text-[#1f2733] font-['Poppins',sans-serif] pb-28 sm:pb-16 pt-5">
             {/* ── Navy band ──────────────────────────────────────────────────── */}

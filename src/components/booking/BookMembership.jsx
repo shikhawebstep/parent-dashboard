@@ -25,6 +25,7 @@ import PhoneNumberInput from "../../commom/PhoneNumberInput";
 import { useCommon } from "../../context/CommonContext";
 import { useProfile } from "../../context/ProfileContext";
 import { getAddressesByPostcode } from "../../commom/getAddressesByPostcode";
+import Loader from "../Loader";
 
 // ── react-select shared styles ─────────────────────────────
 const rsStyles = (hasError) => ({
@@ -240,8 +241,8 @@ const BookMembership = () => {
     const [addressLoading, setAddressLoading] = useState(false);
     const [addressError, setAddressError] = useState("");
 
-    const { fetchVenues, venues } = useCommon();
-    const { profile, fetchProfileData } = useProfile();
+    const { fetchVenues, venues, loading: commonLoading } = useCommon();
+    const { profile, fetchProfileData, loading: profileLoading } = useProfile();
     const location = useLocation();
     const booking = location?.state?.booking;
     const navigate = useNavigate();
@@ -1031,6 +1032,10 @@ const BookMembership = () => {
         setIsSavingChild(false);
         setIsAddChildOpen(false);
     };
+
+    if (!venues || (profile === null && profileLoading)) {
+        return <Loader />;
+    }
 
     return (
         <div className="min-h-screen booking-page bg-[#f4f6f9] text-[#1f2733] font-['Poppins',sans-serif] pb-28 sm:pb-16 pt-5">

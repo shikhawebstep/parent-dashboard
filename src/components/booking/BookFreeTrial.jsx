@@ -28,6 +28,7 @@ import Select from "react-select";
 import { useProfile } from "../../context/ProfileContext";
 import { useNavigate, useLocation } from "react-router-dom";
 import { showSuccess, showError } from "../../../utils/swalHelper";
+import Loader from "../Loader";
 
 // ── Dropdown options ──────────────────────────────────────────────────────────
 const genderOptions = [
@@ -181,8 +182,8 @@ const selectStyles = (hasError) => ({
 
 // ── Component ─────────────────────────────────────────────────────────────────
 const BookFreeTrial = () => {
-    const { fetchVenues, venues } = useCommon();
-    const { profile, fetchProfileData } = useProfile();
+    const { fetchVenues, venues, loading: commonLoading } = useCommon();
+    const { profile, fetchProfileData, loading: profileLoading } = useProfile();
     const navigate = useNavigate();
     const location = useLocation();
 
@@ -213,6 +214,7 @@ const BookFreeTrial = () => {
     });
     const [newChildErrors, setNewChildErrors] = useState({});
     const [isSavingChild, setIsSavingChild]   = useState(false);
+    const [isSubmitting,  setIsSubmitting]    = useState(false);
     const [isDirty, setIsDirty]               = useState(false); // tracks unsaved changes
     const DRAFT_KEY = "bookFreeTrial_draft";
 
@@ -713,6 +715,7 @@ const BookFreeTrial = () => {
             alert("Please check the form for errors.");
             return;
         }
+        setIsSubmitting(true);
         let parentData = {};
         try {
             parentData = JSON.parse(localStorage.getItem("parentData") || "{}") || {};
@@ -777,6 +780,8 @@ const BookFreeTrial = () => {
                 err?.response?.data?.error   ||
                 "Something went wrong while booking the trial.";
             showError("Error", msg);
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -791,6 +796,10 @@ const BookFreeTrial = () => {
     const labelClass = "block text-[14px] font-semibold mb-1.5 text-[#1f2733]";
 
     // ── Render ────────────────────────────────────────────────────────────────
+    if (!venues || (profile === null && profileLoading)) {
+        return <Loader />;
+    }
+
     return (
         <div className="min-h-screen booking-page bg-[#f8fafc] text-[#1f2733] font-['Poppins',sans-serif] pb-28 sm:pb-16 pt-5">
             {/* ── Navy band ──────────────────────────────────────────────────── */}
@@ -1533,10 +1542,17 @@ const BookFreeTrial = () => {
 
                                 <button
                                     onClick={handleSubmit}
-                                    disabled={activeStudents.length === 0}
+                                    disabled={isSubmitting || activeStudents.length === 0}
                                     className="w-full font-bold text-[14.5px] rounded-2xl py-4 border border-[#3b7df6] text-white bg-[#3b7df6] hover:bg-[#2f6ae0] disabled:opacity-50 disabled:cursor-not-allowed hover:scale-[1.01] active:scale-[0.99] transition-all flex items-center justify-center gap-2 shadow-md shadow-[#3b7df6]/10"
                                 >
-                                    Confirm Free Trial Booking
+                                    {isSubmitting ? (
+                                        <>
+                                            <Loader2 size={16} className="animate-spin" />
+                                            Booking Trial…
+                                        </>
+                                    ) : (
+                                        "Confirm Free Trial Booking"
+                                    )}
                                 </button>
                                 
                                 <button
