@@ -24,6 +24,7 @@ const ChangePlanModal = ({ isOpen, onClose, booking, onSuccess }) => {
   const [authorised, setAuthorised] = useState(false);
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [existingPayment, setExistingPayment] = useState({});
 
   const emailRef = useRef(null);
   const accountHolderNameRef = useRef(null);
@@ -37,6 +38,12 @@ const ChangePlanModal = ({ isOpen, onClose, booking, onSuccess }) => {
     if (isOpen && booking) {
       const parent = booking.parents?.[0] || {};
       const fullName = `${parent.parentFirstName || ''} ${parent.parentLastName || ''}`.trim();
+
+      console.log("Booking Data:", booking);
+      const existingPayment = booking.payments[0] || booking.directDebit || booking.paymentMethod || {};
+
+      console.log("Existing Payment:", existingPayment);
+      setExistingPayment(existingPayment);
 
       setPayment(prev => ({
         ...prev,
@@ -52,6 +59,7 @@ const ChangePlanModal = ({ isOpen, onClose, booking, onSuccess }) => {
           label: booking.paymentPlan.title,
           all: booking.paymentPlan
         });
+
       }
     }
   }, [isOpen, booking]);
@@ -149,7 +157,7 @@ const ChangePlanModal = ({ isOpen, onClose, booking, onSuccess }) => {
         newPaymentPlanId: membershipPlan?.value,
         startDate: selectedDate,
         payment: {
-          paymentType: "bank",
+          paymentType: existingPayment?.paymentType !== "stripe" ? existingPayment?.paymentType : "bank",
           price: pricingBreakdown.nextMonthPayment,
           proRataAmount: pricingBreakdown.finalProRataCost,
           account_number: payment.account_number,
@@ -528,8 +536,8 @@ const ChangePlanModal = ({ isOpen, onClose, booking, onSuccess }) => {
 
                       <div className="bg-[#F8F9FA] p-4 rounded-xl border border-gray-100 flex justify-between items-center">
                         <span className="text-sm font-semibold text-gray-600">Payment Method</span>
-                        <span className="text-sm font-bold text-gray-900 px-3 py-1 bg-white rounded-md shadow-sm border border-gray-100">
-                          {isFranchisee ? "GoCardless" : "Access Pay Suite"}
+                        <span className="text-sm font-bold capitalize text-gray-900 px-3 py-1 bg-white rounded-md shadow-sm border border-gray-100">
+                          {existingPayment?.paymentType !== "stripe" ? existingPayment?.paymentType : "Bank Transfer"}
                         </span>
                       </div>
 

@@ -266,6 +266,13 @@ const BookMembership = () => {
     const urlVenueId = searchParams.get("venueId");
     const urlBooking = searchParams.get("bookingId");
     const urlCreatedAt = searchParams.get("createdAt");
+
+    // True only for genuine reservation links: /booking?venueId=X&bookingId=Y&createdAt=Z
+    const isReservedBookingFlow = Boolean(urlVenueId && urlCreatedAt && !bookingSource);
+
+
+
+
     const RESERVATION_DURATION_MS = 24 * 60 * 60 * 1000; // 24 hr
     const [reservationTimeLeft, setReservationTimeLeft] = useState(null);
     const [reservationExpired, setReservationExpired] = useState(false);
@@ -298,7 +305,7 @@ const BookMembership = () => {
     const [membershipPlan, setMembershipPlan] = useState(null);
     const [selectedDate, setSelectedDate] = useState(null);
     const [currentDate, setCurrentDate] = useState(new Date());
-
+    const [discountSource, setDiscountSource] = useState(null); // 'auto' | 'manual' | null
     // Discount state (ported from file 2)
     const [discountCode, setDiscountCode] = useState("");
     const [appliedDiscount, setAppliedDiscount] = useState(null);
@@ -320,6 +327,8 @@ const BookMembership = () => {
         stripeAmount: 0,
         nextMonthPayment: 0,
     });
+
+    console.log('pricingBreakdown', pricingBreakdown)
 
     // Field-level errors for payment screens
     const [cardErrors, setCardErrors] = useState({});
@@ -387,8 +396,40 @@ const BookMembership = () => {
         return `${d}/${m}/${y}`;
     };
 
-    console.log("student,parents,emergency", students, parents, emergency);
+    const [starterPackStatus, setStarterPackStatus] = useState(null); // null = not checked yet
+    const [starterPackStatusLoading, setStarterPackStatusLoading] = useState(false);
 
+    // ── Check if this booking already has a starter pack ──────
+    useEffect(() => {
+        const token = localStorage.getItem("parentToken");
+        const parentData = JSON.parse(localStorage.getItem("parentData"));
+        const parentId = parentData?.id;
+        const API_URL = import.meta.env.VITE_API_BASE_URL;
+
+        if (!parentId) {
+            setStarterPackStatus(null);
+            return;
+        }
+        setStarterPackStatusLoading(true);
+        fetch(`${API_BASE_URL}api/parent/starter-pack-status/${parentId}`, {
+            method: "GET",
+            headers: { Authorization: `Bearer ${token || ""}` },
+        })
+            .then((res) => res.json())
+            .then((result) => {
+                // API may return the flag directly or nested — handle both shapes safely
+                const hasStarterPack =
+                    result?.hasStarterPack ??
+                    result?.data?.hasStarterPack ??
+                    false;
+                setStarterPackStatus(Boolean(hasStarterPack));
+            })
+            .catch((err) => {
+                console.error("starter-pack-status check failed:", err);
+                setStarterPackStatus(null); // treat as unknown → fall back to required fields
+            })
+            .finally(() => setStarterPackStatusLoading(false));
+    }, [urlBookingId, booking?.id]);
     // ── react-select option builders (null-safe) ──────────
     const venueOptions = (venues?.capacityVenues || [])
         .filter((v) => v && v.venueId !== undefined && v.venueId !== null)
@@ -491,64 +532,64 @@ const BookMembership = () => {
         setIsDirty(false);
     };
 
-useEffect(() => {
-    if (!profile) return;
-    const rawParents = profile?.adminMeta?.parents || [];
-    const rawStudents = profile?.adminMeta?.students || [];
+    useEffect(() => {
+        if (!profile) return;
+        const rawParents = profile?.adminMeta?.parents || [];
+        const rawStudents = profile?.adminMeta?.students || [];
 
-    const normalizeDOB = (raw) => {
-        if (!raw) return "";
-        return raw.includes("-") ? formatDOBForDisplay(raw) : raw;
-    };
+        const normalizeDOB = (raw) => {
+            if (!raw) return "";
+            return raw.includes("-") ? formatDOBForDisplay(raw) : raw;
+        };
 
-    const normalizedParents = rawParents.map((p) => ({
-        id: null, // ← id no longer sourced from adminMeta; comes from booking match below
-        parentFirstName: p?.parentFirstName || "",
-        parentLastName: p?.parentLastName || "",
-        parentEmail: p?.parentEmail || "",
-        parentPhoneNumber: p?.parentPhoneNumber || p?.phoneNumber || "",
-        interestReason: p?.interestReason || "",
-        interestReasonOther: p?.interestReasonOther || "",
-        relationToChild: p?.relationToChild || "",
-        howDidYouHear: p?.howDidYouHear || "",
-        isCustomReason: p?.isCustomReason || false,
-        starterPackSize: p?.starterPackSize || "",
-    }));
+        const normalizedParents = rawParents.map((p) => ({
+            id: null, // ← id no longer sourced from adminMeta; comes from booking match below
+            parentFirstName: p?.parentFirstName || "",
+            parentLastName: p?.parentLastName || "",
+            parentEmail: p?.parentEmail || "",
+            parentPhoneNumber: p?.parentPhoneNumber || p?.phoneNumber || "",
+            interestReason: p?.interestReason || "",
+            interestReasonOther: p?.interestReasonOther || "",
+            relationToChild: p?.relationToChild || "",
+            howDidYouHear: p?.howDidYouHear || "",
+            isCustomReason: p?.isCustomReason || false,
+            starterPackSize: p?.starterPackSize || "",
+        }));
 
-    const normalizedStudents = rawStudents.map((s, index) => ({
-        _tmpId: s?.id ?? index, // fine — internal React key only, never sent to API
-        id: null, // ← id no longer sourced from adminMeta; comes from booking match below
-        studentFirstName: s?.studentFirstName || "",
-        studentLastName: s?.studentLastName || "",
-        dateOfBirth: normalizeDOB(s?.dateOfBirth || s?.dob),
-        age: s?.age ?? "",
-        gender: s?.gender || "",
-        medicalInformation: s?.medicalInformation || s?.medicalInfo || "",
-        selectedClassId: s?.selectedClassId || null,
-        selectedClassData: s?.selectedClassData || null,
-    }));
+        const normalizedStudents = rawStudents.map((s, index) => ({
+            _tmpId: s?.id ?? index, // fine — internal React key only, never sent to API
+            id: null, // ← id no longer sourced from adminMeta; comes from booking match below
+            studentFirstName: s?.studentFirstName || "",
+            studentLastName: s?.studentLastName || "",
+            dateOfBirth: normalizeDOB(s?.dateOfBirth || s?.dob),
+            age: s?.age ?? "",
+            gender: s?.gender || "",
+            medicalInformation: s?.medicalInformation || s?.medicalInfo || "",
+            selectedClassId: s?.selectedClassId || null,
+            selectedClassData: s?.selectedClassData || null,
+        }));
 
-    setParents(normalizedParents.length ? normalizedParents : [INIT_PARENT()]);
-    setStudents(normalizedStudents.length ? normalizedStudents : [INIT_STUDENT()]);
+        setParents(normalizedParents.length ? normalizedParents : [INIT_PARENT()]);
+        setStudents(normalizedStudents.length ? normalizedStudents : [INIT_STUDENT()]);
 
-    if (normalizedStudents.length === 1) {
-        setSelectedStudentIds([normalizedStudents[0]._tmpId]);
-    } else if (normalizedStudents.length > 1) {
-        setSelectedStudentIds(normalizedStudents.map((s) => s._tmpId));
-    }
+        if (normalizedStudents.length === 1) {
+            setSelectedStudentIds([normalizedStudents[0]._tmpId]);
+        } else if (normalizedStudents.length > 1) {
+            setSelectedStudentIds(normalizedStudents.map((s) => s._tmpId));
+        }
 
-    const emergencyContact = profile?.adminMeta?.emergency;
-    if (emergencyContact) {
-        setEmergency({
-            sameAsAbove: false,
-            emergencyFirstName: emergencyContact?.emergencyFirstName || "",
-            emergencyLastName: emergencyContact?.emergencyLastName || "",
-            emergencyPhoneNumber: emergencyContact?.emergencyPhoneNumber || "",
-            emergencyRelation: emergencyContact?.emergencyRelation || "",
-            id: "", // ← id no longer sourced from adminMeta; comes from booking match below
-        });
-    }
-}, [profile]);
+        const emergencyContact = profile?.adminMeta?.emergency;
+        if (emergencyContact) {
+            setEmergency({
+                sameAsAbove: false,
+                emergencyFirstName: emergencyContact?.emergencyFirstName || "",
+                emergencyLastName: emergencyContact?.emergencyLastName || "",
+                emergencyPhoneNumber: emergencyContact?.emergencyPhoneNumber || "",
+                emergencyRelation: emergencyContact?.emergencyRelation || "",
+                id: "", // ← id no longer sourced from adminMeta; comes from booking match below
+            });
+        }
+    }, [profile]);
 
     useEffect(() => {
         if (hasInitialized.current || !availableDatesSet.size) return;
@@ -673,92 +714,94 @@ useEffect(() => {
     // When parent clicks "Book Membership" from a trial booking row, the booking
     // object is passed via location.state — use it to pre-select venue & classes.
     // Booking students appear FIRST in the list and are the only ones pre-selected.
-   useEffect(() => {
-    if (!booking || !venues?.capacityVenues?.length) return;
+    useEffect(() => {
+        if (!booking || !venues?.capacityVenues?.length) return;
 
-    // 1. Auto-select venue
-    const sourceVenueId = booking?.venue?.id ?? booking?.venueId;
-    if (sourceVenueId && !selectedVenue) {
-        const match = venues.capacityVenues.find(
-            (v) => String(v.venueId) === String(sourceVenueId)
-        );
-        if (match) {
-            setSelectedVenue({
-                value: match.venueId,
-                label: match.venueName || booking?.venue?.name || "Venue",
-                all: match,
+        // 1. Auto-select venue
+        const sourceVenueId = booking?.venue?.id ?? booking?.venueId;
+        if (sourceVenueId && !selectedVenue) {
+            const match = venues.capacityVenues.find(
+                (v) => String(v.venueId) === String(sourceVenueId)
+            );
+            if (match) {
+                setSelectedVenue({
+                    value: match.venueId,
+                    label: match.venueName || booking?.venue?.name || "Venue",
+                    all: match,
+                });
+            }
+        }
+
+        // 2. Reorder students, enrich with class + real booking id
+        const bookingStudents = booking?.students || [];
+        if (bookingStudents.length) {
+            const bookingNames = new Set(
+                bookingStudents.map((bs) => (bs?.studentFirstName || "").toLowerCase())
+            );
+
+            setStudents((prev) => {
+                const enriched = prev.map((student) => {
+                    const match = bookingStudents.find(
+                        (bs) =>
+                            (bs?.studentFirstName || "").toLowerCase() ===
+                            (student.studentFirstName || "").toLowerCase()
+                    );
+                    if (!match) return student;
+                    const sched = match?.classSchedule || match?.holidayClassSchedules || null;
+                    const classId = sched?.classScheduleId ?? sched?.id ?? sched?.classId ?? null;
+                    return {
+                        ...student,
+                        id: match?.id ?? student.id, // ← real student id from booking
+                        selectedClassId: classId ? String(classId) : student.selectedClassId,
+                        selectedClassData: sched ?? student.selectedClassData,
+                    };
+                });
+
+                const inBooking = enriched.filter((s) =>
+                    bookingNames.has((s.studentFirstName || "").toLowerCase())
+                );
+                const notInBooking = enriched.filter(
+                    (s) => !bookingNames.has((s.studentFirstName || "").toLowerCase())
+                );
+                const reordered = [...inBooking, ...notInBooking];
+
+                setSelectedStudentIds(inBooking.map((s) => s._tmpId));
+                return reordered;
             });
         }
-    }
 
-    // 2. Reorder students, enrich with class + real booking id
-    const bookingStudents = booking?.students || [];
-    if (bookingStudents.length) {
-        const bookingNames = new Set(
-            bookingStudents.map((bs) => (bs?.studentFirstName || "").toLowerCase())
-        );
-
-        setStudents((prev) => {
-            const enriched = prev.map((student) => {
-                const match = bookingStudents.find(
-                    (bs) =>
-                        (bs?.studentFirstName || "").toLowerCase() ===
-                        (student.studentFirstName || "").toLowerCase()
-                );
-                if (!match) return student;
-                const sched = match?.classSchedule || match?.holidayClassSchedules || null;
-                const classId = sched?.classScheduleId ?? sched?.id ?? sched?.classId ?? null;
-                return {
-                    ...student,
-                    id: match?.id ?? student.id, // ← real student id from booking
-                    selectedClassId: classId ? String(classId) : student.selectedClassId,
-                    selectedClassData: sched ?? student.selectedClassData,
-                };
-            });
-
-            const inBooking = enriched.filter((s) =>
-                bookingNames.has((s.studentFirstName || "").toLowerCase())
+        // 3. Match parent ids from booking.parents (email first, name as fallback)
+        const bookingParents = booking?.parents || [];
+        if (bookingParents.length) {
+            setParents((prev) =>
+                prev.map((parent) => {
+                    const match =
+                        bookingParents.find(
+                            (bp) =>
+                                (bp?.parentEmail || "").toLowerCase() &&
+                                (bp?.parentEmail || "").toLowerCase() === (parent.parentEmail || "").toLowerCase()
+                        ) ||
+                        bookingParents.find(
+                            (bp) =>
+                                (bp?.parentFirstName || "").toLowerCase() === (parent.parentFirstName || "").toLowerCase() &&
+                                (bp?.parentLastName || "").toLowerCase() === (parent.parentLastName || "").toLowerCase()
+                        );
+                    return match ? { ...parent, id: match.id ?? parent.id } : parent;
+                })
             );
-            const notInBooking = enriched.filter(
-                (s) => !bookingNames.has((s.studentFirstName || "").toLowerCase())
-            );
-            const reordered = [...inBooking, ...notInBooking];
+        }
 
-            setSelectedStudentIds(inBooking.map((s) => s._tmpId));
-            return reordered;
-        });
-    }
-
-    // 3. Match parent ids from booking.parents (email first, name as fallback)
-    const bookingParents = booking?.parents || [];
-    if (bookingParents.length) {
-        setParents((prev) =>
-            prev.map((parent) => {
-                const match =
-                    bookingParents.find(
-                        (bp) =>
-                            (bp?.parentEmail || "").toLowerCase() &&
-                            (bp?.parentEmail || "").toLowerCase() === (parent.parentEmail || "").toLowerCase()
-                    ) ||
-                    bookingParents.find(
-                        (bp) =>
-                            (bp?.parentFirstName || "").toLowerCase() === (parent.parentFirstName || "").toLowerCase() &&
-                            (bp?.parentLastName || "").toLowerCase() === (parent.parentLastName || "").toLowerCase()
-                    );
-                return match ? { ...parent, id: match.id ?? parent.id } : parent;
-            })
-        );
-    }
-
-    // 4. Match emergency id from booking.emergency
-    const bookingEmergency = Array.isArray(booking?.emergency) ? booking.emergency[0] : booking?.emergency;
-    if (bookingEmergency?.id) {
-        setEmergency((prev) => ({ ...prev, id: bookingEmergency.id }));
-    }
-}, [booking, venues]);
+        // 4. Match emergency id from booking.emergency
+        const bookingEmergency = Array.isArray(booking?.emergency) ? booking.emergency[0] : booking?.emergency;
+        if (bookingEmergency?.id) {
+            setEmergency((prev) => ({ ...prev, id: bookingEmergency.id }));
+        }
+    }, [booking, venues]);
 
     useEffect(() => {
-        if (!bookingSource && showStarterPack && !isApplied && !reservationExpired) {
+        const eligible = isReservedBookingFlow && showStarterPack && !reservationExpired;
+
+        if (eligible && discountSource !== "manual") {
             setAppliedDiscount({
                 status: true,
                 message: "50% off applied for your reserved booking!",
@@ -766,8 +809,16 @@ useEffect(() => {
             });
             setIsApplied(true);
             setIsChecked(true);
+            setDiscountSource("auto");
         }
-    }, [urlBookingId, showStarterPack, reservationExpired]);
+
+        if (!eligible && discountSource === "auto") {
+            setAppliedDiscount(null);
+            setIsApplied(false);
+            setIsChecked(false);
+            setDiscountSource(null);
+        }
+    }, [isReservedBookingFlow, showStarterPack, reservationExpired, discountSource]);
 
     const formatTimeLeft = (ms) => {
         if (ms === null) return "--:--:--";
@@ -849,6 +900,9 @@ useEffect(() => {
     };
 
 
+    const isStarterPackOptional = starterPackStatus === true;
+
+
     // ── Prefill Direct Debit email from first parent ───────────
     useEffect(() => {
         const firstParentEmail = parents[0]?.parentEmail;
@@ -867,12 +921,22 @@ useEffect(() => {
                 body: JSON.stringify({ starterPack: starterPackPrice, code: discountCode }),
             });
             const result = await res.json();
-            if (res.ok && result?.status) { setAppliedDiscount(result); setIsApplied(true); }
-            else { setAppliedDiscount(null); setIsApplied(false); }
-        } catch { setIsApplied(false); }
-        finally { setIsDiscountLoading(false); }
+            if (res.ok && result?.status) {
+                setAppliedDiscount(result);
+                setIsApplied(true);
+                setDiscountSource("manual");
+            } else {
+                setAppliedDiscount(null);
+                setIsApplied(false);
+                setDiscountSource(null);
+            }
+        } catch {
+            setIsApplied(false);
+            setDiscountSource(null);
+        } finally {
+            setIsDiscountLoading(false);
+        }
     };
-
     const toggleStudent = (id) => {
         if (id === undefined || id === null) return;
         setSelectedStudentIds((prev) =>
@@ -985,7 +1049,7 @@ useEffect(() => {
                 })),
                 starterPack: showStarterPack ? starterPackPrice : 0,
                 starterPackDeliveryAddress: showStarterPack
-                    ? { line1: deliveryLine1, city: deliveryCity, postcode: deliveryPostcode,buildingNumber:buildingNumber }
+                    ? { line1: deliveryLine1, city: deliveryCity, postcode: deliveryPostcode, buildingNumber: buildingNumber }
                     : null,
                 discountId: isApplied && appliedDiscount?.data?.id ? appliedDiscount.data.id : null,
                 emergency: {
@@ -1197,7 +1261,7 @@ useEffect(() => {
                         </div>
                     );
                 })()}
-                {(urlCreatedAt && !bookingSource) && reservationExpired && (
+                {(isReservedBookingFlow && reservationExpired) && (
                     <div className=" mx-auto md:px-6 px-2 mt-4">
                         <div className="bg-[#fff5f5] border border-[#feb2b2] text-[#c53030] rounded-[14px] px-5 py-3.5 flex items-center gap-2.5 font-semibold text-[14px]">
                             <AlertTriangle size={18} />
@@ -1286,6 +1350,13 @@ useEffect(() => {
                                                     setSelectedDate(null);
                                                     setIsChangingVenue(false);
                                                     setStudents((prev) => prev.map((s) => ({ ...s, selectedClassId: null, selectedClassData: null })));
+
+                                                    // ← reset discount — starter pack price differs by venue, force re-evaluation
+                                                    setDiscountCode("");
+                                                    setAppliedDiscount(null);
+                                                    setIsApplied(false);
+                                                    setIsChecked(false);
+                                                    setDiscountSource(null);
                                                 }}
                                             />
                                         </div>
@@ -1343,7 +1414,7 @@ useEffect(() => {
                                                                 Coach's verdict: {s?.selectedClassData?.level} level
                                                             </div>
                                                         )}
-                                                    
+
                                                     </div>
                                                 )}
                                             </div>
@@ -1421,10 +1492,26 @@ useEffect(() => {
                                                             value={discountCode}
                                                             placeholder="Enter discount code"
                                                             onChange={(e) => {
-                                                                setDiscountCode(e.target.value);
-                                                                setIsApplied(false);
-                                                                setAppliedDiscount(null);
+                                                                const val = e.target.value;
+                                                                setDiscountCode(val);
                                                                 setIsChecked(false);
+
+                                                                const eligible = isReservedBookingFlow && showStarterPack && !reservationExpired;
+
+                                                                if (!val.trim() && eligible) {
+                                                                    // field cleared — fall back to the automatic reserved-booking discount
+                                                                    setAppliedDiscount({
+                                                                        status: true,
+                                                                        message: "50% off applied for your reserved booking!",
+                                                                        data: { type: "percentage", value: 50 },
+                                                                    });
+                                                                    setIsApplied(true);
+                                                                    setDiscountSource("auto");
+                                                                } else {
+                                                                    setAppliedDiscount(null);
+                                                                    setIsApplied(false);
+                                                                    setDiscountSource(null);
+                                                                }
                                                             }}
                                                         />
                                                         <button
@@ -1447,14 +1534,14 @@ useEffect(() => {
                                     {/* Kit size per student */}
 
                                     {showStarterPack && (
-                                        <div className="text-[12px] font-bold uppercase tracking-[0.04em] text-[#6b7685] mb-3 mt-5">
-                                            Student & kit size{" "}
+                                        <div className="text-[12px] font-bold uppercase tracking-[0.04em] text-[#6b7685] mb-1 mt-5">
+                                            kit size{" "}
                                             <button
                                                 type="button"
                                                 onClick={() => setIsSizeChartOpen(true)}
-                                                className="normal-case text-[#3b7df6] font-semibold text-[14px] hover:underline ml-2"
+                                                className="normal-case text-[#3b7df6] font-semibold text-[12px] hover:underline ml-2"
                                             >
-                                                Size chart →
+                                                Size chart
                                             </button>
                                         </div>
                                     )
@@ -1501,8 +1588,12 @@ useEffect(() => {
                                     {showStarterPack && (
                                         <div className="border border-[#e7ebf1] rounded-[14px] p-4 mt-1 mb-5">
                                             <div className="font-bold text-[14px] mb-3 flex flex-wrap items-center gap-2">
-                                                <Truck size={16} /> Delivery address <span className="font-medium text-[#6b7685] text-[14px]">— where should we send the starter pack?</span>
-                                            </div>
+                                                <Truck size={16} /> Delivery address
+                                                <span className="font-medium text-[#6b7685] text-[14px]">
+                                                    {isStarterPackOptional
+                                                        ? "— optional, you already have a starter pack on file"
+                                                        : "— where should we send the starter pack?"}
+                                                </span>                                            </div>
                                             <div className="flex flex-col sm:flex-row items-stretch sm:items-end gap-3">
                                                 <div className="flex-1">
                                                     <label className="block text-[14px] font-semibold mb-1.5">Postcode</label>
@@ -1714,25 +1805,27 @@ useEffect(() => {
                                     </div>
                                     {showStarterPack && (
                                         <>
-
                                             {isApplied && pricingBreakdown.starterDiscount > 0 ? (
-                                                <div className="flex justify-between items-center text-[11px] py-1   text-[#0e7a4d] font-semibold">
-                                                    <span>Starter pack {activeStudents.length > 1 ? ` × ${activeStudents.length} (50% trial offer)` : ` (50% trial offer) `}</span>
-                                                    <span className="font-semibold"><span className="text-gray-500 line-through">   £{(pricingBreakdown.starterPack || 0).toFixed(2)}</span>
-                                                        {'  '} £{(pricingBreakdown.starterDiscount || 0).toFixed(2)}</span>
+                                                <div className="flex justify-between items-center text-[11px] py-1 text-[#0e7a4d] font-semibold">
+                                                    <span>
+                                                        Starter pack{activeStudents.length > 1 ? ` × ${activeStudents.length}` : ""}
+                                                        {discountSource === "auto" ? " (50% trial offer)" : " (discount applied)"}
+                                                    </span>
+                                                    <span className="font-semibold">
+                                                        <span className="text-gray-500 line-through">   £{(pricingBreakdown.starterPack || 0).toFixed(2)}</span>
+                                                        {'  '} £{(pricingBreakdown.starterDiscount || 0).toFixed(2)}
+                                                    </span>
                                                 </div>
                                             ) : (
-                                                <div className="flex justify-between items-center text-[11px] py-1  ">
+                                                <div className="flex justify-between items-center text-[11px] py-1">
                                                     <span className="text-[#6b7685]">Starter pack{activeStudents.length > 1 ? ` × ${activeStudents.length}` : ""}</span>
                                                     <span className="font-semibold">£{(pricingBreakdown.starterPack || 0).toFixed(2)}</span>
                                                 </div>
-
                                             )}
-                                            <div className="flex justify-between items-center text-[11px] py-1  ">
+                                            <div className="flex justify-between items-center text-[11px] py-1">
                                                 <span className="text-[#6b7685]">Delivery fee</span>
                                                 <span className="font-semibold">£3.99</span>
                                             </div>
-
                                         </>
                                     )}
                                     <div className="flex justify-between items-center text-[11px] py-1  "><span className="text-[#6b7685]">Joining fee</span><span className="font-semibold">No joining fee</span></div>
@@ -1752,8 +1845,8 @@ useEffect(() => {
                                     disabled={
                                         !membershipPlan ||
                                         !selectedDate ||
-                                        (showStarterPack && !selectedAddress) ||
-                                        (showStarterPack && activeStudents.some((s) => !studentSizes[s._tmpId])) ||
+                                        (showStarterPack && !isStarterPackOptional && !selectedAddress) ||
+                                        (showStarterPack && !isStarterPackOptional && activeStudents.some((s) => !studentSizes[s._tmpId])) ||
                                         activeStudents.some((s) => !s.selectedClassData) ||
                                         !!overCapacityInfo
                                     }
