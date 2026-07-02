@@ -270,6 +270,8 @@ const BookMembership = () => {
     const [reservationTimeLeft, setReservationTimeLeft] = useState(null);
     const [reservationExpired, setReservationExpired] = useState(false);
 
+    const [editingClassId, setEditingClassId] = useState(null);
+
     // form
     const [students, setStudents] = useState([INIT_STUDENT()]);
     const [parents, setParents] = useState([INIT_PARENT()]);
@@ -489,66 +491,64 @@ const BookMembership = () => {
         setIsDirty(false);
     };
 
-    useEffect(() => {
-        if (!profile) return;
-        const rawParents = profile?.adminMeta?.parents || [];
-        const rawStudents = profile?.adminMeta?.students || [];
+useEffect(() => {
+    if (!profile) return;
+    const rawParents = profile?.adminMeta?.parents || [];
+    const rawStudents = profile?.adminMeta?.students || [];
 
-        const normalizeDOB = (raw) => {
-            if (!raw) return "";
-            return raw.includes("-") ? formatDOBForDisplay(raw) : raw;
-        };
+    const normalizeDOB = (raw) => {
+        if (!raw) return "";
+        return raw.includes("-") ? formatDOBForDisplay(raw) : raw;
+    };
 
-        const normalizedParents = rawParents.map((p) => ({
-            id: p?.id ?? Date.now() + Math.random(),
-            parentFirstName: p?.parentFirstName || "",
+    const normalizedParents = rawParents.map((p) => ({
+        id: null, // ← id no longer sourced from adminMeta; comes from booking match below
+        parentFirstName: p?.parentFirstName || "",
+        parentLastName: p?.parentLastName || "",
+        parentEmail: p?.parentEmail || "",
+        parentPhoneNumber: p?.parentPhoneNumber || p?.phoneNumber || "",
+        interestReason: p?.interestReason || "",
+        interestReasonOther: p?.interestReasonOther || "",
+        relationToChild: p?.relationToChild || "",
+        howDidYouHear: p?.howDidYouHear || "",
+        isCustomReason: p?.isCustomReason || false,
+        starterPackSize: p?.starterPackSize || "",
+    }));
 
-            parentLastName: p?.parentLastName || "",
-            parentEmail: p?.parentEmail || "",
-            parentPhoneNumber: p?.parentPhoneNumber || p?.phoneNumber || "",
-            interestReason: p?.interestReason || "",
-            interestReasonOther: p?.interestReasonOther || "",
-            relationToChild: p?.relationToChild || "",
-            howDidYouHear: p?.howDidYouHear || "",
-            isCustomReason: p?.isCustomReason || false,
-            starterPackSize: p?.starterPackSize || "",
-        }));
+    const normalizedStudents = rawStudents.map((s, index) => ({
+        _tmpId: s?.id ?? index, // fine — internal React key only, never sent to API
+        id: null, // ← id no longer sourced from adminMeta; comes from booking match below
+        studentFirstName: s?.studentFirstName || "",
+        studentLastName: s?.studentLastName || "",
+        dateOfBirth: normalizeDOB(s?.dateOfBirth || s?.dob),
+        age: s?.age ?? "",
+        gender: s?.gender || "",
+        medicalInformation: s?.medicalInformation || s?.medicalInfo || "",
+        selectedClassId: s?.selectedClassId || null,
+        selectedClassData: s?.selectedClassData || null,
+    }));
 
-        const normalizedStudents = rawStudents.map((s, index) => ({
-            _tmpId: s?.id ?? index,
-            id: s?.id ?? null,
-            studentFirstName: s?.studentFirstName || "",
-            studentLastName: s?.studentLastName || "",
-            dateOfBirth: normalizeDOB(s?.dateOfBirth || s?.dob),
-            age: s?.age ?? "",
-            gender: s?.gender || "",
-            medicalInformation: s?.medicalInformation || s?.medicalInfo || "",
-            selectedClassId: s?.selectedClassId || null,
-            selectedClassData: s?.selectedClassData || null,
-        }));
+    setParents(normalizedParents.length ? normalizedParents : [INIT_PARENT()]);
+    setStudents(normalizedStudents.length ? normalizedStudents : [INIT_STUDENT()]);
 
-        setParents(normalizedParents.length ? normalizedParents : [INIT_PARENT()]);
-        setStudents(normalizedStudents.length ? normalizedStudents : [INIT_STUDENT()]);
+    if (normalizedStudents.length === 1) {
+        setSelectedStudentIds([normalizedStudents[0]._tmpId]);
+    } else if (normalizedStudents.length > 1) {
+        setSelectedStudentIds(normalizedStudents.map((s) => s._tmpId));
+    }
 
-        if (normalizedStudents.length === 1) {
-            setSelectedStudentIds([normalizedStudents[0]._tmpId]);
-        } else if (normalizedStudents.length > 1) {
-            setSelectedStudentIds(normalizedStudents.map((s) => s._tmpId));
-        }
-
-        const emergencyContact = profile?.adminMeta?.emergency;
-
-        if (emergencyContact) {
-            setEmergency({
-                sameAsAbove: false,
-                emergencyFirstName: emergencyContact?.emergencyFirstName || "",
-                emergencyLastName: emergencyContact?.emergencyLastName || "",
-                emergencyPhoneNumber: emergencyContact?.emergencyPhoneNumber || "",
-                emergencyRelation: emergencyContact?.emergencyRelation || "",
-                id: emergencyContact?.id || "",
-            });
-        }
-    }, [profile]);
+    const emergencyContact = profile?.adminMeta?.emergency;
+    if (emergencyContact) {
+        setEmergency({
+            sameAsAbove: false,
+            emergencyFirstName: emergencyContact?.emergencyFirstName || "",
+            emergencyLastName: emergencyContact?.emergencyLastName || "",
+            emergencyPhoneNumber: emergencyContact?.emergencyPhoneNumber || "",
+            emergencyRelation: emergencyContact?.emergencyRelation || "",
+            id: "", // ← id no longer sourced from adminMeta; comes from booking match below
+        });
+    }
+}, [profile]);
 
     useEffect(() => {
         if (hasInitialized.current || !availableDatesSet.size) return;
@@ -673,28 +673,27 @@ const BookMembership = () => {
     // When parent clicks "Book Membership" from a trial booking row, the booking
     // object is passed via location.state — use it to pre-select venue & classes.
     // Booking students appear FIRST in the list and are the only ones pre-selected.
-    useEffect(() => {
-        if (!booking || !venues?.capacityVenues?.length) return;
+   useEffect(() => {
+    if (!booking || !venues?.capacityVenues?.length) return;
 
-        // 1. Auto-select venue
-        const sourceVenueId = booking?.venue?.id ?? booking?.venueId;
-        if (sourceVenueId && !selectedVenue) {
-            const match = venues.capacityVenues.find(
-                (v) => String(v.venueId) === String(sourceVenueId)
-            );
-            if (match) {
-                setSelectedVenue({
-                    value: match.venueId,
-                    label: match.venueName || booking?.venue?.name || "Venue",
-                    all: match,
-                });
-            }
+    // 1. Auto-select venue
+    const sourceVenueId = booking?.venue?.id ?? booking?.venueId;
+    if (sourceVenueId && !selectedVenue) {
+        const match = venues.capacityVenues.find(
+            (v) => String(v.venueId) === String(sourceVenueId)
+        );
+        if (match) {
+            setSelectedVenue({
+                value: match.venueId,
+                label: match.venueName || booking?.venue?.name || "Venue",
+                all: match,
+            });
         }
+    }
 
-        // 2. Reorder students: booking students first, enrich with class data
-        const bookingStudents = booking?.students || [];
-        if (!bookingStudents.length) return;
-
+    // 2. Reorder students, enrich with class + real booking id
+    const bookingStudents = booking?.students || [];
+    if (bookingStudents.length) {
         const bookingNames = new Set(
             bookingStudents.map((bs) => (bs?.studentFirstName || "").toLowerCase())
         );
@@ -708,17 +707,15 @@ const BookMembership = () => {
                 );
                 if (!match) return student;
                 const sched = match?.classSchedule || match?.holidayClassSchedules || null;
-                const classId =
-                    sched?.classScheduleId ?? sched?.id ?? sched?.classId ?? null;
+                const classId = sched?.classScheduleId ?? sched?.id ?? sched?.classId ?? null;
                 return {
                     ...student,
-                    id: match?.id ?? student.id, // ← keep real student id from booking
+                    id: match?.id ?? student.id, // ← real student id from booking
                     selectedClassId: classId ? String(classId) : student.selectedClassId,
                     selectedClassData: sched ?? student.selectedClassData,
                 };
             });
 
-            // Sort: booking students first, rest after
             const inBooking = enriched.filter((s) =>
                 bookingNames.has((s.studentFirstName || "").toLowerCase())
             );
@@ -727,12 +724,38 @@ const BookMembership = () => {
             );
             const reordered = [...inBooking, ...notInBooking];
 
-            // Only pre-select students from this booking
             setSelectedStudentIds(inBooking.map((s) => s._tmpId));
-
             return reordered;
         });
-    }, [booking, venues]);
+    }
+
+    // 3. Match parent ids from booking.parents (email first, name as fallback)
+    const bookingParents = booking?.parents || [];
+    if (bookingParents.length) {
+        setParents((prev) =>
+            prev.map((parent) => {
+                const match =
+                    bookingParents.find(
+                        (bp) =>
+                            (bp?.parentEmail || "").toLowerCase() &&
+                            (bp?.parentEmail || "").toLowerCase() === (parent.parentEmail || "").toLowerCase()
+                    ) ||
+                    bookingParents.find(
+                        (bp) =>
+                            (bp?.parentFirstName || "").toLowerCase() === (parent.parentFirstName || "").toLowerCase() &&
+                            (bp?.parentLastName || "").toLowerCase() === (parent.parentLastName || "").toLowerCase()
+                    );
+                return match ? { ...parent, id: match.id ?? parent.id } : parent;
+            })
+        );
+    }
+
+    // 4. Match emergency id from booking.emergency
+    const bookingEmergency = Array.isArray(booking?.emergency) ? booking.emergency[0] : booking?.emergency;
+    if (bookingEmergency?.id) {
+        setEmergency((prev) => ({ ...prev, id: bookingEmergency.id }));
+    }
+}, [booking, venues]);
 
     useEffect(() => {
         if (!bookingSource && showStarterPack && !isApplied && !reservationExpired) {
@@ -798,7 +821,7 @@ const BookMembership = () => {
         if (isApplied && appliedDiscount?.data) {
             starterDiscount = appliedDiscount.data.type === "percentage"
                 ? (starterPack * Number(appliedDiscount.data.value)) / 100
-                : Number(appliedDiscount.data.discountAmount || 0);
+                : Number(appliedDiscount.data.finalPrice || 0);
         }
 
         // total today = starterPack + 3.99 delivery - discount (file 2 formula)
@@ -825,12 +848,20 @@ const BookMembership = () => {
         return { totalToday, breakdown };
     };
 
+
+    // ── Prefill Direct Debit email from first parent ───────────
+    useEffect(() => {
+        const firstParentEmail = parents[0]?.parentEmail;
+        if (firstParentEmail && !payment.email) {
+            setPayment((p) => ({ ...p, email: firstParentEmail }));
+        }
+    }, [parents]);
     // ── Discount handler (ported from file 2) ─────────────
     const handleApplyDiscount = async () => {
         if (!discountCode.trim()) { setIsChecked(true); setIsApplied(false); return; }
         setIsChecked(true); setIsDiscountLoading(true);
         try {
-            const res = await fetch(`${API_BASE_URL}api/admin/book-membership/apply-discount`, {
+            const res = await fetch(`${API_BASE_URL}api/open/discount/apply`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
                 body: JSON.stringify({ starterPack: starterPackPrice, code: discountCode }),
@@ -883,6 +914,8 @@ const BookMembership = () => {
     // ── DD validation ─────────────────────────────────────
     const validateDD = () => {
         const errs = {};
+        if (!(payment.email || "").trim()) errs.email = "Email address is required";
+        else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(payment.email)) errs.email = "Enter a valid email address";
         if (!(payment.account_holder_name || "").trim()) errs.account_holder_name = "Account holder name is required";
         if (!isValidSortCode(payment.branch_code || "")) errs.branch_code = "Enter a valid 6-digit sort code";
         if (!isValidAccountNumber(payment.account_number || "")) errs.account_number = "Enter a valid 8-digit account number";
@@ -890,7 +923,6 @@ const BookMembership = () => {
         setDdErrors(errs);
         return Object.keys(errs).length === 0;
     };
-
     // ── Card validation ───────────────────────────────────
     const validateCard = () => {
         const errs = {};
@@ -922,6 +954,7 @@ const BookMembership = () => {
             // Use the structured address picked via postcode lookup, falling back to raw inputs
             const deliveryLine1 = selectedAddressData?.line1 || selectedAddress || payment.line1 || "NA";
             const deliveryCity = selectedAddressData?.city || payment.city || "NA";
+            const buildingNumber = selectedAddressData?.buildingNumber || "NA";
             const deliveryPostcode = selectedAddressData?.postcode || postcode || payment.postalCode || "NA";
 
             const payload = {
@@ -952,7 +985,7 @@ const BookMembership = () => {
                 })),
                 starterPack: showStarterPack ? starterPackPrice : 0,
                 starterPackDeliveryAddress: showStarterPack
-                    ? { line1: deliveryLine1, city: deliveryCity, postcode: deliveryPostcode }
+                    ? { line1: deliveryLine1, city: deliveryCity, postcode: deliveryPostcode,buildingNumber:buildingNumber }
                     : null,
                 discountId: isApplied && appliedDiscount?.data?.id ? appliedDiscount.data.id : null,
                 emergency: {
@@ -1021,11 +1054,12 @@ const BookMembership = () => {
 
     // ── DD button enabled check ───────────────────────────
     const isDDValid =
+        (payment.email || "").trim() &&
+        /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(payment.email) &&
         (payment.account_holder_name || "").trim() &&
         isValidSortCode(payment.branch_code || "") &&
         isValidAccountNumber(payment.account_number || "") &&
         payment.authorise;
-
     // ── Card button enabled check ─────────────────────────
     const isCardValid =
         isValidCardNumber(payment.cardNumber || "") &&
@@ -1281,53 +1315,64 @@ const BookMembership = () => {
                                 })()}
 
                                 {/* Student class selectors */}
-                                {activeStudents.map((s, idx) => (
-                                    <div key={s._tmpId ?? idx} className={`border border-t-0 border-[#e7ebf1] p-3.5 px-5 flex flex-col gap-3.5 ${idx === activeStudents.length - 1 && !showStarterPack ? "rounded-b-[14px]" : ""}`}>
-                                        <div className="flex items-center justify-between gap-3.5 flex-wrap">
-                                            <div className="flex items-center gap-2">
-                                                <div className="w-[35px] h-[35px] rounded-full bg-[#eaf1fe] flex items-center justify-center font-bold text-[#3b7df6]">{(s.studentFirstName || "?")[0]}</div>
-                                                <div>
-                                                    <div className="font-semibold text-[14px]">{s.studentFirstName} {s.studentLastName}</div>
-                                                    {s.selectedClassData && (
-                                                        <div className="text-[11px] text-[#6b7685]">
-                                                            Class: {`${s.selectedClassData?.className || ""}${s.selectedClassData?.level ? ` (${s.selectedClassData.level})` : ""}`}
-                                                        </div>
-                                                    )}
+                                {activeStudents.map((s, idx) => {
+                                    const isEditingThis = editingClassId === s._tmpId;
+                                    const showSelector = !s.selectedClassData || isEditingThis;
+
+                                    return (
+                                        <div key={s._tmpId ?? idx} className={`border border-t-0 border-[#e7ebf1] p-3.5 px-5 flex flex-col gap-3.5 ${idx === activeStudents.length - 1 && !showStarterPack ? "rounded-b-[14px]" : ""}`}>
+                                            <div className="flex items-center justify-between gap-3.5 flex-wrap">
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-[35px] h-[35px] rounded-full bg-[#eaf1fe] flex items-center justify-center font-bold text-[#3b7df6]">{(s.studentFirstName || "?")[0]}</div>
+                                                    <div>
+                                                        <div className="font-semibold text-[14px]">{s.studentFirstName} {s.studentLastName}</div>
+                                                        {s.selectedClassData && !isEditingThis && (
+                                                            <div className="text-[11px] text-[#6b7685]">
+                                                                Class: {`${s.selectedClassData?.className || ""}${s.selectedClassData?.level ? ` (${s.selectedClassData.level})` : ""}`}
+                                                            </div>
+                                                        )}
+                                                    </div>
                                                 </div>
+                                                {s.selectedClassData && (
+                                                    <div className="flex items-center gap-2">
+                                                        {!isEditingThis && (
+                                                            <div onClick={() => setEditingClassId(isEditingThis ? null : s._tmpId)} className="bg-[#e7f8f0] text-[#0e7a4d] font-semibold text-[10.5px] px-3 py-1.5 rounded-[20px] flex items-center gap-2">
+                                                                <span className="w-4 h-4 rounded-full bg-[#21b573] text-white flex items-center justify-center">
+                                                                    <Star size={10} fill="currentColor" />
+                                                                </span>
+                                                                Coach's verdict: {s?.selectedClassData?.level} level
+                                                            </div>
+                                                        )}
+                                                    
+                                                    </div>
+                                                )}
                                             </div>
-                                            {s.selectedClassData && (
-                                                <div className="bg-[#e7f8f0] text-[#0e7a4d] font-semibold text-[10.5px] px-3 py-1.5 rounded-[20px] flex items-center gap-2">
-                                                    <span className="w-4 h-4 rounded-full bg-[#21b573] text-white flex items-center justify-center">
-                                                        <Star size={10} fill="currentColor" />
-                                                    </span>
-                                                    Coach's verdict: {s?.selectedClassData?.level} level
+                                            {showSelector && (
+                                                <div className="flex items-end gap-3">
+                                                    <div className="flex-1">
+                                                        <label className="block text-[14px] font-semibold mb-1.5">Select class for {s.studentFirstName || "this child"}</label>
+                                                        <Select
+                                                            styles={rsStyles(false)}
+                                                            options={classOptions}
+                                                            value={classOptions.find((o) => o.value === s.selectedClassId) || null}
+                                                            isDisabled={!selectedVenue || classOptions.length === 0}
+                                                            placeholder={!selectedVenue ? "Select a venue first" : classOptions.length ? "Choose a class..." : "No classes available"}
+                                                            onChange={(opt) => {
+                                                                if (!opt) return;
+                                                                setStudents((prev) =>
+                                                                    prev.map((st) =>
+                                                                        st._tmpId === s._tmpId ? { ...st, selectedClassId: opt.value, selectedClassData: opt.all } : st
+                                                                    )
+                                                                );
+                                                                setEditingClassId(null);
+                                                            }}
+                                                        />
+                                                    </div>
                                                 </div>
                                             )}
                                         </div>
-                                        {!s.selectedClassData && (
-                                            <div className="flex items-end gap-3">
-                                                <div className="flex-1">
-                                                    <label className="block text-[14px] font-semibold mb-1.5">Select class for {s.studentFirstName || "this child"}</label>
-                                                    <Select
-                                                        styles={rsStyles(false)}
-                                                        options={classOptions}
-                                                        value={classOptions.find((o) => o.value === s.selectedClassId) || null}
-                                                        isDisabled={!selectedVenue || classOptions.length === 0}
-                                                        placeholder={!selectedVenue ? "Select a venue first" : classOptions.length ? "Choose a class..." : "No classes available"}
-                                                        onChange={(opt) => {
-                                                            if (!opt) return;
-                                                            setStudents((prev) =>
-                                                                prev.map((st) =>
-                                                                    st._tmpId === s._tmpId ? { ...st, selectedClassId: opt.value, selectedClassData: opt.all } : st
-                                                                )
-                                                            );
-                                                        }}
-                                                    />
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-                                ))}
+                                    );
+                                })}
                             </div>
 
                             {/* Starter pack section */}
@@ -1358,7 +1403,7 @@ const BookMembership = () => {
                                         const starterDiscountAmount = starterOfferActive
                                             ? appliedDiscount.data.type === "percentage"
                                                 ? (starterTotalBase * Number(appliedDiscount.data.value)) / 100
-                                                : Number(appliedDiscount.data.discountAmount || 0)
+                                                : Number(appliedDiscount.data.finalPrice || 0)
                                             : 0;
                                         const starterPackOriginalTotal = starterTotalBase + 3.99;
                                         const starterPackDiscountedTotal = Math.max(starterPackOriginalTotal - starterDiscountAmount, 0);
@@ -1742,6 +1787,23 @@ const BookMembership = () => {
                                     <p className="text-[14px] text-[#6b7685] mb-4">Your monthly membership payment is collected by Direct Debit on the 1st of each month.</p>
 
                                     <div className="mb-4">
+                                        <label className="block text-[14px] font-semibold mb-1.5">Email address</label>
+                                        <input
+                                            type="email"
+                                            className={inputClass(!!ddErrors.email)}
+                                            value={payment.email}
+                                            onChange={(e) => {
+                                                setPayment((p) => ({ ...p, email: e.target.value }));
+                                                if (ddErrors.email) setDdErrors((errs) => ({ ...errs, email: "" }));
+                                            }}
+                                            placeholder="Enter email address"
+                                        />
+                                        <div className="text-[14px] text-[#6b7685] mt-1">Direct Debit confirmation will be sent here</div>
+                                        {ddErrors.email && <p className="text-[14px] text-[#e53e3e] mt-1">{ddErrors.email}</p>}
+                                    </div>
+
+                                    <div className="mb-4">
+
                                         <label className="block text-[14px] font-semibold mb-1.5">Account holder name</label>
                                         <input
                                             className={inputClass(!!ddErrors.account_holder_name)}
@@ -1754,6 +1816,7 @@ const BookMembership = () => {
                                         />
                                         {ddErrors.account_holder_name && <p className="text-[14px] text-[#e53e3e] mt-1">{ddErrors.account_holder_name}</p>}
                                     </div>
+
 
                                     <div className="grid grid-cols-2 gap-3.5 mb-4">
                                         <div>

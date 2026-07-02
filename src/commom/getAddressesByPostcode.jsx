@@ -33,6 +33,7 @@ export const getAddressesByPostcode = async (postcode) => {
                 address: formatted,            // ← what addressOptions filters/maps on
                 line1: item.line_1,
                 line2: item.line_2,
+                buildingNumber: item.building_number,
                 line3: item.line_3,
                 city: item.post_town,
                 postcode: item.postcode,
