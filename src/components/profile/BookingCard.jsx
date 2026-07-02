@@ -6,7 +6,6 @@ import { MoreVertical } from "lucide-react";
 const BookingCard = ({ booking, onSeeDetails }) => {
     const navigate = useNavigate();
 
-    console.log('booking', booking)
     const renderImage = (type = "") => {
         const images = {
             "weekly class membership": "/assets/weekly.png",

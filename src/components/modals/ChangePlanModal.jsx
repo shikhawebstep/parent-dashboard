@@ -39,10 +39,8 @@ const ChangePlanModal = ({ isOpen, onClose, booking, onSuccess }) => {
       const parent = booking.parents?.[0] || {};
       const fullName = `${parent.parentFirstName || ''} ${parent.parentLastName || ''}`.trim();
 
-      console.log("Booking Data:", booking);
       const existingPayment = booking.payments[0] || booking.directDebit || booking.paymentMethod || {};
 
-      console.log("Existing Payment:", existingPayment);
       setExistingPayment(existingPayment);
 
       setPayment(prev => ({

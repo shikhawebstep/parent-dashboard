@@ -357,7 +357,6 @@ const MyBookings = () => {
                         const isCurrentMonth =
                             formatted.fullMonth === new Date().toLocaleDateString("en-US", { month: "long" }) &&
                             formatted.year === new Date().getFullYear();
-                        console.log('formatted', formatted)
                         return (
                             <div key={formatted.id || index}>
 

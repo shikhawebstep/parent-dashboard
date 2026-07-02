@@ -155,7 +155,7 @@ const HolidayWaitingList = () => {
     const [selectedVenue, setSelectedVenue] = useState(null);
     const [selectedCamps, setSelectedCamps] = useState([]);
 
-    console.log('selectedCamps',selectedCamps)
+
     const [students, setStudents] = useState([createStudent()]);
     const [parents, setParents] = useState([createParent()]);
     const [emergency, setEmergency] = useState(INIT_EMERGENCY);

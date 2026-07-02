@@ -29,8 +29,6 @@ export default function StepNavigation() {
             ? [formData.student]
             : [];
 
-
-            console.log("Students Array:", studentsArray);
       // ✅ Clean students properly
       const cleanedStudents = studentsArray.map((student) => ({
         studentFirstName: student.studentFirstName,
@@ -97,7 +95,6 @@ export default function StepNavigation() {
       );
       navigate('/bookings')
 
-      console.log(result);
     } catch (error) {
       console.error(error);
       showError("Oops!", error.message || "Failed to book holiday camp");

@@ -59,7 +59,7 @@ const Detail = () => {
             const data = await response.json();
             if (response.ok) {
                 setDetails(data?.data || data);
-                console.log("Preview details result:", data);
+          
             } else {
                 console.error("Failed to fetch details:", data);
             }

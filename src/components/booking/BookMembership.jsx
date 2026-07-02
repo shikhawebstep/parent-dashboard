@@ -269,9 +269,9 @@ const BookMembership = () => {
 
     // True only for genuine reservation links: /booking?venueId=X&bookingId=Y&createdAt=Z
     const isReservedBookingFlow = Boolean(urlVenueId && urlCreatedAt && !bookingSource);
+    const [joinWaitlist, setJoinWaitlist] = useState(false);
 
-
-
+    // reset waitlist checkbox when the over-capacity class changes or clears
 
     const RESERVATION_DURATION_MS = 24 * 60 * 60 * 1000; // 24 hr
     const [reservationTimeLeft, setReservationTimeLeft] = useState(null);
@@ -328,7 +328,6 @@ const BookMembership = () => {
         nextMonthPayment: 0,
     });
 
-    console.log('pricingBreakdown', pricingBreakdown)
 
     // Field-level errors for payment screens
     const [cardErrors, setCardErrors] = useState({});
@@ -400,6 +399,7 @@ const BookMembership = () => {
     const [starterPackStatusLoading, setStarterPackStatusLoading] = useState(false);
 
     // ── Check if this booking already has a starter pack ──────
+
     useEffect(() => {
         const token = localStorage.getItem("parentToken");
         const parentData = JSON.parse(localStorage.getItem("parentData"));
@@ -637,6 +637,8 @@ const BookMembership = () => {
         for (const [classId, count] of Object.entries(classCounts)) {
             const studentWithClass = activeStudents.find((s) => String(s.selectedClassId) === String(classId));
             const classData = studentWithClass?.selectedClassData;
+
+
             if (classData) {
                 const cap = Number(classData.capacity);
                 if (!isNaN(cap) && count > cap) {
@@ -653,6 +655,9 @@ const BookMembership = () => {
 
     const overCapacityInfo = getOverCapacityWarning();
 
+    useEffect(() => {
+        setJoinWaitlist(false);
+    }, [overCapacityInfo?.className, overCapacityInfo?.capacity, overCapacityInfo?.count]);
 
     // ── IST conversion helpers ──────────────────────────────
     const IST_OFFSET_MS = 5.5 * 60 * 60 * 1000; // UTC+5:30
@@ -1208,7 +1213,7 @@ const BookMembership = () => {
             </div>
 
 
-            <div className="max-w-[900px] mx-auto md:px-6 pt-5 px-2">
+            <div className="max-w-[850px] mt-5 mx-auto md:px-6 pt-5 px-2">
                 {/* Steps */}
                 <div className="hidden md:flex items-center justify-center gap-2 mb-5 flex-wrap">
                     {flowStates.map((fs, i) => {
@@ -1379,7 +1384,7 @@ const BookMembership = () => {
                                             </div>
                                             <div className="flex flex-col gap-0.5">
                                                 <span className="text-[10.5px] uppercase tracking-[0.04em] text-[#6b7685] font-bold">Trial date</span>
-                                                <span className="text-[14px] font-bold text-[#1f2733]">{formatDateForDisplay(booking?.trialDate || selectedDate) || "-"}</span>
+                                                <span className="text-[14px] font-bold text-[#1f2733]">{formatDateForDisplay(booking?.trialDate || matchedBooking?.trialDate || matchedBooking?.startDate || booking?.startDate || selectedDate) || "-"}</span>
                                             </div>
                                         </div>
                                     );
@@ -1446,6 +1451,29 @@ const BookMembership = () => {
                                 })}
                             </div>
 
+
+                            {overCapacityInfo && (
+                                <div className="border border-[#feb2b2] bg-[#fff5f5] rounded-[14px] p-4 mb-4 flex items-start gap-3">
+                                    <AlertTriangle size={18} className="text-[#c53030] shrink-0 mt-0.5" />
+                                    <div className="flex-1">
+                                        <div className="font-semibold text-[#c53030] text-[14px] mb-1">
+                                            Not enough space in {overCapacityInfo.className}
+                                        </div>
+                                        <div className="text-[14px] text-[#7a3030] mb-2.5">
+                                            Only {overCapacityInfo.capacity} spot{overCapacityInfo.capacity !== 1 ? "s" : ""} available, but you've selected {overCapacityInfo.count} children for this class. You can still continue by joining the waiting list — we'll confirm with the coach.
+                                        </div>
+                                        <label className="flex items-center gap-2 text-[14px] font-semibold text-[#1f2733] cursor-pointer">
+                                            <input
+                                                type="checkbox"
+                                                className="cursor-pointer"
+                                                checked={joinWaitlist}
+                                                onChange={(e) => setJoinWaitlist(e.target.checked)}
+                                            />
+                                            Add to the waiting list and continue
+                                        </label>
+                                    </div>
+                                </div>
+                            )}
                             {/* Starter pack section */}
                             {showStarterPack && (
                                 <>
@@ -1848,7 +1876,7 @@ const BookMembership = () => {
                                         (showStarterPack && !isStarterPackOptional && !selectedAddress) ||
                                         (showStarterPack && !isStarterPackOptional && activeStudents.some((s) => !studentSizes[s._tmpId])) ||
                                         activeStudents.some((s) => !s.selectedClassData) ||
-                                        !!overCapacityInfo
+                                        (!!overCapacityInfo && !joinWaitlist)
                                     }
                                     onClick={() => setFlowStep("C")}
                                     className="sm:w-auto font-semibold text-[14px] rounded-[12px] md:px-8 py-3.5 border border-[#3b7df6] text-white bg-[#3b7df6] disabled:opacity-50 hover:bg-[#2f6ae0] px-4">
@@ -2087,7 +2115,7 @@ const BookMembership = () => {
                     {flowStep === "D" && (
                         <div>
                             <div className="text-center text-[23px] font-bold mb-1.5 tracking-tight flex items-center justify-center gap-2">
-                                You're all set! <PartyPopper size={22} />
+                                You're all set!
                             </div>
                             <div className="text-center text-[#6b7685] text-[14px] mb-6">{activeNames}'s membership is confirmed</div>
 
@@ -2106,8 +2134,8 @@ const BookMembership = () => {
                                     </div>
                                 </div>
                             </div>
-                            <div className="max-w-[560px] mx-auto text-[14px] text-[#6b7685] text-center mt-3.5 flex items-center justify-center gap-1.5">
-                                <Mail size={14} />
+                            <div className="max-w-[560px] mx-auto text-[14px] text-[#6b7685] text-start mt-3.5 flex items-center justify-center gap-1.5">
+
                                 A confirmation email with your booking details, payment summary and Direct Debit schedule has been sent to your inbox.
                             </div>
 
@@ -2118,21 +2146,29 @@ const BookMembership = () => {
                     )}
                 </div>
 
-                {/* Dev flow toggles */}
-                <div className="max-w-[1040px] mx-auto mt-4 px-6 text-[14px] text-[#6b7685] text-center">
-                    Prototype — single-child journey starts at "Confirm & choose".
-                </div>
-                <div className="flex flex-col sm:flex-row justify-center gap-3 mt-3.5 mb-6 w-full max-w-md mx-auto sm:max-w-none">
-                    <button onClick={() => { setDemoMode("single"); setFlowStep("B"); }}
-                        className={`w-full sm:w-auto font-semibold text-[14px] rounded-[12px] px-8 py-3.5 border transition-all ${demoMode === "single" ? "bg-[#3b7df6] text-white border-[#3b7df6]" : "bg-white text-[#1f2733] border-[#e7ebf1]"}`}>
-                        Single-child flow
-                    </button>
-                    <button onClick={() => { setDemoMode("multi"); setFlowStep("A"); }}
-                        className={`w-full sm:w-auto font-semibold text-[14px] rounded-[12px] px-8 py-3.5 border transition-all ${demoMode === "multi" ? "bg-[#3b7df6] text-white border-[#3b7df6]" : "bg-white text-[#1f2733] border-[#e7ebf1]"}`}>
-                        Multi-child flow
-                    </button>
-                </div>
             </div>
+
+            {flowStep !== "D" && (
+                <>
+
+                    {/* Dev flow toggles */}
+                    <div className="max-w-[1040px] mx-auto mt-4 px-6 text-[14px] text-[#6b7685] text-center">
+                        Prototype — single-child journey starts at "Confirm & choose".
+                    </div>
+                    <div className="flex flex-col sm:flex-row justify-center gap-3 mt-3.5 mb-6 w-full max-w-md mx-auto sm:max-w-none">
+                        <button onClick={() => { setDemoMode("single"); setFlowStep("B"); }}
+                            className={`w-full sm:w-auto font-semibold text-[14px] rounded-[12px] px-8 py-3.5 border transition-all ${demoMode === "single" ? "bg-[#3b7df6] text-white border-[#3b7df6]" : "bg-white text-[#1f2733] border-[#e7ebf1]"}`}>
+                            Single-child flow
+                        </button>
+                        <button onClick={() => { setDemoMode("multi"); setFlowStep("A"); }}
+                            className={`w-full sm:w-auto font-semibold text-[14px] rounded-[12px] px-8 py-3.5 border transition-all ${demoMode === "multi" ? "bg-[#3b7df6] text-white border-[#3b7df6]" : "bg-white text-[#1f2733] border-[#e7ebf1]"}`}>
+                            Multi-child flow
+                        </button>
+                    </div>
+
+                </>
+
+            )}
 
 
 

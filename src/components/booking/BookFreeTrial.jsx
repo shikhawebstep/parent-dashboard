@@ -464,8 +464,7 @@ const BookFreeTrial = () => {
     // ── Selected students ─────────────────────────────────────────────────────
     const activeStudents = students.filter((s) => selectedStudentIds.includes(s._tmpId));
 
-    console.log("activeStudents", activeStudents);
-
+  
     const activeNames = activeStudents
         .map((s) => s?.studentFirstName || "Child")
         .join(" & ") || "your child";

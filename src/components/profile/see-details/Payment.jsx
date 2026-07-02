@@ -35,7 +35,6 @@ const Payment = ({ booking, details, loading }) => {
 
   const firstPayment = payments[0] || {};
 
-  console.log('firstPayment', firstPayment)
 
   const detailss = [
     { label: 'Status', value: firstPayment?.payment_status ?? firstPayment?.paymentStatus ?? '-' },

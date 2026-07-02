@@ -20,8 +20,6 @@ export default function StepParent() {
     const sectionRefs = useRef([]);
     const parents = formData.parents || [];
 
-    console.log('errors',errors)
-
     const handleChange = (index, field, value) => {
         setFormData(prev => {
             const updatedParents = [...prev.parents];
