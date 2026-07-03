@@ -72,9 +72,9 @@ const Header = ({ onMenuClick }) => {
         prev.map((item) => ({
           ...item,
           recipients: item.recipients?.map((r) =>
-            r.recipientId === parentData?.id ? { ...r, isRead: true } : r
+            r.recipientId === parentData?.id ? { ...r, isRead: true } : r,
           ),
-        }))
+        })),
       );
     } catch (error) {
       console.error("Mark-as-read error:", error);
@@ -128,9 +128,9 @@ const Header = ({ onMenuClick }) => {
     };
 
     fetchNotificationList();
-    const intervalId = setInterval(fetchNotificationList, 15000);
+    const intervalId = setInterval(fetchNotificationList, 20000);
     return () => clearInterval(intervalId);
-  }, []);
+  }, [API_URL]);
 
   // ── Clock ────────────────────────────────────────────────────
   useEffect(() => {
@@ -146,14 +146,13 @@ const Header = ({ onMenuClick }) => {
           navigate("/auth/login");
           showSuccess("Logged Out!", "You have been logged out.");
         }
-      }
+      },
     );
   };
 
   return (
     <header className="w-full bg-white border-b shadow-[rgba(0,0,0,0.1)_0px_5px_7px_-5px,_rgba(0,0,0,0.04)_0px_3px_10px_-5px]">
       <div className="w-full px-6 py-4 pt-[20px] 2xl:pt-[40px] pb-[20px] flex items-center justify-between">
-
         {/* Left */}
         <div className="flex items-center gap-4">
           <button className="lg:hidden text-[#fff]" onClick={onMenuClick}>
@@ -180,9 +179,15 @@ const Header = ({ onMenuClick }) => {
 
         {/* Right */}
         <div className="md:flex items-center 2xl:gap-8 gap-3">
-
           <button
-            onClick={() => navigate("https://synco-website.netlify.app/")}
+            // onClick={() => navigate("https://synco-website.netlify.app/")}
+            onClick={() =>
+              window.open(
+                "https://synco-website.netlify.app/",
+                "_blank",
+                "noopener,noreferrer",
+              )
+            }
             className="bg-[#00A6E3] hidden lg:block hover:bg-sky-600 text-white 2xl:px-6 px-3 glory py-3 rounded-full 2xl:text-[18px] text-[16px] font-semibold transition"
           >
             Go back to the website
@@ -212,12 +217,12 @@ const Header = ({ onMenuClick }) => {
               )}
             </button>
 
-        {isNotificationOpen && (
-    <NotificationPopup
-        notifications={notifications}
-        onMarkRead={markNotificationsAsRead}
-    />
-)}
+            {isNotificationOpen && (
+              <NotificationPopup
+                notifications={notifications}
+                onMarkRead={markNotificationsAsRead}
+              />
+            )}
           </div>
 
           {/* Date */}
@@ -246,7 +251,7 @@ const Header = ({ onMenuClick }) => {
               className="w-[52px] lg:h-[52px] rounded-full object-cover"
             />
             <span className="2xl:text-[18px] text-[14px] hidden lg:block font-semibold text-[#282829]">
-              {parentData?.firstName 
+              {parentData?.firstName
                 ? `${parentData.firstName}`
                 : parentData?.email || "N/A"}
             </span>

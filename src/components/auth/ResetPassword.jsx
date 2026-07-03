@@ -1,201 +1,219 @@
 import { useState, useEffect } from "react";
 import { useSearchParams, useNavigate, Link } from "react-router-dom";
-import { Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff } from "lucide-react";
 import Swal from "sweetalert2";
 import { showError, showSuccess } from "../../../utils/swalHelper";
 import axios from "axios";
 
 const ResetPassword = () => {
-    const [searchParams] = useSearchParams();
-    const navigate = useNavigate();
-    const token = searchParams.get("token");
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const token = searchParams.get("token");
 
-    const [passwords, setPasswords] = useState({
-        password: "",
-        confirmPassword: ""
+  const [passwords, setPasswords] = useState({
+    password: "",
+    confirmPassword: "",
+  });
+  const [loading, setLoading] = useState(false);
+
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [errors, setErrors] = useState({});
+
+  useEffect(() => {
+    if (!token) {
+      showError(
+        "Invalid Link",
+        "Reset token is missing. Please request a new password reset link.",
+      ).then(() => {
+        navigate("/auth/login");
+      });
+    }
+  }, [token]); // navigate ko dependency se hatao
+  const safeNavigate = (path) => {
+    try {
+      navigate(path);
+    } catch (e) {
+      window.location.href = path;
+    }
+  };
+
+  const handleChange = (e) => {
+    setPasswords({
+      ...passwords,
+      [e.target.name]: e.target.value,
     });
-    const [loading, setLoading] = useState(false);
+  };
 
-    const [showPassword, setShowPassword] = useState(false);
-    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-    const [errors, setErrors] = useState({});
+  const validate = () => {
+    let newErrors = {};
 
-    useEffect(() => {
-        if (!token) {
-            showError("Invalid Link", "Reset token is missing. Please request a new password reset link.")
-                .then(() => {
-                    navigate("/auth/login");
-                });
-        }
-    }, [token]); // navigate ko dependency se hatao
-    const safeNavigate = (path) => {
-        try {
-            navigate(path);
-        } catch (e) {
-            window.location.href = path;
-        }
-    };
+    if (!passwords.password) {
+      newErrors.password = "Password is required";
+    } else if (passwords.password.length < 6) {
+      newErrors.password = "Minimum 6 characters required";
+    }
 
-    const handleChange = (e) => {
-        setPasswords({
-            ...passwords,
-            [e.target.name]: e.target.value
-        });
-    };
+    if (passwords.password !== passwords.confirmPassword) {
+      newErrors.confirmPassword = "Passwords do not match";
+    }
 
-    const validate = () => {
-        let newErrors = {};
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
-        if (!passwords.password) {
-            newErrors.password = "Password is required";
-        } else if (passwords.password.length < 6) {
-            newErrors.password = "Minimum 6 characters required";
-        }
+  const handleSubmit = async (e) => {
+    e.preventDefault();
 
-        if (passwords.password !== passwords.confirmPassword) {
-            newErrors.confirmPassword = "Passwords do not match";
-        }
+    if (!validate()) return;
 
-        setErrors(newErrors);
-        return Object.keys(newErrors).length === 0;
-    };
+    const API_URL = import.meta.env.VITE_API_BASE_URL;
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
+    setLoading(true);
 
-        if (!validate()) return;
+    try {
+      await axios.post(
+        `${API_URL}api/parent/auth/password/reset`,
+        {
+          token,
+          newPassword: passwords.password,
+          confirmPassword: passwords.confirmPassword,
+        },
+        { headers: { "Content-Type": "application/json" } },
+      );
 
-        const API_URL = import.meta.env.VITE_API_BASE_URL;
+      await showSuccess(
+        "Password Reset Successful",
+        "You can now login with your new password.",
+      );
+      safeNavigate("/auth/login");
+    } catch (error) {
+      console.error("RESET PASS ERROR:", error);
 
-        setLoading(true);
+      let message = "Something went wrong. Please try again.";
 
-        try {
-            await axios.post(
-                `${API_URL}api/parent/auth/password/reset`,
-                {
-                    token,
-                    newPassword: passwords.password,
-                    confirmPassword: passwords.confirmPassword
-                },
-                { headers: { "Content-Type": "application/json" } }
-            );
+      if (error.response) {
+        message =
+          error.response.data?.message ||
+          error.response.data?.error ||
+          "Could not reset password.";
+      }
 
-            await showSuccess("Password Reset Successful", "You can now login with your new password.");
-            safeNavigate("/auth/login");
+      showError("Reset Failed", message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-        } catch (error) {
+  if (!token) return null;
 
-            console.error("RESET PASS ERROR:", error);
-
-            let message = "Something went wrong. Please try again.";
-
-            if (error.response) {
-                message =
-                    error.response.data?.message ||
-                    error.response.data?.error ||
-                    "Could not reset password.";
-            }
-
-            showError("Reset Failed", message);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    if (!token) return null;
-
-    return (
-        <div className="w-full h-full  flex items-center p-5  lg:p-10 xl:p-0">
-            <div className="w-full flex flex-col 2xl:max-w-[25%] md:max-w-[33%]  bg-white shadow-md border border-gray-200 rounded-[20px]  p-10  m-auto items-center justify-center">
-                <div className="text-center w-full mb-8">
-                    <div className="text-5xl font-bold text-blue-700 2xl:max-w-[80px] lg:w-[50px] w-[50px] m-auto">
-                        <img src="/assets/sambaLogoBlue.png" alt="" className="w-full" />
-                    </div>
-                    <h2 className="2xl:text-[36px] text-[26px] lg:text-[32px] font-semibold mt-3">Reset Password</h2>
-                    <p className="text-black xl:text-[20px] md:text-[16px] font-semibold">Enter your new password below.</p>
-                </div>
-
-                <form onSubmit={handleSubmit} className="w-full">
-                    {/* <div className="bg-gray-50 border border-gray-200 rounded-[16px] shadow-sm px-6 py-6 mb-6"> */}
-
-                        {/* NEW PASSWORD */}
-                        <div className="my-5">
-                            <label className="2xl:text-[18px] lg:text-[16px] font-medium">New Password</label>
-                            <div className="relative">
-                                <input
-                                    type={showPassword ? "text" : "password"}
-                                    name="password"
-                                    placeholder="Enter new password"
-                                    value={passwords.password}
-                                    onChange={handleChange}
-                                    className={`w-full mt-1 px-4 py-2.5 border ${errors.password ? "border-red-500" : "border-[#D0CFD1]"
-                                        } placeholder:text-[#717073] rounded-[14px] focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                                />
-                                <button
-                                    type="button"
-                                    onClick={() => setShowPassword(!showPassword)}
-                                    className="absolute right-3 top-3 text-gray-500 2xl:text-[18px] lg:text-[16px]"
-                                >
-                                    {showPassword ? <EyeOff /> : <Eye />}
-                                </button>
-                            </div>
-                            {errors.password && (
-                                <p className="text-red-500 text-xs mt-1">{errors.password}</p>
-                            )}
-                        </div>
-
-                        {/* CONFIRM PASSWORD */}
-                        <div className="mb-8">
-                            <label className="2xl:text-[18px] lg:text-[16px] font-medium">Confirm Password</label>
-                            <div className="relative">
-                                <input
-                                    type={showConfirmPassword ? "text" : "password"}
-                                    name="confirmPassword"
-                                    placeholder="Confirm new password"
-                                    value={passwords.confirmPassword}
-
-                                    onPaste={(e) => e.preventDefault()}   // ← add this line
-
-                                    onChange={handleChange}
-                                    className={`w-full mt-1 px-4 py-2.5 border ${errors.confirmPassword ? "border-red-500" : "border-[#D0CFD1]"
-                                        } placeholder:text-[#717073] rounded-[14px] focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                                />
-                                <button
-                                    type="button"
-                                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                                    className="absolute right-3 top-3 text-gray-500 2xl:text-[18px] lg:text-[16px]"
-                                >
-                                    {showConfirmPassword ? <EyeOff /> : <Eye />}
-                                </button>
-                            </div>
-                            {errors.confirmPassword && (
-                                <p className="text-red-500 text-xs mt-1">{errors.confirmPassword}</p>
-                            )}
-                        </div>
-                    {/* </div> */}
-                    {/* BUTTON */}
-                    <button
-                        type="submit"
-                        disabled={loading}
-                        className="w-full bg-[#237FEA] text-white 2xl:text-[18px] lg:text-[16px] font-bold py-2.5 rounded-[14px] hover:bg-blue-700 transition disabled:opacity-70 disabled:cursor-not-allowed flex justify-center items-center gap-2"
-                    >
-                        {loading && <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>}
-                        {loading ? "Resetting..." : "Reset Password"}
-                    </button>
-
-                    <div className="text-center mt-5">
-                        <Link to="/auth/login" className="text-[#237FEA] font-semibold hover:underline">
-                            Back to Login
-                        </Link>
-                    </div>
-                </form>
-
-                <div className="mt-8 max-w-[130px] m-auto">
-                    <img src="/assets/sss-logo-parents.png" alt="" className="w-full" />
-                </div>
-            </div>
+  return (
+    <div className="w-full h-screen  flex items-center p-5  lg:p-10 xl:p-0">
+      <div className="w-full flex flex-col 2xl:max-w-[25%] md:max-w-[33%]  bg-white shadow-md border border-gray-200 rounded-[20px]  p-10  m-auto items-center justify-center">
+        <div className="text-center w-full mb-8">
+          <div className="text-5xl font-bold text-blue-700 2xl:max-w-[80px] lg:w-[50px] w-[50px] m-auto">
+            <img src="/assets/sambaLogoBlue.png" alt="" className="w-full" />
+          </div>
+          <h2 className="2xl:text-[36px] text-[26px] lg:text-[32px] font-semibold mt-3">
+            Reset Password
+          </h2>
+          <p className="text-black xl:text-[20px] md:text-[16px] font-semibold">
+            Enter your new password below.
+          </p>
         </div>
-    );
+
+        <form onSubmit={handleSubmit} className="w-full">
+          {/* <div className="bg-gray-50 border border-gray-200 rounded-[16px] shadow-sm px-6 py-6 mb-6"> */}
+
+          {/* NEW PASSWORD */}
+          <div className="my-5">
+            <label className="2xl:text-[18px] lg:text-[16px] font-medium">
+              New Password
+            </label>
+            <div className="relative">
+              <input
+                type={showPassword ? "text" : "password"}
+                name="password"
+                placeholder="Enter new password"
+                value={passwords.password}
+                onChange={handleChange}
+                className={`w-full mt-1 px-4 py-2.5 border ${
+                  errors.password ? "border-red-500" : "border-[#D0CFD1]"
+                } placeholder:text-[#717073] rounded-[14px] focus:outline-none focus:ring-2 focus:ring-blue-500`}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-3 text-gray-500 2xl:text-[18px] lg:text-[16px]"
+              >
+                {showPassword ? <EyeOff /> : <Eye />}
+              </button>
+            </div>
+            {errors.password && (
+              <p className="text-red-500 text-xs mt-1">{errors.password}</p>
+            )}
+          </div>
+
+          {/* CONFIRM PASSWORD */}
+          <div className="mb-8">
+            <label className="2xl:text-[18px] lg:text-[16px] font-medium">
+              Confirm Password
+            </label>
+            <div className="relative">
+              <input
+                type={showConfirmPassword ? "text" : "password"}
+                name="confirmPassword"
+                placeholder="Confirm new password"
+                value={passwords.confirmPassword}
+                onPaste={(e) => e.preventDefault()} // ← add this line
+                onChange={handleChange}
+                className={`w-full mt-1 px-4 py-2.5 border ${
+                  errors.confirmPassword ? "border-red-500" : "border-[#D0CFD1]"
+                } placeholder:text-[#717073] rounded-[14px] focus:outline-none focus:ring-2 focus:ring-blue-500`}
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                className="absolute right-3 top-3 text-gray-500 2xl:text-[18px] lg:text-[16px]"
+              >
+                {showConfirmPassword ? <EyeOff /> : <Eye />}
+              </button>
+            </div>
+            {errors.confirmPassword && (
+              <p className="text-red-500 text-xs mt-1">
+                {errors.confirmPassword}
+              </p>
+            )}
+          </div>
+          {/* </div> */}
+          {/* BUTTON */}
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-[#237FEA] text-white 2xl:text-[18px] lg:text-[16px] font-bold py-2.5 rounded-[14px] hover:bg-blue-700 transition disabled:opacity-70 disabled:cursor-not-allowed flex justify-center items-center gap-2"
+          >
+            {loading && (
+              <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+            )}
+            {loading ? "Resetting..." : "Reset Password"}
+          </button>
+
+          <div className="text-center mt-5">
+            <Link
+              to="/auth/login"
+              className="text-[#237FEA] font-semibold hover:underline"
+            >
+              Back to Login
+            </Link>
+          </div>
+        </form>
+
+        <div className="mt-8 max-w-[130px] m-auto">
+          <img src="/assets/sss-logo-parents.png" alt="" className="w-full" />
+        </div>
+      </div>
+    </div>
+  );
 };
 
 export default ResetPassword;
