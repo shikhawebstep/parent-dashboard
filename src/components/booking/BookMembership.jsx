@@ -1,4 +1,4 @@
-﻿import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
   X,
@@ -321,7 +321,6 @@ const BookMembership = () => {
 
   // Wizard State
   const [flowStep, setFlowStep] = useState("B");
-  const [demoMode, setDemoMode] = useState("single");
   const [selectedStudentIds, setSelectedStudentIds] = useState([]);
 
   // Delivery address state
@@ -666,8 +665,10 @@ const BookMembership = () => {
 
     if (normalizedStudents.length === 1) {
       setSelectedStudentIds([normalizedStudents[0]._tmpId]);
+      setFlowStep("B"); // single child — skip child selector
     } else if (normalizedStudents.length > 1) {
       setSelectedStudentIds(normalizedStudents.map((s) => s._tmpId));
+      setFlowStep("A"); // multi child — show child selector first
     }
 
     const emergencyContact = profile?.adminMeta?.emergency;
@@ -711,8 +712,8 @@ const BookMembership = () => {
     appliedDiscount,
   ]);
 
-  // Derived selected students
-  const isMulti = demoMode === "multi";
+  // Derived selected students — true when parent has 2 or more children
+  const isMulti = students.length >= 2;
   const activeStudents = isMulti
     ? students.filter((s) => selectedStudentIds.includes(s._tmpId))
     : students.slice(0, 1);
@@ -3248,34 +3249,7 @@ const BookMembership = () => {
         </div>
       </div>
 
-      {flowStep !== "D" && (
-        <>
-          {/* Dev flow toggles */}
-          <div className="max-w-[1040px] mx-auto mt-4 px-6 text-[14px] text-[#6b7685] text-center">
-            Prototype — single-child journey starts at "Confirm & choose".
-          </div>
-          <div className="flex flex-col sm:flex-row justify-center gap-3 mt-3.5 mb-6 w-full max-w-md mx-auto sm:max-w-none">
-            <button
-              onClick={() => {
-                setDemoMode("single");
-                setFlowStep("B");
-              }}
-              className={`w-full sm:w-auto font-semibold text-[14px] rounded-[12px] px-8 py-3.5 border transition-all ${demoMode === "single" ? "bg-[#3b7df6] text-white border-[#3b7df6]" : "bg-white text-[#1f2733] border-[#e7ebf1]"}`}
-            >
-              Single-child flow
-            </button>
-            <button
-              onClick={() => {
-                setDemoMode("multi");
-                setFlowStep("A");
-              }}
-              className={`w-full sm:w-auto font-semibold text-[14px] rounded-[12px] px-8 py-3.5 border transition-all ${demoMode === "multi" ? "bg-[#3b7df6] text-white border-[#3b7df6]" : "bg-white text-[#1f2733] border-[#e7ebf1]"}`}
-            >
-              Multi-child flow
-            </button>
-          </div>
-        </>
-      )}
+
 
       {/* ── Size Chart Modal ── */}
       <AnimatePresence>

@@ -21,7 +21,6 @@ const OnboardingTour = () => {
     const handleClose = () => {
         setIsOpen(false);
         localStorage.setItem(tourKey, 'true');
-        
     };
 
     const handleSkip = () => {
@@ -42,41 +41,56 @@ const OnboardingTour = () => {
                 ? `${parentData.firstName}`
                 : parentData?.email || "N/A"}`,
             description: "Take a quick tour of your parent connect account.",
-            icon: '/assets/step1.png'
+            icon: '/assets/step1.png',
+            route: null,
         },
         {
             title: "Check out your Services",
             description: "In the service history parent profile you can edit your profile and check your schedule",
             icon: '/assets/step2.png',
+            route: '/bookings',
         },
         {
             title: "Look at your Rewards",
             description: "Check out the benefits of Refer a Friend, know your referrals and manage your loyalty points.",
             icon: '/assets/step3.png',
+            route: '/refer',
         },
         {
             title: "Check out your Surveys",
             description: "In Surveys you can create and edit your surveys. You can also check your status.",
             icon: '/assets/step4.png',
+            route: '/surveys',
         },
         {
             title: "Access settings",
             description: "Set up your account information, your profile, payment methods, security, and notifications in just a few steps.",
             icon: '/assets/step5.png',
+            route: '/settings',
         },
         {
             title: `Congratulations ${parentData.firstName} !`,
             description: "You have successfully completed the tour guide, you are ready to go.",
             icon: '/assets/step6.png',
+            route: null,
         }
     ];
+
+    // Navigate to the real page for each step so the actual screen shows behind the card
+    useEffect(() => {
+        if (!isOpen) return;
+        const route = steps[currentStep]?.route;
+        if (route) {
+            navigate(route);
+        }
+    }, [currentStep, isOpen]);
 
     if (!isOpen) return null;
 
     const currentStepData = steps[currentStep];
 
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fadeIn">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/40 animate-fadeIn">
             <div className="bg-white rounded-[30px] p-8 max-w-[400px] w-full flex flex-col items-center text-center shadow-2xl relative animate-scaleIn">
                 <img src={currentStepData.icon} className='w-full h-full object-cover' alt="" />
 

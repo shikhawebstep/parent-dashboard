@@ -8,30 +8,35 @@ const menu = [
     path: "/",
     icon: "/assets/dashboard.png",
     activeImg: "/assets/dashboard-active.png",
+    tourId: "tour-account",
   },
   {
     name: "My Bookings",
     path: "/bookings",
     icon: "/assets/booking.png",
     activeImg: "/assets/booking-active.png",
+    tourId: "tour-bookings",
   },
   {
     name: "Refer a friend",
     path: "/refer",
     icon: "/assets/refer.png",
     activeImg: "/assets/refer-active.png",
+    tourId: "tour-refer",
   },
   {
     name: "Surveys",
     path: "/surveys",
     icon: "/assets/online-learning.png",
     activeImg: "/assets/online-learning-active.png",
+    tourId: "tour-surveys",
   },
   {
     name: "Settings",
     path: "/settings",
     icon: "/assets/setting-02.png",
     activeImg: "/assets/setting-active.png",
+    tourId: "tour-settings",
   },
 ];
 
@@ -64,6 +69,7 @@ const Sidebar = () => {
             key={item.name}
             to={item.path}
             end
+            data-tour={item.tourId}
             className={({ isActive }) =>
               `flex items-center gap-3 px-4 py-3 rounded-[12px] text-[18px] 2xl:text-[20px] font-semibold transition
               ${isActive ? "bg-[#0DD180]" : ""}`
