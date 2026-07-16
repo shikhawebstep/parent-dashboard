@@ -1525,7 +1525,7 @@ const BookMembership = () => {
         Booking
       </div>
 
-      <div className="max-w-[850px] mt-5 mx-auto md:px-6 pt-5 px-2">
+      <div className="max-w-[1100px] mt-5 mx-auto md:px-6 pt-5 px-2">
         {/* Steps */}
         <div className="hidden md:flex items-center justify-center gap-2 mb-5 flex-wrap">
           {flowStates.map((fs, i) => {
@@ -1632,7 +1632,7 @@ const BookMembership = () => {
           </div>
         )}
         {/* Screens */}
-        <div className="bg-white mt-6 rounded-[16px] shadow-[0_8px_30px_rgba(20,40,80,0.08)] p-4 md:p-8">
+        <div className="bg-white mt-6 rounded-[16px] shadow-[0_8px_30px_rgba(20,40,80,0.08)] p-4 md:p-10">
           {/* SCREEN A */}
           {flowStep === "A" && (
             <div>
@@ -1753,7 +1753,7 @@ const BookMembership = () => {
                   }}
                   className="text-white px-5 py-4 rounded-t-[14px] flex items-center justify-between gap-3 flex-wrap"
                 >
-                  <div className="flex items-center gap-2.5 font-semibold text-[14px]">
+                  <div className="flex items-center gap-2.5 font-semibold text-[14px] md:text-[16px]">
                     <MapPin size={16} />{" "}
                     {selectedVenue?.label || "Select a venue..."}
                   </div>
@@ -1877,11 +1877,11 @@ const BookMembership = () => {
                             {(s.studentFirstName || "?")[0]}
                           </div>
                           <div>
-                            <div className="font-semibold text-[14px]">
+                            <div className="font-semibold text-[16px]">
                               {s.studentFirstName} {s.studentLastName}
                             </div>
                             {s.selectedClassData && !isEditingThis && (
-                              <div className="text-[11px] text-[#6b7685]">
+                              <div className="text-[11px] md:text-[14px] text-[#6b7685]">
                                 Class:{" "}
                                 {`${s.selectedClassData?.className || ""}${s.selectedClassData?.level ? ` (${s.selectedClassData.level})` : ""}`}
                               </div>
@@ -1996,7 +1996,7 @@ const BookMembership = () => {
                               key={s._tmpId}
                               className="flex items-center justify-between gap-3 bg-white border border-[#f3d0d0] rounded-[10px] px-3.5 py-2.5 flex-wrap"
                             >
-                              <span className="font-semibold text-[14px] text-[#1f2733]">
+                              <span className="font-semibold text-[14px] md:text-[16px] text-[#1f2733]">
                                 {s.studentFirstName || "Child"}{" "}
                                 {s.studentLastName}
                               </span>
@@ -2056,7 +2056,7 @@ const BookMembership = () => {
                       <img src="/assets/Kids-Size-Guide.png" alt="" />
                     </div>
                     <div>
-                      <h5 className="text-[14px] font-bold mb-2.5 text-[#1f2733]">
+                      <h5 className="text-[14px] md:text-[16px] font-bold mb-2.5 text-[#1f2733]">
                         Every membership includes the Samba starter pack:
                       </h5>
                       <ul className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2.5 list-none">
@@ -2068,7 +2068,7 @@ const BookMembership = () => {
                         ].map((item, i) => (
                           <li
                             key={i}
-                            className="text-[10.5px] flex items-center gap-2 text-[#1f2733]"
+                            className="text-[12px] md:text-[13.5px] flex items-center gap-2 text-[#1f2733]"
                           >
                             <Check
                               size={14}
@@ -2194,12 +2194,11 @@ const BookMembership = () => {
                             <div className="w-[35px] h-[35px] rounded-full bg-[#eaf1fe] flex items-center justify-center font-bold text-[#3b7df6]">
                               {(s.studentFirstName || "?")[0]}
                             </div>
-                            <div className="font-semibold text-[14px]">
+                            <div className="font-semibold text-[14px] md:text-[16px]">
                               {s.studentFirstName} {s.studentLastName}
-                              <div className="font-semibold text-gray-400 text-[10px]">
+                              <div className="font-medium text-gray-400 text-[10px] md:text-[13px]">
                                 Age: {s.age} .{" "}
-                                {s.selectedClassData?.className ||
-                                  "Class not selected"}
+                                {s.selectedClassData?.className || "Class not selected"}
                               </div>
                             </div>
                           </div>
@@ -2331,7 +2330,7 @@ const BookMembership = () => {
                             }}
                           />
                           {selectedAddress && (
-                            <div className="mt-3 text-[10.5px] text-[#0e7a4d] font-semibold bg-[#e7f8f0] rounded-lg px-3.5 py-2.5 flex items-center gap-2">
+                            <div className="mt-3 text-[12px] md:text-[14px] text-[#0e7a4d] font-semibold bg-[#e7f8f0] rounded-lg px-3.5 py-2.5 flex items-center gap-2">
                               <Check size={14} />
                               Starter pack will ship here.
                               <span
@@ -2396,12 +2395,12 @@ const BookMembership = () => {
                           <div
                             key={plan?.value ?? idx}
                             onClick={() => setMembershipPlan(plan)}
-                            className={`border-[1.5px] rounded-[14px] p-4 cursor-pointer transition-all relative ${isSel ? "border-[#3b7df6] bg-[#f5f9ff] ring-4 ring-[#3b7df6]/10" : "border-[#e7ebf1] hover:border-[#bcd0f5]"}`}
+                            className={`border-[1.5px] rounded-[18px] p-5 cursor-pointer transition-all relative ${isSel ? "border-[#3b7df6] bg-[#f5f9ff] ring-4 ring-[#3b7df6]/10" : "border-[#e7ebf1] hover:border-[#bcd0f5]"}`}
                           >
                             <span
                               className={`absolute top-4 right-4 w-5 h-5 rounded-full border-2 ${isSel ? "border-[#3b7df6] bg-white ring-inset ring-4 ring-[#3b7df6]" : "border-[#e7ebf1]"}`}
                             />
-                            <div className="text-[14px] text-[#6b7685] font-semibold">
+                            <div className="text-[15px] text-[#6b7685] font-semibold">
                               {is12Month
                                 ? "Best value"
                                 : is6Month
@@ -2411,9 +2410,9 @@ const BookMembership = () => {
                             <div className="text-[14px] font-bold my-0.5 mb-1.5">
                               {plan.all?.title || "Plan"}
                             </div>
-                            <div className="text-[21px] font-bold text-[#1e3a6e]">
+                            <div className="text-[26px] font-bold text-[#1e3a6e]">
                               £{plan.all?.price ?? 0}
-                              <small className="text-[14px] text-[#6b7685] font-medium">
+                              <small className="text-[15px] text-[#6b7685] font-medium">
                                 {" "}
                                 / month
                               </small>
@@ -2583,7 +2582,7 @@ const BookMembership = () => {
                   <h4 className="text-[12px] uppercase tracking-[0.04em] text-[#6b7685] font-semibold mb-3">
                     Price breakdown
                   </h4>
-                  <div className="flex justify-between items-center text-[11px] py-1  ">
+                  <div className="flex justify-between items-center text-[13px] py-1.5  ">
                     <span className="text-[#6b7685]">
                       {membershipPlan?.label || "Plan"} · {numberOfStudents}{" "}
                       student{numberOfStudents > 1 ? "s" : ""}
@@ -2596,7 +2595,7 @@ const BookMembership = () => {
                   {showStarterPack && (
                     <>
                       {isApplied && pricingBreakdown.starterDiscount > 0 ? (
-                        <div className="flex justify-between items-center text-[11px] py-1 text-[#0e7a4d] font-semibold">
+                        <div className="flex justify-between items-center text-[12px] py-1 md:text-[14px] text-[#0e7a4d] font-semibold">
                           <span>
                             Starter pack
                             {activeStudents.length > 1
@@ -2616,7 +2615,7 @@ const BookMembership = () => {
                           </span>
                         </div>
                       ) : (
-                        <div className="flex justify-between items-center text-[11px] py-1">
+                        <div className="flex justify-between items-center text-[12px] py-1 md:text-[14px]">
                           <span className="text-[#6b7685]">
                             Starter pack
                             {activeStudents.length > 1
@@ -2628,30 +2627,30 @@ const BookMembership = () => {
                           </span>
                         </div>
                       )}
-                      <div className="flex justify-between items-center text-[11px] py-1">
+                      <div className="flex justify-between items-center text-[12px] py-1 md:text-[14px]">
                         <span className="text-[#6b7685]">Delivery fee</span>
                         <span className="font-semibold">£3.99</span>
                       </div>
                     </>
                   )}
-                  <div className="flex justify-between items-center text-[11px] py-1  ">
+                  <div className="flex justify-between items-center text-[13px] py-1.5  ">
                     <span className="text-[#6b7685]">Joining fee</span>
                     <span className="font-semibold">No joining fee</span>
                   </div>
-                  <div className="flex justify-between items-center text-[11px] py-1  ">
+                  <div className="flex justify-between items-center text-[13px] py-1.5  ">
                     <span className="text-[#6b7685]">{getProRataLabel()}</span>
                     <span className="font-semibold">
                       £{(pricingBreakdown.finalProRataCost || 0).toFixed(2)}
                     </span>
                   </div>
-                  <div className="h-[1px] bg-[#e7ebf1] my-2.5" />
-                  <div className="flex justify-between items-center text-[11px] font-bold pt-2">
+                  <div className="h-[1px] bg-[#e7ebf1] my-3" />
+                  <div className="flex justify-between items-center text-[14px] font-bold pt-2">
                     <span className="text-[#1f2733] font-bold">Due today</span>
                     <span className="text-[#1e3a6e] font-bold">
                       £{(pricingBreakdown.totalAmountToday || 0).toFixed(2)}
                     </span>
                   </div>
-                  <div className="text-[11px] text-[#6b7685] bg-[#eef5ff] rounded-lg p-3 mt-2.5 leading-[1.6]">
+                  <div className="text-[11px] md:text-[14px] text-[#6b7685] bg-[#eef5ff] rounded-lg p-3 mt-2.5 leading-[1.6]">
                     <b className="text-[#1f2733]">
                       Collected immediately (today):
                     </b>{" "}
@@ -2709,28 +2708,28 @@ const BookMembership = () => {
                 This covers your membership, collected on the 1st of each month
               </div>
 
-              <div className="grid md:grid-cols-[1fr_1.1fr] gap-6">
+              <div className="grid md:grid-cols-[1fr_1.3fr] gap-8">
                 {/* Summary */}
                 <div className="bg-[#f1f6ff] rounded-[14px] p-5">
-                  <h3 className="text-[#1e3a6e] text-[14px] mb-3.5 font-bold">
+                  <h3 className="text-[#1e3a6e] text-[16px] mb-4 font-bold">
                     Your membership
                   </h3>
-                  <div className="flex justify-between text-[10.5px] py-1 text-[#6b7685]">
+                  <div className="flex justify-between text-[13px] py-1.5 text-[#6b7685]">
                     <span>{membershipPlan?.label || "Plan"}</span>
                     <span>
                       £{(pricingBreakdown.nextMonthPayment || 0).toFixed(2)} /
                       mo
                     </span>
                   </div>
-                  <div className="flex justify-between text-[10.5px] py-1 text-[#6b7685]">
+                  <div className="flex justify-between text-[13px] py-1.5 text-[#6b7685]">
                     <span>Start date</span>
                     <span>{selectedDate || "-"}</span>
                   </div>
-                  <div className="flex justify-between text-[10.5px] py-1 text-[#6b7685]">
+                  <div className="flex justify-between text-[13px] py-1.5 text-[#6b7685]">
                     <span>First full payment</span>
                     <span>1st of Next Month</span>
                   </div>
-                  <div className="flex justify-between text-[14px] font-bold text-[#1e3a6e] mt-3.5 border-t border-[#d4e0f5] pt-3">
+                  <div className="flex justify-between text-[16px] font-bold text-[#1e3a6e] mt-4 border-t border-[#d4e0f5] pt-3">
                     <span>Monthly from 1st</span>
                     <span>
                       £{(pricingBreakdown.nextMonthPayment || 0).toFixed(2)}
@@ -2740,16 +2739,16 @@ const BookMembership = () => {
 
                 {/* Form */}
                 <div>
-                  <h3 className="text-[14px] mb-1 font-bold">
+                  <h3 className="text-[16px] mb-1.5 font-bold">
                     Direct Debit details
                   </h3>
-                  <p className="text-[14px] text-[#6b7685] mb-4">
+                  <p className="text-[15px] text-[#6b7685] mb-5">
                     Your monthly membership payment is collected by Direct Debit
                     on the 1st of each month.
                   </p>
 
                   <div className="mb-4">
-                    <label className="block text-[14px] font-semibold mb-1.5">
+                    <label className="block text-[15px] font-semibold mb-1.5">
                       Email address
                     </label>
                     <input
@@ -2774,7 +2773,7 @@ const BookMembership = () => {
                   </div>
 
                   <div className="mb-4">
-                    <label className="block text-[14px] font-semibold mb-1.5">
+                    <label className="block text-[15px] font-semibold mb-1.5">
                       Account holder name
                     </label>
                     <input
@@ -2802,7 +2801,7 @@ const BookMembership = () => {
 
                   {/* NEW: Address + City */}
                   <div className="mb-4">
-                    <label className="block text-[14px] font-semibold mb-1.5">
+                    <label className="block text-[15px] font-semibold mb-1.5">
                       Address
                     </label>
                     <input
@@ -2824,7 +2823,7 @@ const BookMembership = () => {
                   </div>
 
                   <div className="mb-4">
-                    <label className="block text-[14px] font-semibold mb-1.5">
+                    <label className="block text-[15px] font-semibold mb-1.5">
                       City
                     </label>
                     <input
@@ -2847,7 +2846,7 @@ const BookMembership = () => {
 
                   <div className="grid grid-cols-2 gap-3.5 mb-4">
                     <div>
-                      <label className="block text-[14px] font-semibold mb-1.5">
+                      <label className="block text-[15px] font-semibold mb-1.5">
                         Sort code
                       </label>
                       <input
@@ -2868,7 +2867,7 @@ const BookMembership = () => {
                       )}
                     </div>
                     <div>
-                      <label className="block text-[14px] font-semibold mb-1.5">
+                      <label className="block text-[15px] font-semibold mb-1.5">
                         Account number
                       </label>
                       <input
@@ -2950,10 +2949,10 @@ const BookMembership = () => {
                 payment
               </div>
 
-              <div className="grid md:grid-cols-[1fr_1.1fr] gap-6">
+              <div className="grid md:grid-cols-[1fr_1.3fr] gap-8">
                 {/* Summary */}
                 <div className="bg-[#f1f6ff] rounded-[14px] p-5">
-                  <h3 className="text-[#1e3a6e] text-[14px] mb-3.5 font-bold">
+                  <h3 className="text-[#1e3a6e] text-[16px] mb-4 font-bold">
                     Due today
                   </h3>
                   <div className="font-bold text-[#1e3a6e] mt-3.5 text-[14px]">
@@ -2964,7 +2963,7 @@ const BookMembership = () => {
                       const sCount = activeStudents.length || 1;
                       return (
                         <>
-                          <div className="flex justify-between text-[10.5px] py-1 text-[#6b7685]">
+                          <div className="flex justify-between text-[13px] md:text-[14px] py-1 text-[#6b7685]">
                             <span>
                               Starter pack{sCount > 1 ? ` × ${sCount}` : ""}
                             </span>
@@ -2972,13 +2971,13 @@ const BookMembership = () => {
                               £{(pricingBreakdown.starterPack || 0).toFixed(2)}
                             </span>
                           </div>
-                          <div className="flex justify-between text-[10.5px] py-1 text-[#6b7685]">
+                          <div className="flex justify-between text-[13px] py-1.5 text-[#6b7685]">
                             <span>Delivery fee</span>
                             <span>£3.99</span>
                           </div>
                           {isApplied &&
                             pricingBreakdown.starterDiscount > 0 && (
-                              <div className="flex justify-between text-[10.5px] py-1 text-[#0e7a4d] font-semibold">
+                              <div className="flex justify-between text-[13px] py-1.5 text-[#0e7a4d] font-semibold">
                                 <span>Discount</span>
                                 <span>
                                   -£
@@ -2991,11 +2990,11 @@ const BookMembership = () => {
                         </>
                       );
                     })()}
-                  <div className="flex justify-between text-[10.5px] py-1 text-[#6b7685]">
+                  <div className="flex justify-between text-[13px] py-1.5 text-[#6b7685]">
                     <span>Joining fee</span>
                     <span>£0.00</span>
                   </div>
-                  <div className="flex justify-between text-[14px] font-bold text-[#1e3a6e] mt-3.5 border-t border-[#d4e0f5] pt-3">
+                  <div className="flex justify-between text-[16px] font-bold text-[#1e3a6e] mt-4 border-t border-[#d4e0f5] pt-3">
                     <span>Total today</span>
                     <span>
                       £{(pricingBreakdown.totalAmountToday || 0).toFixed(2)}
@@ -3010,13 +3009,13 @@ const BookMembership = () => {
 
                 {/* Card form */}
                 <div>
-                  <h3 className="text-[14px] mb-1 font-bold">Card details</h3>
-                  <p className="text-[14px] text-[#6b7685] mb-4">
+                  <h3 className="text-[16px] mb-1.5 font-bold">Card details</h3>
+                  <p className="text-[15px] text-[#6b7685] mb-5">
                     This one-off payment covers your starter pack and delivery.
                   </p>
 
                   <div className="mb-4">
-                    <label className="block text-[14px] font-semibold mb-1.5">
+                    <label className="block text-[15px] font-semibold mb-1.5">
                       Card number
                     </label>
                     <div className="relative">
@@ -3060,7 +3059,7 @@ const BookMembership = () => {
 
                   <div className="grid grid-cols-2 gap-3.5 mb-4">
                     <div>
-                      <label className="block text-[14px] font-semibold mb-1.5">
+                      <label className="block text-[15px] font-semibold mb-1.5">
                         Expiry date
                       </label>
                       <input
@@ -3084,7 +3083,7 @@ const BookMembership = () => {
                       ) : null}
                     </div>
                     <div>
-                      <label className="block text-[14px] font-semibold mb-1.5">
+                      <label className="block text-[15px] font-semibold mb-1.5">
                         CVC
                       </label>
                       <input
@@ -3109,7 +3108,7 @@ const BookMembership = () => {
                   </div>
 
                   <div className="mb-4">
-                    <label className="block text-[14px] font-semibold mb-1.5">
+                    <label className="block text-[15px] font-semibold mb-1.5">
                       Name on card
                     </label>
                     <input
@@ -3138,7 +3137,7 @@ const BookMembership = () => {
 
                   <div className="grid grid-cols-2 gap-3.5">
                     <div>
-                      <label className="block text-[14px] font-semibold mb-1.5">
+                      <label className="block text-[15px] font-semibold mb-1.5">
                         Country
                       </label>
                       <Select
@@ -3158,7 +3157,7 @@ const BookMembership = () => {
                       />
                     </div>
                     <div>
-                      <label className="block text-[14px] font-semibold mb-1.5">
+                      <label className="block text-[15px] font-semibold mb-1.5">
                         Postcode / ZIP
                       </label>
                       <input

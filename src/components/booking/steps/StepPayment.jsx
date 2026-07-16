@@ -159,7 +159,7 @@ export default function StepPayment() {
 
     const inputClass = (hasError) =>
         `w-full mainShadow rounded-lg ${hasError ? "border border-red-500" : "border-gray-200"
-        } py-2.5 px-5 text-sm focus:border-[#0496FF] outline-none transition-colors`;
+        } py-3.5 px-4 text-[15px] focus:border-[#0496FF] outline-none transition-colors`;
 
     const cvvMaxLength = 4;
 
@@ -260,7 +260,7 @@ export default function StepPayment() {
                         {/* Name Row */}
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <label className="text-[14px] font-normal poppins text-[#191919] mb-2 block">
+                                <label className="text-[15px] font-normal poppins text-[#191919] mb-2 block">
                                     First Name
                                 </label>
                                 <input
@@ -276,7 +276,7 @@ export default function StepPayment() {
                                 )}
                             </div>
                             <div>
-                                <label className="text-[14px] font-normal poppins text-[#191919] mb-2 block">
+                                <label className="text-[15px] font-normal poppins text-[#191919] mb-2 block">
                                     Last Name
                                 </label>
                                 <input
@@ -295,7 +295,7 @@ export default function StepPayment() {
 
                         {/* Email */}
                         <div>
-                            <label className="text-[14px] font-normal poppins text-[#191919] mb-2 block">
+                            <label className="text-[15px] font-normal poppins text-[#191919] mb-2 block">
                                 Email
                             </label>
                             <input
@@ -313,7 +313,7 @@ export default function StepPayment() {
 
                         {/* Billing Address */}
                         <div>
-                            <label className="text-[14px] font-normal poppins text-[#191919] mb-2 block">
+                            <label className="text-[15px] font-normal poppins text-[#191919] mb-2 block">
                                 Billing Address
                             </label>
                             <input
@@ -331,7 +331,7 @@ export default function StepPayment() {
 
                         {/* Card Number */}
                         <div>
-                            <label className="text-[14px] font-normal poppins text-[#191919] mb-2 block">
+                            <label className="text-[15px] font-normal poppins text-[#191919] mb-2 block">
                                 Card Number
                             </label>
                             <div className="relative">
@@ -359,7 +359,7 @@ export default function StepPayment() {
                         {/* Expiry + CVV */}
                         <div className="grid grid-cols-2 gap-8">
                             <div>
-                                <label className="text-[14px] font-normal poppins text-[#191919] mb-2 block">
+                                <label className="text-[15px] font-normal poppins text-[#191919] mb-2 block">
                                     Expiry Date
                                 </label>
                                 <input
@@ -379,9 +379,9 @@ export default function StepPayment() {
                                 )}
                             </div>
                             <div>
-                                <label className="text-[14px] font-normal poppins text-[#191919] mb-2 block">
+                                <label className="text-[15px] font-normal poppins text-[#191919] mb-2 block">
                                     Security Code
-                                    <span className="text-[#797A88] text-[12px] ml-1">
+                                    <span className="text-[#797A88] text-[13px] ml-1">
                                         (3 or 4 digits)
                                     </span>
                                 </label>
