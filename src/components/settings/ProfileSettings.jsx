@@ -18,7 +18,7 @@ const ProfileSettings = () => {
     });
 
     // ✅ profileImage starts with fallback — never reads from possibly-null parentData
-    const [profileImage, setProfileImage] = useState("/assets/user.png");
+    const [profileImage, setProfileImage] = useState("");
 
     const [imageFile, setImageFile] = useState(null);
     const [imagePreview, setImagePreview] = useState(null);
@@ -45,7 +45,7 @@ const ProfileSettings = () => {
             phone: d.phoneNumber ?? d.phone ?? "",
         });
         setProfileImage(
-            d.profile || d.avatar || d.profileImage || "/assets/user.png"
+            d.profile || d.avatar 
         );
     }, [profile]);
 

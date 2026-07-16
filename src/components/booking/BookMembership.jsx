@@ -1,5 +1,7 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useMemo } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+
+
 import {
   X,
   ChevronLeft,
@@ -26,6 +28,7 @@ import { useCommon } from "../../context/CommonContext";
 import { useProfile } from "../../context/ProfileContext";
 import { getAddressesByPostcode } from "../../commom/getAddressesByPostcode";
 import Loader from "../Loader";
+import { GiCheckMark } from "react-icons/gi";
 
 // ── react-select shared styles ─────────────────────────────
 const rsStyles = (hasError) => ({
@@ -275,10 +278,10 @@ const BookMembership = () => {
 
   const matchedBooking = urlBookingId
     ? allProfileBookings.find(
-        (b) =>
-          String(b?.id || "") === String(urlBookingId) ||
-          String(b?.bookingId || "") === String(urlBookingId),
-      )
+      (b) =>
+        String(b?.id || "") === String(urlBookingId) ||
+        String(b?.bookingId || "") === String(urlBookingId),
+    )
     : null;
 
   // NEW: whether this link's bookingId actually belongs to the logged-in parent's bookings.
@@ -394,8 +397,8 @@ const BookMembership = () => {
 
   const paymentPlanOptions = numberOfStudents
     ? allPaymentPlans.filter(
-        (p) => Number(p?.all?.students) === Number(numberOfStudents),
-      )
+      (p) => Number(p?.all?.students) === Number(numberOfStudents),
+    )
     : allPaymentPlans;
 
   const sessionDates =
@@ -541,6 +544,35 @@ const BookMembership = () => {
     if (!y || !m || !d) return isoDate;
     return `${d}/${m}/${y}`;
   };
+
+
+  // helper — put near your other top-level helpers (e.g. below toDateOnly)
+  const addWorkingDays = (date, days) => {
+    const result = new Date(date);
+    let added = 0;
+    while (added < days) {
+      result.setDate(result.getDate() + 1);
+      const day = result.getDay();
+      if (day !== 0 && day !== 6) added++; // skip Saturday (6) and Sunday (0)
+    }
+    return result;
+  };
+
+  const getFirstPaymentDate = () => {
+    const after10WorkingDays = addWorkingDays(new Date(), 10);
+    return new Date(
+      after10WorkingDays.getFullYear(),
+      after10WorkingDays.getMonth() + 1, // next month
+      1
+    );
+  };
+
+  const formatDate = (date) =>
+    date instanceof Date && !Number.isNaN(date.getTime())
+      ? date.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })
+      : "-";
+
+  const firstPaymentDate = useMemo(() => getFirstPaymentDate(), []);
 
   const getProRataLabel = () => {
     if (!selectedDate) return "Pro-rata";
@@ -898,14 +930,14 @@ const BookMembership = () => {
               (bp) =>
                 (bp?.parentEmail || "").toLowerCase() &&
                 (bp?.parentEmail || "").toLowerCase() ===
-                  (parent.parentEmail || "").toLowerCase(),
+                (parent.parentEmail || "").toLowerCase(),
             ) ||
             bookingParents.find(
               (bp) =>
                 (bp?.parentFirstName || "").toLowerCase() ===
-                  (parent.parentFirstName || "").toLowerCase() &&
+                (parent.parentFirstName || "").toLowerCase() &&
                 (bp?.parentLastName || "").toLowerCase() ===
-                  (parent.parentLastName || "").toLowerCase(),
+                (parent.parentLastName || "").toLowerCase(),
             );
           return match ? { ...parent, id: match.id ?? parent.id } : parent;
         }),
@@ -1239,11 +1271,11 @@ const BookMembership = () => {
 
       const starterPackFinalPrice = showStarterPack
         ? Number(
-            Math.max(
-              starterPackBaseTotal - starterPackDiscountAmount,
-              0,
-            ).toFixed(2),
-          )
+          Math.max(
+            starterPackBaseTotal - starterPackDiscountAmount,
+            0,
+          ).toFixed(2),
+        )
         : 0;
 
       // ── Split: who has a confirmed space vs who needs the waiting list ──
@@ -1297,11 +1329,11 @@ const BookMembership = () => {
           // NEW: how much was knocked off
           starterPackDeliveryAddress: showStarterPack
             ? {
-                line1: deliveryLine1,
-                city: deliveryCity,
-                postcode: deliveryPostcode,
-                buildingNumber,
-              }
+              line1: deliveryLine1,
+              city: deliveryCity,
+              postcode: deliveryPostcode,
+              buildingNumber,
+            }
             : null,
           discountId:
             isApplied && appliedDiscount?.data?.id
@@ -1348,8 +1380,8 @@ const BookMembership = () => {
         if (!response.ok)
           throw new Error(
             data?.message ||
-              data?.error ||
-              "Something went wrong creating the membership.",
+            data?.error ||
+            "Something went wrong creating the membership.",
           );
       }
 
@@ -1378,8 +1410,8 @@ const BookMembership = () => {
         if (!waitlistRes.ok)
           throw new Error(
             waitlistData?.message ||
-              waitlistData?.error ||
-              "Something went wrong adding your child to the waiting list.",
+            waitlistData?.error ||
+            "Something went wrong adding your child to the waiting list.",
           );
       }
 
@@ -1441,10 +1473,9 @@ const BookMembership = () => {
 
   // ── Input class helper ────────────────────────────────
   const inputClass = (hasErr) =>
-    `w-full font-inherit text-[14px] border rounded-[10px] px-3.5 py-3 focus:outline-none focus:ring-2 transition-colors ${
-      hasErr
-        ? "border-[#e53e3e] focus:ring-[#e53e3e]/30 bg-[#fff5f5]"
-        : "border-[#e7ebf1] focus:ring-[#3b7df6]"
+    `w-full font-inherit text-[14px] border rounded-[10px] px-3.5 py-3 focus:outline-none focus:ring-2 transition-colors ${hasErr
+      ? "border-[#e53e3e] focus:ring-[#e53e3e]/30 bg-[#fff5f5]"
+      : "border-[#e7ebf1] focus:ring-[#3b7df6]"
     }`;
 
   const handleAddStudents = () => {
@@ -1510,9 +1541,9 @@ const BookMembership = () => {
   }
 
   return (
-    <div className="min-h-screen booking-page bg-[#f4f6f9] text-[#1f2733] font-['Poppins',sans-serif] pb-28 sm:pb-16 pt-5">
+    <div className="min-h-screen booking-page bg-[#f4f6f9] text-[#1f2733] poppins pb-28 sm:pb-16 pt-3">
       {/* Band */}
-      <div className="bg-[#1e3a6e] text-white mx-6 rounded-[14px] px-5 py-4 flex items-center gap-3 font-bold text-[18px]">
+      <div className="bg-[#1e3a6e] text-white mx-6 rounded-[14px] px-5 py-4 flex items-center gap-3 font-semibold text-[18px]">
         <span
           className="cursor-pointer opacity-90 flex items-center"
           onClick={() => {
@@ -1537,13 +1568,12 @@ const BookMembership = () => {
                   className={`flex items-center gap-2 text-[14px] font-semibold ${isActive ? "text-[#1f2733]" : "text-[#6b7685]"}`}
                 >
                   <span
-                    className={`w-6 h-6 rounded-full border-[1.5px] flex items-center justify-center text-[14px] ${
-                      isActive
-                        ? "bg-[#21b573] border-[#21b573] text-white"
-                        : isDone
-                          ? "bg-[#cdeede] border-[#cdeede] text-[#21b573]"
-                          : "bg-white border-[#e7ebf1]"
-                    }`}
+                    className={`w-6 h-6 rounded-full border-[1.5px] flex items-center justify-center text-[14px] ${isActive
+                      ? "bg-[#21b573] border-[#21b573] text-white"
+                      : isDone
+                        ? "bg-[#cdeede] border-[#cdeede] text-[#21b573]"
+                        : "bg-white border-[#e7ebf1]"
+                      }`}
                   >
                     {isDone ? <Check size={13} /> : i + 1}
                   </span>
@@ -1566,33 +1596,28 @@ const BookMembership = () => {
               const t = formatTimeLeft(reservationTimeLeft);
               const pad = (n) => String(n).padStart(2, "0");
               return (
-                <div className=" mx-auto md:px-6 px-2 mt-4">
-                  <div className="bg-[#fff4dd] border border-[#ffd98a] text-[#7a5210] rounded-[14px] px-5 py-3 flex items-center justify-center gap-3 flex-wrap text-[14px]">
-                    <Zap
-                      size={16}
-                      className="text-[#d98c00] shrink-0"
-                      fill="currentColor"
-                    />
-                    <span>
-                      Book within 24 hours for <strong>50% off</strong> the full
+                <div className="mx-auto md:px-6 px-2 mt-4">
+                  <div className="bg-gradient-to-r from-[#fff4e0] to-[#ffe9c7] border border-[#ffd9a0] text-[#92561a] rounded-[14px] p-[12px_18px] flex items-center justify-center gap-[14px] flex-wrap">
+                    <div className="text-[14px] font-semibold text-[#92561a]">
+                      ⚡ Book within 24 hours for <strong>50% off</strong> the full
                       Samba starter pack
-                    </span>
-                    <div className="flex items-center gap-1.5 ml-1">
+                    </div>
+                    <div className="flex items-center gap-[6px]">
                       {[
                         ["h", t.h],
                         ["m", t.m],
                         ["s", t.s],
                       ].map(([unit, val], i) => (
                         <React.Fragment key={unit}>
-                          <span className="bg-[#3b2a14] text-white font-bold text-[14px] rounded-[6px] px-2.5 py-1.5 tabular-nums">
+                          <span className="bg-[#7a4310] text-white font-semibold text-[15px] rounded-[8px] p-[6px_9px] min-w-[38px] text-center tabular-nums">
                             {pad(val)}
                           </span>
                           {i < 2 && (
-                            <span className="text-[#7a5210] font-bold">:</span>
+                            <span className="text-[#7a4310] font-semibold">:</span>
                           )}
                         </React.Fragment>
                       ))}
-                      <span className="text-[14px] text-[#9c7a3a] font-semibold ml-1 uppercase tracking-wide">
+                      <span className="text-[10px] text-[#92561a] font-semibold uppercase tracking-wide">
                         Left
                       </span>
                     </div>
@@ -1632,11 +1657,11 @@ const BookMembership = () => {
           </div>
         )}
         {/* Screens */}
-        <div className="bg-white mt-6 rounded-[16px] shadow-[0_8px_30px_rgba(20,40,80,0.08)] p-4 md:p-10">
+        <div className="bg-white mt-6 rounded-[18px] shadow-[0_8px_30px_rgba(20,40,80,0.08)] p-4 md:p-10 md:pt-7">
           {/* SCREEN A */}
           {flowStep === "A" && (
             <div>
-              <div className="text-center text-[23px] font-bold mb-1.5 tracking-tight">
+              <div className="text-center text-[23px] font-semibold mb-1.5 tracking-tight">
                 Who's this membership for?
               </div>
               <div className="text-center text-[#6b7685] text-[14px] mb-6">
@@ -1662,22 +1687,20 @@ const BookMembership = () => {
                     <div
                       key={s._tmpId ?? i}
                       onClick={() => toggleStudent(s._tmpId)}
-                      className={`w-[230px] border-[1.5px] rounded-[14px] p-4 cursor-pointer transition-all relative ${
-                        isSel
-                          ? "border-[#3b7df6] ring-4 ring-[#3b7df6]/10"
-                          : "border-[#e7ebf1] hover:border-[#bcd0f5]"
-                      }`}
+                      className={`w-[230px] border-[1.5px] rounded-[14px] p-4 cursor-pointer transition-all relative ${isSel
+                        ? "border-[#3b7df6] ring-4 ring-[#3b7df6]/10"
+                        : "border-[#e7ebf1] hover:border-[#bcd0f5]"
+                        }`}
                     >
                       <div
-                        className={`absolute top-3.5 right-3.5 w-[22px] h-[22px] rounded-full border-2 flex items-center justify-center text-white text-[14px] ${
-                          isSel
-                            ? "bg-[#3b7df6] border-[#3b7df6]"
-                            : "border-[#e7ebf1]"
-                        }`}
+                        className={`absolute top-3.5 right-3.5 w-[22px] h-[22px] rounded-full border-2 flex items-center justify-center text-white text-[14px] ${isSel
+                          ? "bg-[#3b7df6] border-[#3b7df6]"
+                          : "border-[#e7ebf1]"
+                          }`}
                       >
                         {isSel && <Check size={13} />}
                       </div>
-                      <div className="text-[#3b7df6] font-bold text-[14px] mb-3">
+                      <div className="text-[#3b7df6] font-semibold text-[14px] mb-3">
                         {s.studentFirstName || `Child ${i + 1}`}
                       </div>
                       <div className="grid grid-cols-2 gap-y-3 gap-x-2">
@@ -1717,17 +1740,17 @@ const BookMembership = () => {
                 })}
               </div>
 
-              <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-[#e7ebf1] p-4 z-40 flex gap-3 w-full sm:relative sm:bottom-auto sm:left-auto sm:right-auto sm:bg-transparent sm:border-t-0 sm:p-0 sm:z-auto justify-center sm:mt-7 sm:w-auto">
+              <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-[#e7ebf1] p-4 z-40 flex gap-3 w-full sm:relative sm:bottom-auto sm:left-auto sm:right-auto sm:bg-transparent sm:border-t-0 sm:p-0 sm:z-auto justify-center sm:mt-[28px] sm:w-auto">
                 <button
                   onClick={() => navigate(-1)}
-                  className="sm:w-auto font-semibold text-[14px] rounded-[12px] md:px-8 py-3.5 border border-[#e7ebf1] text-[#1f2733] bg-white px-4"
+                  className="sm:w-auto font-semibold text-[15px] rounded-[12px] px-[34px] py-3.5 border border-[#e7ebf1] text-[#1f2733] bg-white"
                 >
                   Cancel
                 </button>
                 <button
                   disabled={selectedStudentIds.length === 0}
                   onClick={() => setFlowStep("B")}
-                  className="sm:w-auto font-semibold text-[14px] rounded-[12px] md:px-8 py-3.5 border border-[#3b7df6] text-white bg-[#3b7df6] disabled:opacity-50 hover:bg-[#2f6ae0] px-4"
+                  className="sm:w-auto font-semibold text-[15px] rounded-[12px] px-[34px] py-3.5 border border-[#3b7df6] text-white bg-[#3b7df6] disabled:opacity-50 hover:bg-[#2f6ae0]"
                 >
                   Next
                 </button>
@@ -1738,10 +1761,10 @@ const BookMembership = () => {
           {/* SCREEN B */}
           {flowStep === "B" && (
             <div>
-              <div className="text-center text-[23px] font-bold mb-1.5 tracking-tight">
+              <div className="text-center poppins text-[23px] font-semibold mb-1.5 tracking-tight">
                 Book {activeNames}'s membership
               </div>
-              <div className="text-center text-[#6b7685] text-[14px] mb-6">
+              <div className="text-center poppins text-[#6b7685] text-[14px] mb-6">
                 Confirm the details, choose a plan, and you're done
               </div>
 
@@ -1751,15 +1774,15 @@ const BookMembership = () => {
                   style={{
                     background: "linear-gradient(120deg, #1e3a6e, #2f5aa0)",
                   }}
-                  className="text-white px-5 py-4 rounded-t-[14px] flex items-center justify-between gap-3 flex-wrap"
+                  className="text-white px-5 py-3 rounded-t-[14px] flex items-center justify-between gap-3 flex-wrap"
                 >
-                  <div className="flex items-center gap-2.5 font-semibold text-[14px] md:text-[16px]">
+                  <div className="flex items-center gap-2.5 font-semibold text-[13px] md:text-[15px]">
                     <MapPin size={16} />{" "}
                     {selectedVenue?.label || "Select a venue..."}
                   </div>
                   <button
                     onClick={() => setIsChangingVenue(!isChangingVenue)}
-                    className="bg-white/15 border border-white/35 text-white rounded-[20px] px-3.5 py-1.5 text-[14px] font-semibold"
+                    className="bg-white/15 border border-white/35 text-white rounded-[20px] px-3.5 py-1.5 text-[12px] font-semibold"
                   >
                     Change venue
                   </button>
@@ -1828,32 +1851,32 @@ const BookMembership = () => {
                     return (
                       <div className="flex gap-[26px] flex-wrap p-[14px_20px] border border-t-0 border-[#e7ebf1] bg-white">
                         <div className="flex flex-col gap-0.5">
-                          <span className="text-[10.5px] uppercase tracking-[0.04em] text-[#6b7685] font-bold">
+                          <span className="text-[11px] uppercase tracking-[0.04em] text-[#6b7685] font-semibold">
                             Day
                           </span>
-                          <span className="text-[14px] capitalize font-bold text-[#1f2733]">
+                          <span className="text-[14px] capitalize font-semibold text-[#1f2733]">
                             {classDay || "-"}
                           </span>
                         </div>
                         <div className="flex flex-col gap-0.5">
-                          <span className="text-[10.5px] uppercase tracking-[0.04em] text-[#6b7685] font-bold">
+                          <span className="text-[11px] uppercase tracking-[0.04em] text-[#6b7685] font-semibold">
                             Time
                           </span>
-                          <span className="text-[14px] font-bold text-[#1f2733]">
+                          <span className="text-[14px] font-semibold text-[#1f2733]">
                             {classTime || "-"}
                           </span>
                         </div>
                         <div className="flex flex-col gap-0.5">
-                          <span className="text-[10.5px] uppercase tracking-[0.04em] text-[#6b7685] font-bold">
+                          <span className="text-[11px] uppercase tracking-[0.04em] text-[#6b7685] font-semibold">
                             Trial date
                           </span>
-                          <span className="text-[14px] font-bold text-[#1f2733]">
+                          <span className="text-[14px] font-semibold text-[#1f2733]">
                             {formatDateForDisplay(
                               booking?.trialDate ||
-                                matchedBooking?.trialDate ||
-                                matchedBooking?.startDate ||
-                                booking?.startDate ||
-                                selectedDate,
+                              matchedBooking?.trialDate ||
+                              matchedBooking?.startDate ||
+                              booking?.startDate ||
+                              selectedDate,
                             ) || "-"}
                           </span>
                         </div>
@@ -1873,7 +1896,7 @@ const BookMembership = () => {
                     >
                       <div className="flex items-center justify-between gap-3.5 flex-wrap">
                         <div className="flex items-center gap-2">
-                          <div className="w-[35px] h-[35px] rounded-full bg-[#eaf1fe] flex items-center justify-center font-bold text-[#3b7df6]">
+                          <div className="w-[35px] h-[35px] rounded-full bg-[#eaf1fe] flex items-center justify-center font-semibold text-[#3b7df6]">
                             {(s.studentFirstName || "?")[0]}
                           </div>
                           <div>
@@ -1881,7 +1904,7 @@ const BookMembership = () => {
                               {s.studentFirstName} {s.studentLastName}
                             </div>
                             {s.selectedClassData && !isEditingThis && (
-                              <div className="text-[11px] md:text-[14px] text-[#6b7685]">
+                              <div className="text-[10px] md:text-[12px] text-[#6b7685]">
                                 Class:{" "}
                                 {`${s.selectedClassData?.className || ""}${s.selectedClassData?.level ? ` (${s.selectedClassData.level})` : ""}`}
                               </div>
@@ -1897,7 +1920,7 @@ const BookMembership = () => {
                                     isEditingThis ? null : s._tmpId,
                                   )
                                 }
-                                className="bg-[#e7f8f0] text-[#0e7a4d] font-semibold text-[10.5px] px-3 py-1.5 rounded-[20px] flex items-center gap-2"
+                                className="bg-[#e7f8f0] text-[#0e7a4d] font-semibold text-[12.5px] p-[6px_12px] rounded-[20px] flex items-center gap-2"
                               >
                                 <span className="w-4 h-4 rounded-full bg-[#21b573] text-white flex items-center justify-center">
                                   <Star size={10} fill="currentColor" />
@@ -1940,10 +1963,10 @@ const BookMembership = () => {
                                   prev.map((st) =>
                                     st._tmpId === s._tmpId
                                       ? {
-                                          ...st,
-                                          selectedClassId: opt.value,
-                                          selectedClassData: opt.all,
-                                        }
+                                        ...st,
+                                        selectedClassId: opt.value,
+                                        selectedClassData: opt.all,
+                                      }
                                       : st,
                                   ),
                                 );
@@ -2006,11 +2029,10 @@ const BookMembership = () => {
                                   onClick={() =>
                                     setAssignment(s._tmpId, "membership")
                                   }
-                                  className={`text-[14px] font-semibold rounded-[20px] px-3.5 py-1.5 border ${
-                                    choice === "membership"
-                                      ? "bg-[#21b573] border-[#21b573] text-white"
-                                      : "bg-white border-[#e7ebf1] text-[#1f2733]"
-                                  }`}
+                                  className={`text-[14px] font-semibold rounded-[20px] px-3.5 py-1.5 border ${choice === "membership"
+                                    ? "bg-[#21b573] border-[#21b573] text-white"
+                                    : "bg-white border-[#e7ebf1] text-[#1f2733]"
+                                    }`}
                                 >
                                   Book membership
                                 </button>
@@ -2019,11 +2041,10 @@ const BookMembership = () => {
                                   onClick={() =>
                                     setAssignment(s._tmpId, "waitlist")
                                   }
-                                  className={`text-[14px] font-semibold rounded-[20px] px-3.5 py-1.5 border ${
-                                    choice === "waitlist"
-                                      ? "bg-[#e6a400] border-[#e6a400] text-white"
-                                      : "bg-white border-[#e7ebf1] text-[#1f2733]"
-                                  }`}
+                                  className={`text-[14px] font-semibold rounded-[20px] px-3.5 py-1.5 border ${choice === "waitlist"
+                                    ? "bg-[#e6a400] border-[#e6a400] text-white"
+                                    : "bg-white border-[#e7ebf1] text-[#1f2733]"
+                                    }`}
                                 >
                                   Waiting list
                                 </button>
@@ -2048,15 +2069,15 @@ const BookMembership = () => {
               {/* Starter pack section */}
               {showStarterPack && (
                 <>
-                  <div className="text-[12px] font-bold uppercase tracking-[0.04em] text-[#6b7685] mb-3">
+                  <div className="text-[13px] md:text-[15px] tracking-wide font-semibold uppercase tracking-[0.04em] text-[#6b7685] mb-3">
                     Starter pack
                   </div>
-                  <div className="grid md:grid-cols-[200px_1fr] gap-5 border border-[#e7ebf1] rounded-[14px] p-4 mb-3.5 items-center">
-                    <div className="bg-gradient-to-br from-[#15336b] to-[#ffd21f] rounded-[12px] h-[150px] flex items-center justify-center text-white text-center font-bold relative overflow-hidden">
+                  <div className="grid md:grid-cols-[200px_1fr] gap-5 border border-[#e7ebf1] rounded-[14px] p-[18px] mb-[14px] items-center">
+                    <div className="bg-gradient-to-br from-[#15336b] to-[#ffd21f] rounded-[12px] h-[150px] flex items-center justify-center text-white text-center font-semibold relative overflow-hidden">
                       <img src="/assets/Kids-Size-Guide.png" alt="" />
                     </div>
                     <div>
-                      <h5 className="text-[14px] md:text-[16px] font-bold mb-2.5 text-[#1f2733]">
+                      <h5 className="text-[14px] md:text-[16px] font-semibold mb-2.5 text-[#1f2733]">
                         Every membership includes the Samba starter pack:
                       </h5>
                       <ul className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2.5 list-none">
@@ -2070,7 +2091,7 @@ const BookMembership = () => {
                             key={i}
                             className="text-[12px] md:text-[13.5px] flex items-center gap-2 text-[#1f2733]"
                           >
-                            <Check
+                            <GiCheckMark
                               size={14}
                               className="text-[#21b573] shrink-0"
                             />
@@ -2090,8 +2111,8 @@ const BookMembership = () => {
                     const starterDiscountAmount = starterOfferActive
                       ? appliedDiscount.data.type === "percentage"
                         ? (starterTotalBase *
-                            Number(appliedDiscount.data.value)) /
-                          100
+                          Number(appliedDiscount.data.value)) /
+                        100
                         : Number(appliedDiscount.data.finalPrice || 0)
                       : 0;
                     const starterPackOriginalTotal = starterTotalBase + 3.99;
@@ -2171,8 +2192,9 @@ const BookMembership = () => {
                   {/* Kit size per student */}
 
                   {showStarterPack && (
-                    <div className="text-[12px] font-bold uppercase tracking-[0.04em] text-[#6b7685] mb-1 mt-5">
-                      kit size{" "}
+                    <div className="text-[14px] font-semibold uppercase tracking-[0.5px] text-[#6b7685] mb-1 mt-5">
+                      Student & kit size
+                      {" "}
                       <button
                         type="button"
                         onClick={() => setIsSizeChartOpen(true)}
@@ -2191,7 +2213,7 @@ const BookMembership = () => {
                       >
                         <div>
                           <div className="flex items-center gap-3">
-                            <div className="w-[35px] h-[35px] rounded-full bg-[#eaf1fe] flex items-center justify-center font-bold text-[#3b7df6]">
+                            <div className="w-[35px] h-[35px] rounded-full bg-[#eaf1fe] flex items-center justify-center font-semibold text-[#3b7df6]">
                               {(s.studentFirstName || "?")[0]}
                             </div>
                             <div className="font-semibold text-[14px] md:text-[16px]">
@@ -2242,7 +2264,7 @@ const BookMembership = () => {
                   {/* Address lookup */}
                   {showStarterPack && (
                     <div className="border border-[#e7ebf1] rounded-[14px] p-4 mt-1 mb-5">
-                      <div className="font-bold text-[14px] mb-3 flex flex-wrap items-center gap-2">
+                      <div className="font-semibold text-[14px] mb-3 flex flex-wrap items-center gap-2">
                         <Truck size={16} /> Delivery address
                         <span className="font-medium text-[#6b7685] text-[14px]">
                           {isStarterPackOptional
@@ -2283,14 +2305,14 @@ const BookMembership = () => {
                               } else {
                                 setAddressError(
                                   result?.message ||
-                                    "Could not find addresses for this postcode.",
+                                  "Could not find addresses for this postcode.",
                                 );
                                 setShowAddrSelect(false);
                               }
                             } catch (err) {
                               setAddressError(
                                 err?.message ||
-                                  "Could not find addresses for this postcode.",
+                                "Could not find addresses for this postcode.",
                               );
                               setShowAddrSelect(false);
                             } finally {
@@ -2363,7 +2385,7 @@ const BookMembership = () => {
               {/* Membership plan */}
               {selectedVenue ? (
                 <>
-                  <div className="text-[12px] font-bold uppercase tracking-[0.04em] text-[#6b7685] mb-3 mt-5">
+                  <div className="text-[14px] font-semibold uppercase tracking-[0.5px] text-[#6b7685] mb-4 mt-5">
                     Choose your membership plan
                   </div>
                   {paymentPlanOptions.length === 0 ? (
@@ -2375,7 +2397,7 @@ const BookMembership = () => {
                         <br />
                         <button
                           onClick={() => setIsChangingVenue(true)}
-                          className="text-[#3b7df6] font-bold mt-1.5 underline hover:text-[#2f6ae0]"
+                          className="text-[#3b7df6] font-semibold mt-1.5 underline hover:text-[#2f6ae0]"
                         >
                           Please select a different venue
                         </button>{" "}
@@ -2395,30 +2417,30 @@ const BookMembership = () => {
                           <div
                             key={plan?.value ?? idx}
                             onClick={() => setMembershipPlan(plan)}
-                            className={`border-[1.5px] rounded-[18px] p-5 cursor-pointer transition-all relative ${isSel ? "border-[#3b7df6] bg-[#f5f9ff] ring-4 ring-[#3b7df6]/10" : "border-[#e7ebf1] hover:border-[#bcd0f5]"}`}
+                            className={`border-[1.5px] rounded-[18px] p-5 pb-7 cursor-pointer transition-all relative ${isSel ? "border-[#3b7df6] bg-[#f5f9ff] ring-4 ring-[#3b7df6]/10" : "border-[#e7ebf1] hover:border-[#bcd0f5]"}`}
                           >
                             <span
                               className={`absolute top-4 right-4 w-5 h-5 rounded-full border-2 ${isSel ? "border-[#3b7df6] bg-white ring-inset ring-4 ring-[#3b7df6]" : "border-[#e7ebf1]"}`}
                             />
-                            <div className="text-[15px] text-[#6b7685] font-semibold">
+                            <div className="text-[12px] text-[#6b7685] font-semibold">
                               {is12Month
                                 ? "Best value"
                                 : is6Month
                                   ? "More flexible · not a rolling commitment"
                                   : "Standard Plan"}
                             </div>
-                            <div className="text-[14px] font-bold my-0.5 mb-1.5">
+                            <div className="text-[17px] font-semibold my-0.5 mb-1.5 text-[#1f2733]">
                               {plan.all?.title || "Plan"}
                             </div>
-                            <div className="text-[26px] font-bold text-[#1e3a6e]">
+                            <div className="text-[22px] font-semibold text-[#1e3a6e]">
                               £{plan.all?.price ?? 0}
-                              <small className="text-[15px] text-[#6b7685] font-medium">
+                              <small className="text-[13px] text-[#6b7685] font-medium">
                                 {" "}
                                 / month
                               </small>
                             </div>
                             {is12Month && (
-                              <span className="inline-block mt-2 bg-[#e7f8f0] text-[#0e7a4d] text-[14px] font-bold px-2.5 py-1 rounded-[20px]">
+                              <span className="inline-block mt-2 bg-[#e7f8f0] text-[#0e7a4d] text-[11px] font-semibold px-2.5 py-[3px] rounded-[20px]">
                                 Save £60 / year
                               </span>
                             )}
@@ -2429,7 +2451,7 @@ const BookMembership = () => {
                   )}
                 </>
               ) : (
-                <div className="text-[14px] font-bold  tracking-[0.04em] text-[#6b7685] mb-3 mt-5 text-center py-4 flex flex-col items-center gap-2">
+                <div className="text-[14px] font-semibold  tracking-[0.04em] text-[#6b7685] mb-3 mt-5 text-center py-4 flex flex-col items-center gap-2">
                   Select a venue above to view membership plans
                 </div>
               )}
@@ -2437,7 +2459,7 @@ const BookMembership = () => {
               {/* Calendar */}
               {membershipPlan && (
                 <>
-                  <div className="text-[14px] font-bold uppercase tracking-[0.04em] text-[#6b7685] mb-3 mt-5">
+                  <div className="text-[14px] font-semibold uppercase tracking-[0.5px] text-[#6b7685] mb-1 mt-5">
                     Select your start date
                   </div>
                   {availableDatesSet.size === 0 ? (
@@ -2448,7 +2470,7 @@ const BookMembership = () => {
                         <b>{selectedVenue?.label || "this venue"}</b>.<br />
                         <button
                           onClick={() => setIsChangingVenue(true)}
-                          className="text-[#3b7df6] font-bold mt-1.5 underline hover:text-[#2f6ae0] block"
+                          className="text-[#3b7df6] font-semibold mt-1.5 underline hover:text-[#2f6ae0] block"
                         >
                           Select a different venue to continue
                         </button>
@@ -2467,7 +2489,7 @@ const BookMembership = () => {
                         },
                       );
                       return hasFutureDates ? (
-                        <div className="border border-[#e7ebf1] rounded-[14px] p-4 max-w-[360px] mb-6">
+                        <div className="border border-[#e7ebf1] rounded-[14px] p-[18px] max-w-[360px] mb-6">
                           <div className="flex items-center justify-between mb-3">
                             <button
                               onClick={() => {
@@ -2475,11 +2497,11 @@ const BookMembership = () => {
                                 nd.setMonth(nd.getMonth() - 1);
                                 setCurrentDate(nd);
                               }}
-                              className="border border-[#e7ebf1] bg-white rounded-full w-[30px] h-[30px] flex items-center justify-center text-[#6b7685] font-bold hover:bg-[#f4f6f9]"
+                              className="border border-[#e7ebf1] bg-white rounded-full w-[30px] h-[30px] flex items-center justify-center text-[#6b7685] font-semibold hover:bg-[#f4f6f9]"
                             >
                               <ChevronLeft size={16} />
                             </button>
-                            <span className="font-bold text-[14px]">
+                            <span className="font-semibold text-[15px]">
                               {currentDate.toLocaleString("default", {
                                 month: "long",
                               })}{" "}
@@ -2491,7 +2513,7 @@ const BookMembership = () => {
                                 nd.setMonth(nd.getMonth() + 1);
                                 setCurrentDate(nd);
                               }}
-                              className="border border-[#e7ebf1] bg-white rounded-full w-[30px] h-[30px] flex items-center justify-center text-[#6b7685] font-bold hover:bg-[#f4f6f9]"
+                              className="border border-[#e7ebf1] bg-white rounded-full w-[30px] h-[30px] flex items-center justify-center text-[#6b7685] font-semibold hover:bg-[#f4f6f9]"
                             >
                               <ChevronRight size={16} />
                             </button>
@@ -2500,7 +2522,7 @@ const BookMembership = () => {
                             {["M", "T", "W", "T", "F", "S", "S"].map((d, i) => (
                               <div
                                 key={i}
-                                className="text-[14px] text-[#6b7685] font-semibold py-1"
+                                className="text-[11px] text-[#6b7685] font-semibold py-1"
                               >
                                 {d}
                               </div>
@@ -2541,15 +2563,15 @@ const BookMembership = () => {
                                     if (isAvail && !isPast)
                                       setSelectedDate(dateStr);
                                   }}
-                                  className={`py-2 text-[14px] rounded-lg ${styleClass}`}
+                                  className={`py-[9px] text-[13px] rounded-lg ${styleClass}`}
                                 >
                                   {d}
                                 </div>
                               );
                             })}
                           </div>
-                          <div className="text-[14px] text-[#6b7685] mt-2.5 flex items-center gap-2">
-                            <span className="w-2.5 h-2.5 rounded-[3px] bg-[#eef5ff] border border-[#cfe0fb] inline-block"></span>{" "}
+                          <div className="text-[12px] text-[#6b7685] mt-2.5 flex items-center gap-2">
+                            <span className="w-[11px] h-[11px] rounded-[3px] bg-[#eef5ff] border border-[#cfe0fb] inline-block"></span>{" "}
                             Only dates with an available class are selectable
                           </div>
                         </div>
@@ -2564,7 +2586,7 @@ const BookMembership = () => {
                             <b>{selectedVenue?.label || "this venue"}</b>.<br />
                             <button
                               onClick={() => setIsChangingVenue(true)}
-                              className="text-[#3b7df6] font-bold mt-1.5 underline hover:text-[#2f6ae0] block"
+                              className="text-[#3b7df6] font-semibold mt-1.5 underline hover:text-[#2f6ae0] block"
                             >
                               Select a different venue to continue
                             </button>
@@ -2578,11 +2600,11 @@ const BookMembership = () => {
 
               {/* Price breakdown */}
               {selectedDate && (
-                <div className="bg-[#f7f9fc] border border-[#e7ebf1] rounded-[14px] p-4 md:p-5 mt-5">
-                  <h4 className="text-[12px] uppercase tracking-[0.04em] text-[#6b7685] font-semibold mb-3">
+                <div className="bg-[#f7f9fc] border border-[#e7ebf1] rounded-[14px] p-[18px_20px] mt-5">
+                  <h4 className="text-[14px] font-semibold uppercase tracking-[0.5px] text-[#6b7685] mb-4 mt-5">
                     Price breakdown
                   </h4>
-                  <div className="flex justify-between items-center text-[13px] py-1.5  ">
+                  <div className="flex justify-between items-center text-[14px] py-[6px]  ">
                     <span className="text-[#6b7685]">
                       {membershipPlan?.label || "Plan"} · {numberOfStudents}{" "}
                       student{numberOfStudents > 1 ? "s" : ""}
@@ -2595,7 +2617,7 @@ const BookMembership = () => {
                   {showStarterPack && (
                     <>
                       {isApplied && pricingBreakdown.starterDiscount > 0 ? (
-                        <div className="flex justify-between items-center text-[12px] py-1 md:text-[14px] text-[#0e7a4d] font-semibold">
+                        <div className="flex justify-between items-center text-[14px] py-[6px] text-[#0e7a4d] font-semibold">
                           <span>
                             Starter pack
                             {activeStudents.length > 1
@@ -2606,16 +2628,14 @@ const BookMembership = () => {
                               : " (discount applied)"}
                           </span>
                           <span className="font-semibold">
-                            <span className="text-gray-500 line-through">
-                              {" "}
+                            <span className="text-[#9aa4b2] line-through text-[13px] mr-1.5">
                               £{(pricingBreakdown.starterPack || 0).toFixed(2)}
                             </span>
-                            {"  "} £
-                            {(pricingBreakdown.starterDiscount || 0).toFixed(2)}
+                            £{(pricingBreakdown.starterDiscount || 0).toFixed(2)}
                           </span>
                         </div>
                       ) : (
-                        <div className="flex justify-between items-center text-[12px] py-1 md:text-[14px]">
+                        <div className="flex justify-between items-center text-[14px] py-[6px]">
                           <span className="text-[#6b7685]">
                             Starter pack
                             {activeStudents.length > 1
@@ -2627,41 +2647,39 @@ const BookMembership = () => {
                           </span>
                         </div>
                       )}
-                      <div className="flex justify-between items-center text-[12px] py-1 md:text-[14px]">
+                      <div className="flex justify-between items-center text-[14px] py-[6px]">
                         <span className="text-[#6b7685]">Delivery fee</span>
                         <span className="font-semibold">£3.99</span>
                       </div>
                     </>
                   )}
-                  <div className="flex justify-between items-center text-[13px] py-1.5  ">
+                  <div className="flex justify-between items-center text-[14px] py-[6px]  ">
                     <span className="text-[#6b7685]">Joining fee</span>
                     <span className="font-semibold">No joining fee</span>
                   </div>
-                  <div className="flex justify-between items-center text-[13px] py-1.5  ">
+                  <div className="flex justify-between items-center text-[14px] py-[6px]  ">
                     <span className="text-[#6b7685]">{getProRataLabel()}</span>
                     <span className="font-semibold">
                       £{(pricingBreakdown.finalProRataCost || 0).toFixed(2)}
                     </span>
                   </div>
-                  <div className="h-[1px] bg-[#e7ebf1] my-3" />
-                  <div className="flex justify-between items-center text-[14px] font-bold pt-2">
-                    <span className="text-[#1f2733] font-bold">Due today</span>
-                    <span className="text-[#1e3a6e] font-bold">
+                  <div className="h-[1px] bg-[#e7ebf1] my-2.5" />
+                  <div className="flex justify-between items-center text-[17px] font-semibold pt-2">
+                    <span className="text-[#6b7685] font-semibold">Due today</span>
+                    <span className="text-[#1e3a6e] font-semibold">
                       £{(pricingBreakdown.totalAmountToday || 0).toFixed(2)}
                     </span>
                   </div>
-                  <div className="text-[11px] md:text-[14px] text-[#6b7685] bg-[#eef5ff] rounded-lg p-3 mt-2.5 leading-[1.6]">
+                  <div className="text-[12px] text-[#6b7685] bg-[#eef5ff] rounded-[8px] p-[10px_12px] mt-2.5 leading-[1.6]">
                     <b className="text-[#1f2733]">
                       Collected immediately (today):
                     </b>{" "}
                     {showStarterPack
-                      ? "the starter pack (incl. £3.99 delivery) and "
+                      ? "the starter pack and "
                       : ""}
                     the pro-rata for the part-month you're joining.
                     <br />
-                    <b className="text-[#1f2733]">
-                      From the 1st of next month:
-                    </b>{" "}
+                    <b className="text-[#1f2733]">From {formatDate(firstPaymentDate)}:</b>{" "}
                     your first full monthly payment (£
                     {(pricingBreakdown.nextMonthPayment || 0).toFixed(2)}), then
                     on the 1st of each month.
@@ -2669,10 +2687,10 @@ const BookMembership = () => {
                 </div>
               )}
 
-              <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-[#e7ebf1] p-4 z-40 flex gap-3 w-full sm:relative sm:bottom-auto sm:left-auto sm:right-auto sm:bg-transparent sm:border-t-0 sm:p-0 sm:z-auto justify-center sm:mt-7 sm:w-auto">
+              <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-[#e7ebf1] p-4 z-40 flex gap-3 w-full sm:relative sm:bottom-auto sm:left-auto sm:right-auto sm:bg-transparent sm:border-t-0 sm:p-0 sm:z-auto justify-center sm:mt-[28px] sm:w-auto">
                 <button
                   onClick={() => (isMulti ? setFlowStep("A") : navigate(-1))}
-                  className="sm:w-auto font-semibold text-[14px] rounded-[12px] md:px-8 py-3.5 border border-[#e7ebf1] text-[#1f2733] bg-white px-4"
+                  className="sm:w-auto font-semibold text-[15px] rounded-[12px] px-[34px] py-3.5 border border-[#e7ebf1] text-[#1f2733] bg-white"
                 >
                   Cancel
                 </button>
@@ -2690,7 +2708,7 @@ const BookMembership = () => {
                     (hasOverCapacity && !isCapacityResolved)
                   }
                   onClick={() => setFlowStep("C")}
-                  className="sm:w-auto font-semibold text-[14px] rounded-[12px] md:px-8 py-3.5 border border-[#3b7df6] text-white bg-[#3b7df6] disabled:opacity-50 hover:bg-[#2f6ae0] px-4"
+                  className="sm:w-auto font-semibold text-[15px] rounded-[12px] px-[34px] py-3.5 border border-[#3b7df6] text-white bg-[#3b7df6] disabled:opacity-50 hover:bg-[#2f6ae0]"
                 >
                   Continue to payment
                 </button>
@@ -2701,7 +2719,7 @@ const BookMembership = () => {
           {/* SCREEN C — Direct Debit */}
           {flowStep === "C" && (
             <div>
-              <div className="text-center text-[23px] font-bold mb-1.5 tracking-tight">
+              <div className="text-center text-[23px] font-semibold mb-1.5 tracking-tight">
                 Set up your monthly Direct Debit
               </div>
               <div className="text-center text-[#6b7685] text-[14px] mb-6">
@@ -2710,45 +2728,46 @@ const BookMembership = () => {
 
               <div className="grid md:grid-cols-[1fr_1.3fr] gap-8">
                 {/* Summary */}
-                <div className="bg-[#f1f6ff] rounded-[14px] p-5">
-                  <h3 className="text-[#1e3a6e] text-[16px] mb-4 font-bold">
+                <div className="bg-[#f1f6ff] rounded-[14px] p-[22px]">
+                  <h3 className="text-[#1e3a6e] text-[18px] mb-[14px] font-bold">
                     Your membership
                   </h3>
-                  <div className="flex justify-between text-[13px] py-1.5 text-[#6b7685]">
+                  <div className="flex justify-between text-[13.5px] py-1 text-[#6b7685]">
                     <span>{membershipPlan?.label || "Plan"}</span>
                     <span>
                       £{(pricingBreakdown.nextMonthPayment || 0).toFixed(2)} /
                       mo
                     </span>
                   </div>
-                  <div className="flex justify-between text-[13px] py-1.5 text-[#6b7685]">
+                  <div className="flex justify-between text-[13.5px] py-1 text-[#6b7685]">
                     <span>Start date</span>
                     <span>{selectedDate || "-"}</span>
                   </div>
-                  <div className="flex justify-between text-[13px] py-1.5 text-[#6b7685]">
+                  <div className="flex justify-between text-[13.5px] py-1 text-[#6b7685]">
                     <span>First full payment</span>
-                    <span>1st of Next Month</span>
+                    <span>{formatDate(firstPaymentDate)}</span>
                   </div>
-                  <div className="flex justify-between text-[16px] font-bold text-[#1e3a6e] mt-4 border-t border-[#d4e0f5] pt-3">
-                    <span>Monthly from 1st</span>
-                    <span>
+                  <div className="flex justify-between text-[18px] font-bold text-[#1e3a6e] mt-[14px] border-t border-[#d4e0f5] pt-[12px]">
+                    <span className="text-[14px] font-bold">Monthly from {formatDate(firstPaymentDate)}</span>
+                    <span className="text-[18px] font-bold">
                       £{(pricingBreakdown.nextMonthPayment || 0).toFixed(2)}
                     </span>
+
                   </div>
                 </div>
 
                 {/* Form */}
                 <div>
-                  <h3 className="text-[16px] mb-1.5 font-bold">
+                  <h3 className="text-[18px] mb-1 font-semibold">
                     Direct Debit details
                   </h3>
-                  <p className="text-[15px] text-[#6b7685] mb-5">
+                  <p className="text-[13px] text-[#6b7685] mb-[18px]">
                     Your monthly membership payment is collected by Direct Debit
                     on the 1st of each month.
                   </p>
 
                   <div className="mb-4">
-                    <label className="block text-[15px] font-semibold mb-1.5">
+                    <label className="block text-[13px] font-semibold mb-1.5">
                       Email address
                     </label>
                     <input
@@ -2762,68 +2781,69 @@ const BookMembership = () => {
                       }}
                       placeholder="Enter email address"
                     />
-                    <div className="text-[14px] text-[#6b7685] mt-1">
+                    <div className="text-[11px] text-[#6b7685] mt-1">
                       Direct Debit confirmation will be sent here
                     </div>
                     {ddErrors.email && (
-                      <p className="text-[14px] text-[#e53e3e] mt-1">
+                      <p className="text-[11px] text-[#e53e3e] mt-1">
                         {ddErrors.email}
                       </p>
                     )}
                   </div>
+                  <div className="grid grid-cols-2 gap-3.5 mb-2">
 
-                  <div className="mb-4">
-                    <label className="block text-[15px] font-semibold mb-1.5">
-                      Account holder name
-                    </label>
-                    <input
-                      className={inputClass(!!ddErrors.account_holder_name)}
-                      value={payment.account_holder_name}
-                      onChange={(e) => {
-                        setPayment((p) => ({
-                          ...p,
-                          account_holder_name: e.target.value,
-                        }));
-                        if (ddErrors.account_holder_name)
-                          setDdErrors((errs) => ({
-                            ...errs,
-                            account_holder_name: "",
+                    <div className="">
+                      <label className="block text-[13px] font-semibold mb-1.5">
+                        Account holder name
+                      </label>
+                      <input
+                        className={inputClass(!!ddErrors.account_holder_name)}
+                        value={payment.account_holder_name}
+                        onChange={(e) => {
+                          setPayment((p) => ({
+                            ...p,
+                            account_holder_name: e.target.value,
                           }));
-                      }}
-                      placeholder="Full name as on bank account"
-                    />
-                    {ddErrors.account_holder_name && (
-                      <p className="text-[14px] text-[#e53e3e] mt-1">
-                        {ddErrors.account_holder_name}
-                      </p>
-                    )}
-                  </div>
+                          if (ddErrors.account_holder_name)
+                            setDdErrors((errs) => ({
+                              ...errs,
+                              account_holder_name: "",
+                            }));
+                        }}
+                        placeholder="Full name as on bank account"
+                      />
+                      {ddErrors.account_holder_name && (
+                        <p className="text-[11px] text-[#e53e3e] mt-1">
+                          {ddErrors.account_holder_name}
+                        </p>
+                      )}
+                    </div>
 
-                  {/* NEW: Address + City */}
-                  <div className="mb-4">
-                    <label className="block text-[15px] font-semibold mb-1.5">
-                      Address
-                    </label>
-                    <input
-                      className={inputClass(!!ddErrors.line1)}
-                      value={payment.line1}
-                      onChange={(e) => {
-                        setPayment((p) => ({ ...p, line1: e.target.value }));
-                        if (ddErrors.line1)
-                          setDdErrors((errs) => ({ ...errs, line1: "" }));
-                      }}
-                      placeholder="Street address"
-                      autoComplete="address-line1"
-                    />
-                    {ddErrors.line1 && (
-                      <p className="text-[14px] text-[#e53e3e] mt-1">
-                        {ddErrors.line1}
-                      </p>
-                    )}
+                    {/* NEW: Address + City */}
+                    <div className="">
+                      <label className="block text-[13px] font-semibold mb-1.5">
+                        Address
+                      </label>
+                      <input
+                        className={inputClass(!!ddErrors.line1)}
+                        value={payment.line1}
+                        onChange={(e) => {
+                          setPayment((p) => ({ ...p, line1: e.target.value }));
+                          if (ddErrors.line1)
+                            setDdErrors((errs) => ({ ...errs, line1: "" }));
+                        }}
+                        placeholder="Street address"
+                        autoComplete="address-line1"
+                      />
+                      {ddErrors.line1 && (
+                        <p className="text-[11px] text-[#e53e3e] mt-1">
+                          {ddErrors.line1}
+                        </p>
+                      )}
+                    </div>
                   </div>
-
                   <div className="mb-4">
-                    <label className="block text-[15px] font-semibold mb-1.5">
+                    <label className="block text-[13px] font-semibold mb-1.5">
                       City
                     </label>
                     <input
@@ -2838,15 +2858,15 @@ const BookMembership = () => {
                       autoComplete="address-level2"
                     />
                     {ddErrors.city && (
-                      <p className="text-[14px] text-[#e53e3e] mt-1">
+                      <p className="text-[11px] text-[#e53e3e] mt-1">
                         {ddErrors.city}
                       </p>
                     )}
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3.5 mb-4">
+                  <div className="grid grid-cols-2 gap-3.5 mb-2">
                     <div>
-                      <label className="block text-[15px] font-semibold mb-1.5">
+                      <label className="block text-[13px] font-semibold mb-1.5">
                         Sort code
                       </label>
                       <input
@@ -2857,17 +2877,17 @@ const BookMembership = () => {
                         inputMode="numeric"
                         maxLength={8}
                       />
-                      <div className="text-[14px] text-[#6b7685] mt-1">
+                      <div className="text-[11px] text-[#6b7685] mt-1">
                         6 digits, auto-formatted
                       </div>
                       {ddErrors.branch_code && (
-                        <p className="text-[14px] text-[#e53e3e] mt-1">
+                        <p className="text-[11px] text-[#e53e3e] mt-1">
                           {ddErrors.branch_code}
                         </p>
                       )}
                     </div>
                     <div>
-                      <label className="block text-[15px] font-semibold mb-1.5">
+                      <label className="block text-[13px] font-semibold mb-1.5">
                         Account number
                       </label>
                       <input
@@ -2878,11 +2898,11 @@ const BookMembership = () => {
                         inputMode="numeric"
                         maxLength={8}
                       />
-                      <div className="text-[14px] text-[#6b7685] mt-1">
+                      <div className="text-[11px] text-[#6b7685] mt-1">
                         8 digits
                       </div>
                       {ddErrors.account_number && (
-                        <p className="text-[14px] text-[#e53e3e] mt-1">
+                        <p className="text-[11px] text-[#e53e3e] mt-1">
                           {ddErrors.account_number}
                         </p>
                       )}
@@ -2906,7 +2926,7 @@ const BookMembership = () => {
                             setDdErrors((errs) => ({ ...errs, authorise: "" }));
                         }}
                       />
-                      <span>
+                      <span className="font-medium text-[12px]">
                         I agree to the <strong>Direct Debit Guarantee</strong>,
                         Terms & Conditions and Privacy Policy.
                       </span>
@@ -2920,17 +2940,17 @@ const BookMembership = () => {
                 </div>
               </div>
 
-              <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-[#e7ebf1] p-4 z-40 flex gap-3 w-full sm:relative sm:bottom-auto sm:left-auto sm:right-auto sm:bg-transparent sm:border-t-0 sm:p-0 sm:z-auto justify-center sm:mt-7 sm:w-auto">
+              <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-[#e7ebf1] p-4 z-40 flex gap-3 w-full sm:relative sm:bottom-auto sm:left-auto sm:right-auto sm:bg-transparent sm:border-t-0 sm:p-0 sm:z-auto justify-center sm:mt-[28px] sm:w-auto">
                 <button
                   onClick={() => setFlowStep("B")}
-                  className="sm:w-auto font-semibold text-[14px] rounded-[12px] md:px-8 py-3.5 border border-[#e7ebf1] text-[#1f2733] bg-white px-4"
+                  className="sm:w-auto font-semibold text-[15px] rounded-[12px] px-[34px] py-3.5 border border-[#e7ebf1] text-[#1f2733] bg-white"
                 >
                   Back
                 </button>
                 <button
                   onClick={handleDDContinue}
                   disabled={!isDDValid}
-                  className="sm:w-auto font-semibold text-[14px] rounded-[12px] md:px-8 py-3.5 border border-[#3b7df6] text-white bg-[#3b7df6] disabled:opacity-50 hover:bg-[#2f6ae0] px-4"
+                  className="sm:w-auto font-semibold text-[15px] rounded-[12px] px-[34px] py-3.5 border border-[#3b7df6] text-white bg-[#3b7df6] disabled:opacity-50 hover:bg-[#2f6ae0]"
                 >
                   Continue to card payment
                 </button>
@@ -2941,7 +2961,7 @@ const BookMembership = () => {
           {/* SCREEN E — Card */}
           {flowStep === "E" && (
             <div>
-              <div className="text-center text-[23px] font-bold mb-1.5 tracking-tight">
+              <div className="text-center text-[23px] font-semibold mb-1.5 tracking-tight">
                 Pay for your starter pack
               </div>
               <div className="text-center text-[#6b7685] text-[14px] mb-6">
@@ -2951,11 +2971,11 @@ const BookMembership = () => {
 
               <div className="grid md:grid-cols-[1fr_1.3fr] gap-8">
                 {/* Summary */}
-                <div className="bg-[#f1f6ff] rounded-[14px] p-5">
-                  <h3 className="text-[#1e3a6e] text-[16px] mb-4 font-bold">
+                <div className="bg-[#f1f6ff] rounded-[14px] p-[22px]">
+                  <h3 className="text-[#1e3a6e] text-[16px] mb-[14px] font-semibold">
                     Due today
                   </h3>
-                  <div className="font-bold text-[#1e3a6e] mt-3.5 text-[14px]">
+                  <div className="font-semibold text-[#1e3a6e] mt-3.5 text-[14px]">
                     Collected now (one-off)
                   </div>
                   {showStarterPack &&
@@ -2963,7 +2983,7 @@ const BookMembership = () => {
                       const sCount = activeStudents.length || 1;
                       return (
                         <>
-                          <div className="flex justify-between text-[13px] md:text-[14px] py-1 text-[#6b7685]">
+                          <div className="flex justify-between text-[13.5px] py-1 text-[#6b7685]">
                             <span>
                               Starter pack{sCount > 1 ? ` × ${sCount}` : ""}
                             </span>
@@ -2971,13 +2991,13 @@ const BookMembership = () => {
                               £{(pricingBreakdown.starterPack || 0).toFixed(2)}
                             </span>
                           </div>
-                          <div className="flex justify-between text-[13px] py-1.5 text-[#6b7685]">
+                          <div className="flex justify-between text-[13.5px] py-1 text-[#6b7685]">
                             <span>Delivery fee</span>
                             <span>£3.99</span>
                           </div>
                           {isApplied &&
                             pricingBreakdown.starterDiscount > 0 && (
-                              <div className="flex justify-between text-[13px] py-1.5 text-[#0e7a4d] font-semibold">
+                              <div className="flex justify-between text-[13.5px] py-1 text-[#0e7a4d] font-semibold">
                                 <span>Discount</span>
                                 <span>
                                   -£
@@ -2990,17 +3010,17 @@ const BookMembership = () => {
                         </>
                       );
                     })()}
-                  <div className="flex justify-between text-[13px] py-1.5 text-[#6b7685]">
+                  <div className="flex justify-between text-[13.5px] py-1 text-[#6b7685]">
                     <span>Joining fee</span>
                     <span>£0.00</span>
                   </div>
-                  <div className="flex justify-between text-[16px] font-bold text-[#1e3a6e] mt-4 border-t border-[#d4e0f5] pt-3">
-                    <span>Total today</span>
-                    <span>
+                  <div className="flex justify-between text-[15px] font-bold text-[#1e3a6e] mt-[14px] border-t border-[#d4e0f5] pt-[12px]">
+                    <span className="text-[15px] font-bold">Total today</span>
+                    <span className="text-[15px] font-bold">
                       £{(pricingBreakdown.totalAmountToday || 0).toFixed(2)}
                     </span>
                   </div>
-                  <div className="text-[14px] text-[#6b7685] bg-[#eef5ff] rounded-lg p-3 mt-3.5 leading-[1.6]">
+                  <div className="text-[12px] text-[#6b7685] bg-[#eef5ff] rounded-lg p-3 mt-2 leading-[1.6]">
                     Your monthly membership Direct Debit (£
                     {(pricingBreakdown.nextMonthPayment || 0).toFixed(2)})
                     starts separately on 1st.
@@ -3009,13 +3029,13 @@ const BookMembership = () => {
 
                 {/* Card form */}
                 <div>
-                  <h3 className="text-[16px] mb-1.5 font-bold">Card details</h3>
-                  <p className="text-[15px] text-[#6b7685] mb-5">
+                  <h3 className="text-[18px] mb-1 font-semibold">Card details</h3>
+                  <p className="text-[13px] text-[#6b7685] mb-[18px]">
                     This one-off payment covers your starter pack and delivery.
                   </p>
 
                   <div className="mb-4">
-                    <label className="block text-[15px] font-semibold mb-1.5">
+                    <label className="block text-[13px] font-semibold mb-1.5">
                       Card number
                     </label>
                     <div className="relative">
@@ -3029,16 +3049,16 @@ const BookMembership = () => {
                         autoComplete="cc-number"
                       />
                       {(payment.cardNumber || "").startsWith("4") && (
-                        <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[14px] font-bold text-[#1a1f71] bg-[#e8eaf6] px-2 py-0.5 rounded">
+                        <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[14px] font-semibold text-[#1a1f71] bg-[#e8eaf6] px-2 py-0.5 rounded">
                           VISA
                         </span>
                       )}
                       {((payment.cardNumber || "").startsWith("5") ||
                         (payment.cardNumber || "").startsWith("2")) && (
-                        <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[14px] font-bold text-[#eb001b] bg-[#fce4ec] px-2 py-0.5 rounded">
-                          MC
-                        </span>
-                      )}
+                          <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[14px] font-semibold text-[#eb001b] bg-[#fce4ec] px-2 py-0.5 rounded">
+                            MC
+                          </span>
+                        )}
                     </div>
                     {cardErrors.cardNumber ? (
                       <p className="text-[14px] text-[#e53e3e] mt-1">
@@ -3050,7 +3070,7 @@ const BookMembership = () => {
                         <Check size={12} /> Valid card number
                       </p>
                     ) : (
-                      <div className="text-[14px] text-[#6b7685] mt-1">
+                      <div className="text-[11px] text-[#6b7685] mt-1">
                         {(payment.cardNumber || "").replace(/\s/g, "").length}
                         /16 digits
                       </div>
@@ -3059,7 +3079,7 @@ const BookMembership = () => {
 
                   <div className="grid grid-cols-2 gap-3.5 mb-4">
                     <div>
-                      <label className="block text-[15px] font-semibold mb-1.5">
+                      <label className="block text-[13px] font-semibold mb-1.5">
                         Expiry date
                       </label>
                       <input
@@ -3072,7 +3092,7 @@ const BookMembership = () => {
                         autoComplete="cc-exp"
                       />
                       {cardErrors.expiryDate ? (
-                        <p className="text-[14px] text-[#e53e3e] mt-1">
+                        <p className="text-[11px] text-[#e53e3e] mt-1">
                           {cardErrors.expiryDate}
                         </p>
                       ) : payment.expiryDate &&
@@ -3083,7 +3103,7 @@ const BookMembership = () => {
                       ) : null}
                     </div>
                     <div>
-                      <label className="block text-[15px] font-semibold mb-1.5">
+                      <label className="block text-[13px] font-semibold mb-1.5">
                         CVC
                       </label>
                       <input
@@ -3096,11 +3116,11 @@ const BookMembership = () => {
                         autoComplete="cc-csc"
                       />
                       {cardErrors.cvc ? (
-                        <p className="text-[14px] text-[#e53e3e] mt-1">
+                        <p className="text-[11px] text-[#e53e3e] mt-1">
                           {cardErrors.cvc}
                         </p>
                       ) : (
-                        <div className="text-[14px] text-[#6b7685] mt-1">
+                        <div className="text-[11px] text-[#6b7685] mt-1">
                           3–4 digits on back
                         </div>
                       )}
@@ -3108,7 +3128,7 @@ const BookMembership = () => {
                   </div>
 
                   <div className="mb-4">
-                    <label className="block text-[15px] font-semibold mb-1.5">
+                    <label className="block text-[13px] font-semibold mb-1.5">
                       Name on card
                     </label>
                     <input
@@ -3137,7 +3157,7 @@ const BookMembership = () => {
 
                   <div className="grid grid-cols-2 gap-3.5">
                     <div>
-                      <label className="block text-[15px] font-semibold mb-1.5">
+                      <label className="block text-[13px] font-semibold mb-1.5">
                         Country
                       </label>
                       <Select
@@ -3157,7 +3177,7 @@ const BookMembership = () => {
                       />
                     </div>
                     <div>
-                      <label className="block text-[15px] font-semibold mb-1.5">
+                      <label className="block text-[13px] font-semibold mb-1.5">
                         Postcode / ZIP
                       </label>
                       <input
@@ -3173,17 +3193,17 @@ const BookMembership = () => {
                 </div>
               </div>
 
-              <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-[#e7ebf1] p-4 z-40 flex gap-3 w-full sm:relative sm:bottom-auto sm:left-auto sm:right-auto sm:bg-transparent sm:border-t-0 sm:p-0 sm:z-auto justify-center sm:mt-7 sm:w-auto">
+              <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-[#e7ebf1] p-4 z-40 flex gap-3 w-full sm:relative sm:bottom-auto sm:left-auto sm:right-auto sm:bg-transparent sm:border-t-0 sm:p-0 sm:z-auto justify-center sm:mt-[28px] sm:w-auto">
                 <button
                   onClick={() => setFlowStep("C")}
-                  className="sm:w-auto font-semibold text-[14px] rounded-[12px] md:px-8 py-3.5 border border-[#e7ebf1] text-[#1f2733] bg-white px-4"
+                  className="sm:w-auto font-semibold text-[15px] rounded-[12px] px-[34px] py-3.5 border border-[#e7ebf1] text-[#1f2733] bg-white"
                 >
                   Back
                 </button>
                 <button
                   disabled={isSubmitting || !isCardValid}
                   onClick={handleSubmit}
-                  className="sm:w-auto font-semibold text-[14px] rounded-[12px] md:px-11 px-4 py-3.5 border border-[#21b573] text-white bg-[#21b573] disabled:opacity-50 hover:bg-[#1a935d] flex items-center justify-center gap-2"
+                  className="sm:w-auto font-semibold text-[15px] rounded-[12px] px-[44px] py-3.5 border border-[#21b573] text-white bg-[#21b573] disabled:opacity-50 hover:bg-[#1a935d] flex items-center justify-center gap-2"
                 >
                   {isSubmitting && <Loader2 className="animate-spin w-4 h-4" />}
                   {isSubmitting
@@ -3197,7 +3217,7 @@ const BookMembership = () => {
           {/* SCREEN D — Success */}
           {flowStep === "D" && (
             <div>
-              <div className="text-center text-[23px] font-bold mb-1.5 tracking-tight flex items-center justify-center gap-2">
+              <div className="text-center text-[23px] font-semibold mb-1.5 tracking-tight flex items-center justify-center gap-2">
                 You're all set!
               </div>
               <div className="text-center text-[#6b7685] text-[14px] mb-6">
@@ -3235,10 +3255,10 @@ const BookMembership = () => {
                 and Direct Debit schedule has been sent to your inbox.
               </div>
 
-              <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-[#e7ebf1] p-4 z-40 flex gap-3 w-full sm:relative sm:bottom-auto sm:left-auto sm:right-auto sm:bg-transparent sm:border-t-0 sm:p-0 sm:z-auto justify-center sm:mt-7 sm:w-auto">
+              <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-[#e7ebf1] p-4 z-40 flex gap-3 w-full sm:relative sm:bottom-auto sm:left-auto sm:right-auto sm:bg-transparent sm:border-t-0 sm:p-0 sm:z-auto justify-center sm:mt-[28px] sm:w-auto">
                 <button
                   onClick={() => navigate("/bookings")}
-                  className="sm:w-auto font-semibold text-[14px] rounded-[12px] px-11 py-3.5 border border-[#21b573] text-white bg-[#21b573] hover:bg-[#1a935d]"
+                  className="sm:w-auto font-semibold text-[15px] rounded-[12px] px-[44px] py-3.5 border border-[#21b573] text-white bg-[#21b573] hover:bg-[#1a935d]"
                 >
                   Finish
                 </button>
@@ -3271,10 +3291,10 @@ const BookMembership = () => {
               {/* Modal Header */}
               <div className="flex justify-between items-center px-8 py-5 border-b border-gray-100">
                 <div>
-                  <span className="text-[14px] uppercase tracking-wider text-[#237FEA] font-bold">
+                  <span className="text-[14px] uppercase tracking-wider text-[#237FEA] font-semibold">
                     Size guides
                   </span>
-                  <h2 className="text-[21px] font-bold text-gray-900 leading-tight">
+                  <h2 className="text-[21px] font-semibold text-gray-900 leading-tight">
                     Kids Size Chart
                   </h2>
                 </div>
@@ -3410,7 +3430,7 @@ const BookMembership = () => {
                 </div>
 
                 <div className="border-l-4 border-[#237FEA] pl-4 py-1">
-                  <h3 className="text-[14px] font-bold text-gray-900">
+                  <h3 className="text-[14px] font-semibold text-gray-900">
                     How to measure?
                   </h3>
                   <p className="text-sm text-gray-600 mt-1">
@@ -3453,10 +3473,10 @@ const BookMembership = () => {
               {/* Header */}
               <div className="flex justify-between items-center px-7 py-5 border-b border-gray-100">
                 <div>
-                  <span className="text-[14px] uppercase tracking-wider text-[#3b7df6] font-bold">
+                  <span className="text-[14px] uppercase tracking-wider text-[#3b7df6] font-semibold">
                     New child
                   </span>
-                  <h2 className="text-[19px] font-bold text-gray-900 leading-tight">
+                  <h2 className="text-[19px] font-semibold text-gray-900 leading-tight">
                     Add a new child
                   </h2>
                 </div>
