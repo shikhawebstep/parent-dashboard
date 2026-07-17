@@ -2,8 +2,9 @@
 
 import React, { useState } from 'react'
 
-const Attendance = ({booking, details, loading}) => {
-  const attendanceDataMain = booking?.students || []
+const Attendance = ({ booking, details, loading }) => {
+  const attendanceDataMain = details?.students || [];
+  console.log('attendanceDataMain',attendanceDataMain)
 
   const [activeTab, setActiveTab] = useState(attendanceDataMain[0]?.id || null)
 
@@ -15,14 +16,16 @@ const Attendance = ({booking, details, loading}) => {
     )
   }
 
-  const activeStudent = attendanceDataMain.find((s) => s.id === activeTab) || attendanceDataMain[0];
-  const schedule = activeStudent?.classSchedule || activeStudent?.holidayClassSchedules;
+  const activeStudent = attendanceDataMain.find((s) => s.id === activeTab) || attendanceDataMain[0]
+  const schedule = activeStudent?.classSchedule || activeStudent?.holidayClassSchedules
+  const sessions = activeStudent?.sessions || [];
+  console.log('activeStudent',activeStudent)
+  console.log('sessions',sessions)
 
-  const venue = schedule?.className || (schedule?.venueId ? `Venue ${schedule.venueId}` : '-');
-  
-  const dateStr = booking?.createdAt ? new Date(booking.createdAt).toLocaleDateString('en-GB') : '-';
-  const timeStr = schedule?.startTime && schedule?.endTime ? `${schedule.startTime} – ${schedule.endTime}` : '';
-  const date = timeStr ? `${dateStr} ${timeStr}` : dateStr;
+  const venue = schedule?.className || (schedule?.venueId ? `Venue ${schedule.venueId}` : '-')
+
+  const formatDate = (isoDate) =>
+    isoDate ? new Date(isoDate).toLocaleDateString('en-GB') : '-'
 
   const renderAttendanceBadge = (status) => {
     switch (status?.toLowerCase()) {
@@ -59,22 +62,27 @@ const Attendance = ({booking, details, loading}) => {
       </div>
 
       {/* Mobile card view */}
-      <div className="block sm:hidden px-4">
-        {activeStudent ? (
-          <div className="border border-gray-100 rounded-2xl p-4 space-y-3">
-            <div className="flex justify-between items-start">
-              <span className="text-[13px] text-gray-500 font-semibold">Class Venue</span>
-              <span className="text-[13px] font-semibold text-gray-800 text-right max-w-[60%]">{venue}</span>
+      <div className="block sm:hidden px-4 space-y-3">
+        {sessions.length > 0 ? (
+          sessions.map((session) => (
+            <div key={session.id} className="border border-gray-100 rounded-2xl p-4 space-y-3">
+              <div className="flex justify-between items-start">
+                <span className="text-[13px] text-gray-500 font-semibold">Class Venue</span>
+                <span className="text-[13px] font-semibold text-gray-800 text-right max-w-[60%]">{venue}</span>
+              </div>
+              <div className="flex justify-between items-start">
+                <span className="text-[13px] text-gray-500 font-semibold">Date</span>
+                <span className="text-[13px] font-semibold text-gray-800 text-right max-w-[60%]">
+                  {formatDate(session.sessionDate)}{' '}
+                  {session.startTime && session.endTime ? `${session.startTime} – ${session.endTime}` : ''}
+                </span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-[13px] text-gray-500 font-semibold">Attendance</span>
+                {renderAttendanceBadge(session.attendanceStatus)}
+              </div>
             </div>
-            <div className="flex justify-between items-start">
-              <span className="text-[13px] text-gray-500 font-semibold">Date</span>
-              <span className="text-[13px] font-semibold text-gray-800 text-right max-w-[60%]">{date}</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-[13px] text-gray-500 font-semibold">Attendance</span>
-              {renderAttendanceBadge(activeStudent.attendance)}
-            </div>
-          </div>
+          ))
         ) : (
           <p className="text-center text-gray-400 text-sm py-6">No data found.</p>
         )}
@@ -91,14 +99,19 @@ const Attendance = ({booking, details, loading}) => {
             </tr>
           </thead>
           <tbody>
-            {activeStudent ? (
-              <tr className="border-t border-gray-100">
-                <td className="px-4 py-3 text-[14px] font-semibold text-gray-800">{venue}</td>
-                <td className="px-4 py-3 text-[14px] font-semibold text-gray-800">{date}</td>
-                <td className="px-4 py-3 text-[14px] font-semibold">
-                  {renderAttendanceBadge(activeStudent.attendance)}
-                </td>
-              </tr>
+            {sessions.length > 0 ? (
+              sessions.map((session) => (
+                <tr key={session.id} className="border-t border-gray-100">
+                  <td className="px-4 py-3 text-[14px] font-semibold text-gray-800">{venue}</td>
+                  <td className="px-4 py-3 text-[14px] font-semibold text-gray-800">
+                    {formatDate(session.sessionDate)}{' '}
+                    {session.startTime && session.endTime ? `${session.startTime} – ${session.endTime}` : ''}
+                  </td>
+                  <td className="px-4 py-3 text-[14px] font-semibold">
+                    {renderAttendanceBadge(session.attendanceStatus)}
+                  </td>
+                </tr>
+              ))
             ) : (
               <tr>
                 <td colSpan={3} className="px-4 py-6 text-center text-gray-400 text-sm">
