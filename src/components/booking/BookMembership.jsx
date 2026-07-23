@@ -1246,7 +1246,6 @@ const BookMembership = () => {
         .split(" ")
         .filter(Boolean);
 
-      console.log("payment", payment);
 
       const deliveryLine1 =
         selectedAddressData?.line1 || selectedAddress || payment.line1 || "NA";
@@ -1278,12 +1277,14 @@ const BookMembership = () => {
         )
         : 0;
 
+      const isBookAgain = urlBookingId && !conversionToken;
+
       // ── Split: who has a confirmed space vs who needs the waiting list ──
       const { confirmed: membershipStudents, waitlisted: waitlistStudents } =
         splitStudentsByAssignment(activeStudents);
 
       const buildStudentPayload = (student) => ({
-        ...(urlBookingId && student?.id ? { id: student.id } : {}),
+        ...(isBookAgain && student?.id ? { id: student.id } : {}),
         studentFirstName: student?.studentFirstName || "",
         studentLastName: student?.studentLastName || "",
         dateOfBirth: toDateOnly(student?.dateOfBirth),
@@ -1295,7 +1296,7 @@ const BookMembership = () => {
       });
 
       const parentsPayload = parents.map((parent) => ({
-        ...(urlBookingId && parent?.id ? { id: parent.id } : {}),
+        ...(isBookAgain && parent?.id ? { id: parent.id } : {}),
         parentFirstName: parent?.parentFirstName || "NA",
         parentLastName: parent?.parentLastName || "NA",
         parentEmail: parent?.parentEmail || "na@na.com",
@@ -1307,7 +1308,7 @@ const BookMembership = () => {
       }));
 
       const emergencyPayload = {
-        ...(urlBookingId && emergency?.id ? { id: emergency.id } : {}),
+        ...(isBookAgain && emergency?.id ? { id: emergency.id } : {}),
         sameAsAbove: emergency?.sameAsAbove || false,
         emergencyFirstName: emergency?.emergencyFirstName || "NA",
         emergencyLastName: emergency?.emergencyLastName || "NA",
@@ -1364,12 +1365,12 @@ const BookMembership = () => {
           },
         };
 
-        const APIURL = urlBookingId
+        const APIURL = isBookAgain
           ? `${API_BASE_URL}api/parent/booking/start-membership/${urlBookingId}`
           : `${API_BASE_URL}api/parent/booking/membership/create/${parentId}`;
 
         const response = await fetch(APIURL, {
-          method: urlBookingId ? "PUT" : "POST",
+          method: isBookAgain ? "PUT" : "POST",
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token || ""}`,
